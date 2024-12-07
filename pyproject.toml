@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "cis-fastapi"
+version = "0.1.0"
+description = ""
+authors = ["luis314159 <luis.14xbox@live.com.mx>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = {extras = ["all"], version = "^0.115.5"}
+uvicorn = "^0.32.1"
+fastapi-admin = "^1.0.4"
+azure-cognitiveservices-vision-computervision = "^0.9.1"
+msrest = "^0.7.1"
+python-dotenv = "^1.0.1"
+prisma-client = "^0.2.1"
+sqlmodel = {extras = ["asyncio"], version = "^0.0.22"}
+python-decouple = "^3.8"
+asyncpg = "^0.30.0"
+psycopg2 = "^2.9.10"
+pandas = "^2.2.3"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
