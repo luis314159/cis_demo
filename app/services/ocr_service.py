@@ -19,7 +19,7 @@ class OCRService:
             raise ValueError("Azure Subscription Key y Endpoint deben estar configurados correctamente.")
         self.client = ComputerVisionClient(endpoint, CognitiveServicesCredentials(subscription_key))
 
-    def azure_ocr(self, image) -> list[str] | None:
+    def azure_ocr(self, image) -> str | None:
         """
         Procesa una imagen para obtener texto reconocido mediante Azure OCR.
         """
@@ -41,11 +41,11 @@ class OCRService:
             # Procesar resultados
             if get_result.status == 'succeeded':
                 logging.info("Reconocimiento de texto completado con éxito.")
-                recognized_texts = [
+                recognized_texts = "\n".join(
                     line.text
                     for result in get_result.analyze_result.read_results
                     for line in result.lines
-                ]
+                )
                 return recognized_texts
             else:
                 logging.error("El reconocimiento de texto falló.")
@@ -53,7 +53,6 @@ class OCRService:
         except Exception as e:
             logging.error(f"Error al procesar la imagen: {e}")
             return None
-
 
 # Inicializar el servicio con credenciales desde variables de entorno
 ocr_service = OCRService(

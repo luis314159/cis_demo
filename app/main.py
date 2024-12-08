@@ -6,16 +6,21 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from models import Item
-from routers import test_jobs, ocr_routes, validate_csv, list_jobs, object_route, details
-
+from routers import object_router, process_router, stage_router, test_jobs, ocr_routes, validate_csv, list_jobs, details, job_status
+#from routers import add_stage
 
 app = FastAPI(lifespan=create_all_tables)
 app.include_router(test_jobs.router)
 app.include_router(ocr_routes.router)
 app.include_router(validate_csv.router)
 app.include_router(list_jobs.router)
-app.include_router(object_route.router)
+app.include_router(object_router.router)
 app.include_router(details.router)
+app.include_router(details.router)
+app.include_router(process_router.router)
+app.include_router(stage_router.router)
+app.include_router(job_status.router)
+#app.include_router(add_stage.router)
 
 # Show static files
 app.mount("/static", StaticFiles(directory="static"), name="static")

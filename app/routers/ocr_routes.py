@@ -1,12 +1,14 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException, Response
 from services.ocr_service import ocr_service  # Importa el servicio
 import logging
+from fastapi.responses import PlainTextResponse
 
 router = APIRouter(
     prefix="/ocr",
     tags=["OCR"]
 )
 
+#@router.post("",  response_class = PlainTextResponse)
 @router.post("")
 async def extract_text(image: UploadFile = File(...)):
     """
@@ -24,7 +26,8 @@ async def extract_text(image: UploadFile = File(...)):
         recognized_texts = ocr_service.azure_ocr(image.file)
         if recognized_texts:
             logging.info("Texto reconocido con éxito.")
-            return {"text": recognized_texts}
+            #return Response(recognized_texts, mimetype='text/plain')
+            return recognized_texts
         logging.info("No se reconoció texto en la imagen.")
         return {"message": "No se reconoció texto en la imagen."}
     except Exception as e:

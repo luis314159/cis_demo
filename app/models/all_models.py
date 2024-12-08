@@ -1,8 +1,6 @@
 from sqlmodel import SQLModel, Field, Relationship
-from typing import Optional
 from typing import List, Optional
 from datetime import datetime, timezone
-from sqlmodel import Field, Relationship, SQLModel
 
 
 # Modelos para la tabla Jobs
@@ -39,12 +37,16 @@ class ItemBase(SQLModel):
     ocr: str = Field(max_length=255, nullable=False)
 
 
+
 class Item(ItemBase, table=True):
     item_id: Optional[int] = Field(default=None, primary_key=True)
     job_id: int = Field(foreign_key="job.job_id", nullable=False)
     job: Job = Relationship(back_populates="items")
     # Renombrar la relación de "object" a "related_objects"
     related_objects: list["Object"] = Relationship(back_populates="item")
+    process_id: int = Field(foreign_key="process.process_id")
+
+    process: "Process" =  Relationship(back_populates="items")
 
 
 
@@ -56,23 +58,23 @@ class ItemUpdate(ItemBase):
     pass
 
 
-# Modelos para la tabla Stages
+# Modelo de Stage
 class StageBase(SQLModel):
-    stage_name: str = Field(max_length=20, unique=True, nullable=False)
+    stage_name: str = Field(max_length=50, unique=True, nullable=False)
 
 
 class Stage(StageBase, table=True):
     stage_id: Optional[int] = Field(default=None, primary_key=True)
+    process_stages: List["ProcessStage"] = Relationship(back_populates="stage")
 
 
 class StageCreate(StageBase):
     pass
 
-
 # Modelos para la tabla Objects
 class ObjectBase(SQLModel):
-    current_stage: int = Field(foreign_key="stage.stage_id", default=0)
-    rework: int
+    current_stage: int = Field(foreign_key="stage.stage_id", default=1)
+    rework: int = Field(default=0)
     scrap: Optional[int]
 
 
@@ -97,3 +99,46 @@ class ObjectDetails(SQLModel):
 class JobObjectsResponse(SQLModel):
     job_code: str
     objects: List[ObjectDetails]
+
+# Tabla intermedia ProcessStage
+class ProcessStage(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    process_id: int = Field(foreign_key="process.process_id", nullable=False)
+    stage_id: int = Field(foreign_key="stage.stage_id", nullable=False)
+    order: int = Field(nullable=False)  # Orden dentro del proceso
+
+    process: "Process" = Relationship(back_populates="process_stages")
+    stage: "Stage" = Relationship(back_populates="process_stages")
+
+
+# Modelo de Process
+class ProcessBase(SQLModel):
+    process_name: str = Field(max_length=50, unique=True, nullable=False)
+
+
+class Process(ProcessBase, table=True):
+    process_id: Optional[int] = Field(default=None, primary_key=True)
+    process_stages: List[ProcessStage] = Relationship(back_populates="process")
+    items: List["Item"] = Relationship(back_populates="process")  # Relación con Item
+
+
+class ProcessCreate(ProcessBase):
+    pass
+
+
+class ProcessUpdate(ProcessBase):
+    pass
+
+
+class ItemStageStatus(SQLModel):
+    item_name: str
+    completed: int
+    pending: int
+
+class StageStatus(SQLModel):
+    stage_name: str
+    items: List[ItemStageStatus]
+
+class JobStatus(SQLModel):
+    job_code: str
+    stages: List[StageStatus]
