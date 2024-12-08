@@ -7,7 +7,22 @@ router = APIRouter(
 )
 
 # Dummy data
-dummy_data = ["WN675B", "WN675A", "WN675C"
+# dummy_data = ["WN675B", "WN675A", "WN675C"
+# ]
+
+dummy_data = [
+  {
+    "id": 1,
+    "name": "WN675B"
+  },
+  {
+    "id": 2,
+    "name": "WN675A"
+  },
+  {
+    "id": 3,
+    "name": "WN675C"
+  }
 ]
 
 # Endpoint para devolver la dummy data

@@ -7,13 +7,13 @@ router = APIRouter(
     tags=["OCR"]
 )
 
-@router.post("/")
+@router.post("")
 async def extract_text(image: UploadFile = File(...)):
     """
     Extrae texto de una imagen usando Azure OCR.
 
-    :param image: Archivo de imagen cargado por el usuario.
-    :return: Lista de textos reconocidos en la imagen.
+    param image: Archivo de imagen cargado por el usuario.
+    return: Lista de textos reconocidos en la imagen.
     """
     if not image.content_type.startswith("image/"):
         logging.warning("Archivo recibido no es una imagen.")

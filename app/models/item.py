@@ -1,7 +1,6 @@
 from sqlmodel import SQLModel, Field, Relationship
 from typing import Optional
 from .job import Job
-from .material import Material
 
 
 # Modelos para la tabla Items
@@ -14,15 +13,17 @@ class ItemBase(SQLModel):
     volumen: float
     area_superficial: float
     cantidad: int
+    material: str = Field(default="Steel")
     ocr: str = Field(max_length=255, nullable=False)
 
 
 class Item(ItemBase, table=True):
     item_id: Optional[int] = Field(default=None, primary_key=True)
     job_id: int = Field(foreign_key="job.job_id", nullable=False)
-    material_id: int = Field(foreign_key="material.material_id", nullable=False)
     job: Job = Relationship(back_populates="items")
-    material: Material = Relationship()
+    # Renombrar la relación de "object" a "related_objects"
+    related_objects: list["Object"] = Relationship(back_populates="item")
+
 
 
 class ItemCreate(ItemBase):
