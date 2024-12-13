@@ -22,7 +22,7 @@ class Item(ItemBase, table=True):
     job_id: int = Field(foreign_key="job.job_id", nullable=False)
     job: Job = Relationship(back_populates="items")
     # Renombrar la relación de "object" a "related_objects"
-    related_objects: list["Object"] = Relationship(back_populates="item")
+    related_objects: list["object"] = Relationship(back_populates="item")
 
 
 

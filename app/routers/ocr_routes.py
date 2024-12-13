@@ -17,6 +17,7 @@ async def extract_text(image: UploadFile = File(...)):
     param image: Archivo de imagen cargado por el usuario.
     return: Lista de textos reconocidos en la imagen.
     """
+    
     if not image.content_type.startswith("image/"):
         logging.warning("Archivo recibido no es una imagen.")
         raise HTTPException(status_code=400, detail="El archivo debe ser una imagen.")

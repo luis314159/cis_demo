@@ -47,6 +47,24 @@ class Item(ItemBase, table=True):
     process_id: int = Field(foreign_key="process.process_id")
 
     process: "Process" =  Relationship(back_populates="items")
+    @property
+    def stages(self) -> List["Stage"]:
+        """
+        Devuelve una lista ordenada de stages para el proceso asociado con este Item.
+        
+        Returns:
+            List[Stage]: Lista de stages ordenados según su orden en el proceso.
+        """
+        # El proceso está ya vinculado al Item a través de process_id
+        # Ordenamos los stages por su orden en el proceso
+        ordered_stages = sorted(
+            [ps.stage for ps in self.process.process_stages], 
+            key=lambda stage_ps: next(
+                ps.order for ps in self.process.process_stages 
+                if ps.stage_id == stage_ps.stage_id
+            )
+        )
+        return ordered_stages
 
 
 

@@ -3,6 +3,19 @@ from typing import List, Optional
 from datetime import datetime, timezone
 
 
+# Modelo de Stage
+class StageBase(SQLModel):
+    stage_name: str = Field(max_length=50, unique=True, nullable=False)
+
+
+class Stage(StageBase, table=True):
+    stage_id: Optional[int] = Field(default=None, primary_key=True)
+    process_stages: List["ProcessStage"] = Relationship(back_populates="stage")
+
+
+class StageCreate(StageBase):
+    pass
+
 # Modelos para la tabla Jobs
 class JobBase(SQLModel):
     job_code: str = Field(max_length=50, unique=True, nullable=False)
@@ -48,7 +61,64 @@ class Item(ItemBase, table=True):
 
     process: "Process" =  Relationship(back_populates="items")
 
+    # @property
+    # def stages(self) -> list["Stage"]:
+    #     """
+    #     Devuelve una lista ordenada de diccionarios representando los stages
+    #     para el proceso asociado con este Item.
+        
+    #     Returns:
+    #         List[Dict]: Lista de stages ordenados como diccionarios.
+    #     """
+    #     return [
+    #         {
+    #             "stage_id": ps.stage.stage_id,
+    #             "stage_name": ps.stage.stage_name
+    #         }
+    #         for ps in sorted(
+    #             self.process.process_stages, 
+    #             key=lambda ps: ps.order
+    #         )
+    #     ]
 
+    @property
+    def stage_ids(self) -> List[str]:
+        """
+        Devuelve una lista ordenada de nombres de stages para el proceso asociado con este Item.
+        
+        Returns:
+            List[str]: Lista de nombres de stages ordenados según su orden en el proceso.
+        """
+        # El proceso está ya vinculado al Item a través de process_id
+        # Ordenamos los stages por su orden en el proceso
+        ordered_stage_ids = [
+            ps.stage.stage_id 
+            for ps in sorted(
+                self.process.process_stages, 
+                key=lambda ps: ps.order
+            )
+        ]
+        return ordered_stage_ids
+
+    @property
+    def stage_names(self) -> List[str]:
+        """
+        Devuelve una lista ordenada de nombres de stages para el proceso asociado con este Item.
+        
+        Returns:
+            List[str]: Lista de nombres de stages ordenados según su orden en el proceso.
+        """
+        # El proceso está ya vinculado al Item a través de process_id
+        # Ordenamos los stages por su orden en el proceso
+        ordered_stage_names = [
+            ps.stage.stage_name 
+            for ps in sorted(
+                self.process.process_stages, 
+                key=lambda ps: ps.order
+            )
+        ]
+        return ordered_stage_names
+    
 
 class ItemCreate(ItemBase):
     job_id: int
@@ -57,19 +127,6 @@ class ItemCreate(ItemBase):
 class ItemUpdate(ItemBase):
     pass
 
-
-# Modelo de Stage
-class StageBase(SQLModel):
-    stage_name: str = Field(max_length=50, unique=True, nullable=False)
-
-
-class Stage(StageBase, table=True):
-    stage_id: Optional[int] = Field(default=None, primary_key=True)
-    process_stages: List["ProcessStage"] = Relationship(back_populates="stage")
-
-
-class StageCreate(StageBase):
-    pass
 
 # Modelos para la tabla Objects
 class ObjectBase(SQLModel):
@@ -82,6 +139,8 @@ class Object(ObjectBase, table=True):
     object_id: Optional[int] = Field(default=None, primary_key=True)
     item_id: int = Field(foreign_key="item.item_id", nullable=False)
     item: Item = Relationship(back_populates="related_objects")
+
+        
 
 class ObjectCreate(ObjectBase):
     item_id: int
@@ -96,9 +155,11 @@ class ObjectDetails(SQLModel):
     stage_name: str
     count: int
 
+
 class JobObjectsResponse(SQLModel):
     job_code: str
     objects: List[ObjectDetails]
+
 
 # Tabla intermedia ProcessStage
 class ProcessStage(SQLModel, table=True):
@@ -109,7 +170,7 @@ class ProcessStage(SQLModel, table=True):
 
     process: "Process" = Relationship(back_populates="process_stages")
     stage: "Stage" = Relationship(back_populates="process_stages")
-
+    
 
 # Modelo de Process
 class ProcessBase(SQLModel):
@@ -130,10 +191,27 @@ class ProcessUpdate(ProcessBase):
     pass
 
 
+# class ItemStageStatus(SQLModel):
+#     item_name: str
+#     ocr : str
+#     fraction: str #str(f"{completed}/{total})
+#     status: bool
+
+# class ItemStageStatus(SQLModel):
+#     item_name: str
+#     completed: int
+#     pending :int
+#      #str(f"{completed}/{total})
+
+
 class ItemStageStatus(SQLModel):
     item_name: str
-    completed: int
-    pending: int
+    # completed: int
+    # pending :int
+
+    item_ocr: str
+    ratio :str
+    status: bool
 
 class StageStatus(SQLModel):
     stage_name: str
@@ -142,3 +220,4 @@ class StageStatus(SQLModel):
 class JobStatus(SQLModel):
     job_code: str
     stages: List[StageStatus]
+
