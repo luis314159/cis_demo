@@ -22,8 +22,9 @@ def update_object_stage(
     :param new_stage_name: Nombre del nuevo stage.
     """
     # Ignorar el último carácter del OCR
-    ocr_cleaned = ocr[:-1]
-    
+    ocr_cleaned = ocr[:-1] #Tomar en cuenta _
+    pieza = ocr[1]
+
     # Obtener el Item asociado al OCR
     item = session.exec(select(Item).where(Item.ocr == ocr_cleaned)).first()
     if not item:

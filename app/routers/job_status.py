@@ -62,15 +62,28 @@ def get_job_status(job_code: str, session: SessionDep):
             # Inicializar datos para el item en esta etapa
             if item.item_name not in progress_data[stage_name]:
                 progress_data[stage_name][item.item_name] = {"completed": 0, "pending": 0, "ocr": item.ocr, "ratio": "", "status": False}
+            
 
             # Analizar cada objeto y determinar su estado en la etapa
             for obj in objects:
-                if obj.current_stage == 1:
-                    progress_data[stage_name][item.item_name]["pending"] += 1
-                elif process_stages.index(obj.current_stage) >=  process_stages.index(stage):
-                    progress_data[stage_name][item.item_name]["completed"] += 1
-                else:
-                    progress_data[stage_name][item.item_name]["pending"] += 1
+                try:
+                    if obj.current_stage == 1:
+                        progress_data[stage_name][item.item_name]["pending"] += 1
+
+                    elif process_ids.index(obj.current_stage) >=  process_ids.index(stage):
+                        progress_data[stage_name][item.item_name]["completed"] += 1
+                    else:
+                        progress_data[stage_name][item.item_name]["pending"] += 1
+                except:
+                    print(f"process_stages: {process_stages}")
+                    print(f"process_ids: {process_ids}")
+                    print(f"current_stage: {obj.current_stage}")
+                    print(f"stage: {stage}")
+
+                    # process_stages: ['CUTTING']
+                    # process_ids: [2]
+                    # current_stage: 2
+                    # stage: 2
             
             completed = progress_data[stage_name][item.item_name]["completed"]
             pending = progress_data[stage_name][item.item_name]["pending"]
