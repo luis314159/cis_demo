@@ -90,8 +90,13 @@ def get_job_status(job_code: str, session: SessionDep):
             total =completed + pending
             progress_data[stage_name][item.item_name]["ratio"] = f'{completed}/{total}'
 
-            if pending == 0:
-                progress_data[stage_name][item.item_name]["status"] == True
+            print(f"Pending: {pending}, completed: {completed}, total: {total}")
+            
+            if int(pending) == 0:
+                print("True")
+                progress_data[stage_name][item.item_name]["status"] = True
+
+            print(f"Status: {progress_data[stage_name][item.item_name]["status"]}")
 
     # Construir la respuesta
 

@@ -22,7 +22,7 @@ app.include_router(stage_router.router)
 app.include_router(job_status.router)
 app.include_router(object_current_stage.router)
 app.include_router(item_router.router)
-#app.include_router(add_stage.router)
+
 
 # Show static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -44,12 +44,3 @@ async def read_root(request: Request):
 @app.get("/item", response_model=list[Item])
 def get_item(session: SessionDep):
     return session.exec(select(Item)).all()
-
-
-
-
-# app.include_router(item_router)
- 
-# app.include_router(job_router)
-# app.include_router(test_router)
-# app.include_router(object_router)

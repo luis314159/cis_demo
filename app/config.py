@@ -1,5 +1,5 @@
 class Settings:
-    PROJECT_NAME: str = "Mi API Básica"
-    VERSION: str = "1.0.0"
+    PROJECT_NAME: str = "CIS_ARGA"
+    VERSION: str = "0.1.0"
 
 settings = Settings()
