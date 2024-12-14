@@ -22,13 +22,16 @@ def update_object_stage(
     :param new_stage_name: Nombre del nuevo stage.
     """
     # Ignorar el último carácter del OCR
-    ocr_cleaned = ocr[:-1] #Tomar en cuenta _
-    pieza = ocr[1]
+    delimitador = "_"
+    pieces = ocr.split(delimitador)
+    ocr_cleaned, part = pieces[0:-1][0], pieces[-1]
+
 
     # Obtener el Item asociado al OCR
+    #print(ocr_cleaned)
     item = session.exec(select(Item).where(Item.ocr == ocr_cleaned)).first()
     if not item:
-        raise HTTPException(status_code=404, detail="Item con el OCR proporcionado no encontrado.")
+        raise HTTPException(status_code=404, detail=F"Item con el OCR proporcionado no encontrado, OCR {ocr_cleaned}.")
 
     # Verificar que el nuevo stage exista
     stage = session.exec(select(Stage).where(Stage.stage_name == new_stage_name)).first()
@@ -36,9 +39,18 @@ def update_object_stage(
         raise HTTPException(status_code=404, detail="Stage proporcionado no existe.")
     
     # Obtener el Object asociado al Item
-    obj = session.exec(select(Object).where(Object.item_id == item.item_id)).first()
+    #print(f"OCR: {ocr_cleaned}, Part: {part}")
+    nth_term = int(part) -1
+    obj = session.exec(
+    select(Object)
+    .where(Object.item_id == item.item_id)
+    .offset(nth_term)  # Saltar las primeras nth_term piezas.
+    .limit(1)          # Obtener solo una pieza.
+    ).first()
+    #obj = session.exec(select(Object).where(Object.item_id == item.item_id)).first()
     if not obj:
         raise HTTPException(status_code=404, detail="Object asociado al Item no encontrado.")
+    
     
     # Actualizar el current_stage del Object
     obj.current_stage = stage.stage_id  # Debes asignar el ID del stage, no el nombre
@@ -64,12 +76,16 @@ def test_update_object_stage(
     :param new_stage_name: Nombre del nuevo stage.
     """
     # Ignorar el último carácter del OCR
-    ocr_cleaned = ocr[:-1]
-    
+    delimitador = "_"
+    pieces = ocr.split(delimitador)
+    ocr_cleaned, part = pieces[0:-1][0], pieces[-1]
+
+
     # Obtener el Item asociado al OCR
+    #print(ocr_cleaned)
     item = session.exec(select(Item).where(Item.ocr == ocr_cleaned)).first()
     if not item:
-        raise HTTPException(status_code=404, detail="Item con el OCR proporcionado no encontrado.")
+        raise HTTPException(status_code=404, detail=F"Item con el OCR proporcionado no encontrado, OCR {ocr_cleaned}.")
 
     # Verificar que el nuevo stage exista
     stage = session.exec(select(Stage).where(Stage.stage_name == new_stage_name)).first()
@@ -77,7 +93,15 @@ def test_update_object_stage(
         raise HTTPException(status_code=404, detail="Stage proporcionado no existe.")
     
     # Obtener el Object asociado al Item
-    obj = session.exec(select(Object).where(Object.item_id == item.item_id)).first()
+    #print(f"OCR: {ocr_cleaned}, Part: {part}")
+    nth_term = int(part) -1
+    obj = session.exec(
+    select(Object)
+    .where(Object.item_id == item.item_id)
+    .offset(nth_term)  # Saltar las primeras nth_term piezas.
+    .limit(1)          # Obtener solo una pieza.
+    ).first()
+    #obj = session.exec(select(Object).where(Object.item_id == item.item_id)).first()
     if not obj:
         raise HTTPException(status_code=404, detail="Object asociado al Item no encontrado.")
     
@@ -85,6 +109,7 @@ def test_update_object_stage(
     return {
         "message": "Prueba exitosa. Estos serían los valores actualizados:",
         "object_id": obj.object_id,
+        "Pieza" : part,
         "current_stage": obj.current_stage,
         "new_stage": new_stage_name,
         "associated_item_ocr": ocr_cleaned,
