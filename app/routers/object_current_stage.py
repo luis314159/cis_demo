@@ -24,9 +24,11 @@ def update_object_stage(
     # Ignorar el último carácter del OCR
     delimitador = "_"
     pieces = ocr.split(delimitador)
+
     ocr_cleaned, part = pieces[0:-1][0], pieces[-1]
-
-
+    
+    ocr_cleaned = "_".join(pieces[0:-1])
+    print(ocr_cleaned)
     # Obtener el Item asociado al OCR
     #print(ocr_cleaned)
     item = session.exec(select(Item).where(Item.ocr == ocr_cleaned)).first()

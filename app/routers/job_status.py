@@ -75,10 +75,11 @@ def get_job_status(job_code: str, session: SessionDep):
                     else:
                         progress_data[stage_name][item.item_name]["pending"] += 1
                 except:
-                    print(f"process_stages: {process_stages}")
-                    print(f"process_ids: {process_ids}")
-                    print(f"current_stage: {obj.current_stage}")
-                    print(f"stage: {stage}")
+                    pass
+                    # print(f"process_stages: {process_stages}")
+                    # print(f"process_ids: {process_ids}")
+                    # print(f"current_stage: {obj.current_stage}")
+                    # print(f"stage: {stage}")
 
                     # process_stages: ['CUTTING']
                     # process_ids: [2]
@@ -90,13 +91,13 @@ def get_job_status(job_code: str, session: SessionDep):
             total =completed + pending
             progress_data[stage_name][item.item_name]["ratio"] = f'{completed}/{total}'
 
-            print(f"Pending: {pending}, completed: {completed}, total: {total}")
+            #print(f"Pending: {pending}, completed: {completed}, total: {total}")
             
             if int(pending) == 0:
-                print("True")
+                #print("True")
                 progress_data[stage_name][item.item_name]["status"] = True
 
-            print(f"Status: {progress_data[stage_name][item.item_name]["status"]}")
+            #print(f"Status: {progress_data[stage_name][item.item_name]["status"]}")
 
     # Construir la respuesta
 
