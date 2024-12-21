@@ -1,0 +1,48 @@
+/* General Styles */
+body {
+  font-family: 'Roboto', Arial, sans-serif;
+  background-color: #f8f9fa;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Navbar */
+.navbar-brand .logo {
+  height: 40px;
+}
+
+.navbar {
+  background-color: #f8f9fa;
+}
+
+.nav-link.active {
+  font-weight: bold;
+  color: #134577 !important;
+}
+
+/* Main Content */
+main {
+  flex: 1;
+}
+
+/* QR Image */
+.qr-image {
+  width: 200px;
+  height: 200px;
+  margin: 20px auto;
+  display: block;
+  border: 5px solid #080808;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* Footer */
+.footer {
+  background-color: #134577;
+  color: white;
+  text-align: center;
+  padding: 15px 0;
+  margin-top: auto;
+}

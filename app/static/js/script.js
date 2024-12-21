@@ -30,7 +30,7 @@ uploadForm.addEventListener("submit", async (e) => {
     formData.append("file", file);
 
     try {
-        const response = await fetch("http://localhost:8000/object/validate-and-insert/", {
+        const response = await fetch("/object/validate-and-insert/", {
             method: "POST",
             body: formData,
         });

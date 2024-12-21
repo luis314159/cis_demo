@@ -1,0 +1,14 @@
+<!-- qr.html -->
+{% extends 'base.html' %}
+
+{% block title %}Generador de QR{% endblock %}
+
+{% block content %}
+<h1 class="text-center">Generador de QR</h1>
+<div class="text-center mt-4">
+  <img id="qr-image" src="{{ url_for('static', path='qr/generated_qr.png') }}" alt="QR Code" class="qr-image">
+  <p>Escanea el código QR para descargar la APK directamente.</p>
+  <a href="/static/documents/qr.pdf" class="btn btn-primary" id="generate-pdf" target="_blank">Descargar PDF</a>
+  <a href="/apk/current_app.apk" class="btn btn-success" id="download-apk" target="_blank">Descargar APK</a>
+</div>
+{% endblock %}

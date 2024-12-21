@@ -1,0 +1,86 @@
+/* base.css */
+body {
+    font-family: 'Roboto', Arial, sans-serif;
+    background-color: #f8f9fa;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+  
+  .navbar-brand .logo {
+    height: 40px;
+  }
+  
+  .navbar {
+    background-color: #f8f9fa;
+  }
+  
+  .nav-link.active {
+    font-weight: bold;
+    color: #134577 !important;
+  }
+  
+  main {
+    flex: 1;
+  }
+  
+  .qr-image {
+    width: 200px;
+    height: 200px;
+    margin: 20px auto;
+    display: block;
+    border: 5px solid #080808;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  }
+  
+  .footer {
+    background-color: #134577;
+    color: white;
+    text-align: center;
+    padding: 15px 0;
+    margin-top: auto;
+  }
+  /* Logo */
+.logo {
+  width: 250px;
+  height: auto;
+}
+
+/* File label */
+.file-label {
+  cursor: pointer;
+}
+
+.file-name {
+  font-size: 0.9rem;
+  color: #6c757d;
+}
+
+/* Spinner */
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #134577;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Notification */
+.notification {
+  padding: 10px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background-color: #f8d7da;
+  color: #721c24;
+}
+.hidden {
+  display: none;
+}

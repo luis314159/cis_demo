@@ -1,42 +1,34 @@
-<!DOCTYPE html>
-<html lang="en">
-<link rel="icon" href="/static/icon/icon.png" type="image/x-icon">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Subir Archivo CSV</title>
-    <link rel="stylesheet" href="static/css/styles.css">
-</head>
-<body>
-    <div class="container">
-        <!-- Logo de la empresa -->
-        <img src="static/images/logo.jpg" alt="Logo de Grupo Arga" class="logo">
+<!-- upload_csv.html -->
+{% extends 'base.html' %}
 
-        <!-- Título principal -->
-        <h1>Agregar nuevo Job</h1>
+{% block title %}Subir Archivo CSV{% endblock %}
+{% block content %}
+<div class="container d-flex flex-column align-items-center justify-content-center mt-5">
+    <!-- Logo de la empresa -->
+    <img src="{{ url_for('static', path='images/logo.jpg') }}" alt="Logo de Grupo Arga" class="logo mb-4">
 
-        <!-- Formulario de subida -->
-        <form id="uploadForm">
-            <label for="fileInput" class="file-label">
-                Seleccionar archivo CSV
-                <input type="file" id="fileInput" accept=".csv" hidden>
-            </label>
-            <p id="fileName" class="file-name hidden">Ningún archivo seleccionado</p>
-            <button type="submit" class="upload-button">Subir</button>
-        </form>
+    <!-- Título principal -->
+    <h1 class="mb-4">Agregar nuevo Job</h1>
 
-        <!-- Spinner -->
-        <div id="spinner" class="spinner hidden"></div>
+    <!-- Formulario de subida -->
+    <form id="uploadForm" class="text-center w-50 p-4 border rounded shadow-sm bg-light">
+        <label for="fileInput" class="file-label btn btn-primary w-100 mb-3">
+            Seleccionar archivo CSV
+            <input type="file" id="fileInput" accept=".csv" hidden>
+        </label>
+        <p id="fileName" class="file-name text-muted mb-3">Ningún archivo seleccionado</p>
+        <button type="submit" class="btn btn-success w-100">Subir</button>
+    </form>
 
-        <!-- Notificación -->
-        <div id="notification" class="notification hidden"></div>
-    </div>
+    <!-- Spinner -->
+    <div id="spinner" class="spinner hidden mt-3"></div>
 
-    <!-- Footer -->
-    <footer class="footer">
-        <p>&copy; 2025 Grupo Arga. Powered by Innovation and Technology Department</p>
-    </footer>
+    <!-- Notificación -->
+    <div id="notification" class="notification hidden mt-3"></div>
 
-    <script src="static/js/script.js"></script>
-</body>
-</html>
+</div>
+
+<!-- Incluye el archivo JS -->
+<script src="{{ url_for('static', path='js/script.js') }}"></script>
+<link rel="stylesheet" href="{{ url_for('static', path='css/styles.css') }}">
+{% endblock %}
