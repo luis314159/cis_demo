@@ -1,0 +1,57 @@
+<!-- templates/admin_jobs.html -->
+{% extends 'base.html' %}
+
+{% block title %}Administrar Jobs{% endblock %}
+
+{% block content %}
+<h1 class="text-center">Administrar Jobs</h1>
+
+<!-- Tabla de Jobs -->
+<h2 class="mt-4">Jobs</h2>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Job Code</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody id="jobs-table">
+        <!-- Los datos serán cargados dinámicamente -->
+    </tbody>
+</table>
+
+<script>
+    async function loadJobs() {
+        const response = await fetch('/jobs/list');
+        const jobs = await response.json();
+        const jobsTable = document.getElementById('jobs-table');
+
+        jobsTable.innerHTML = '';
+
+        jobs.forEach(job => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${job.job_code}</td>
+                <td>
+                    <button class="btn btn-danger" onclick="deleteJob('${job.job_code}')">Eliminar</button>
+                </td>
+            `;
+            jobsTable.appendChild(row);
+        });
+    }
+
+    async function deleteJob(jobCode) {
+        if (confirm(`¿Estás seguro de que quieres eliminar el Job '${jobCode}'?`)) {
+            const response = await fetch(`/jobs/${jobCode}`, { method: 'DELETE' });
+            if (response.ok) {
+                alert('Job eliminado correctamente');
+                loadJobs();
+            } else {
+                alert('Error al eliminar el Job');
+            }
+        }
+    }
+
+    loadJobs();
+</script>
+{% endblock %}

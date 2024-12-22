@@ -1,9 +1,8 @@
 from fastapi import HTTPException
-from models import Stage
 from db import SessionDep
 from fastapi import APIRouter
 from sqlmodel import select
-from models import Item, Stage
+from models import Item, Object
 
 
 
@@ -30,11 +29,24 @@ def get_item_by_id(item_id: int, session: SessionDep):
     return item.stage_ids
 
 
-# @router.get("/object/{object_id}", response_model=Object)
-# def get_object_by_id(object_id: int, session: SessionDep):
-#     # Buscar el Object por su ID
-#     obj = session.exec(select(Object).where(Object.object_id == object_id)).first()
-#     if not obj:
-#         raise HTTPException(status_code=404, detail=f"El Object con ID '{object_id}' no existe.")
-#     return obj
+@router.delete("/item/{item_id}")
+def delete_item(item_id: int, session: SessionDep):
+    """
+    Endpoint para eliminar un Item y todos los Objects relacionados.
 
+    Parámetros:
+        - item_id: ID del Item que se desea eliminar.
+    """
+    # Verificar si el Item existe
+    item = session.exec(select(Item).where(Item.item_id == item_id)).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="El Item no existe.")
+
+    # Eliminar los Objects relacionados al Item
+    session.exec(select(Object).where(Object.item_id == item.item_id)).delete()
+
+    # Eliminar el Item
+    session.delete(item)
+    session.commit()
+
+    return {"message": f"El Item con ID '{item_id}' y todos los Objects relacionados fueron eliminados exitosamente."}

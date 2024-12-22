@@ -47,3 +47,5 @@ def get_objects_by_job(job_code: str, session: SessionDep):
         job_code=job.job_code,
         objects=objects_details
     )
+
+

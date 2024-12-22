@@ -29,7 +29,7 @@
             <a class="nav-link {% if request.path == '/info' %}active{% endif %}" href="/info">Info</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link {% if request.path == '/documentacion' %}active{% endif %}" href="/documentacion">Documentación</a>
+            <a class="nav-link {% if request.path == '/documentacion' %}active{% endif %}" href="/documentacion">Documentation</a>
           </li>
           <li class="nav-item">
             <a class="nav-link {% if request.path == '/QR' %}active{% endif %}" href="/QR">QR</a>
@@ -37,17 +37,33 @@
           <li class="nav-item">
             <a class="nav-link {% if request.path == '/new_job' %}active{% endif %}" href="/new_job">Add Job</a>
           </li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.path.startswith('/admin') %}active{% endif %}" href="/admin">Admin</a>
+          </li>
         </ul>
       </div>
     </div>
   </nav>
+
+  <!-- Subnavbar para la sección de administración -->
+  {% if request.path.startswith('/admin') %}
+  <nav class="navbar navbar-expand-lg navbar-dark bg-secondary">
+    <div class="container-fluid">
+      <div class="navbar-nav">
+        <a class="nav-link {% if request.path == '/admin/jobs' %}active{% endif %}" href="/admin/jobs">Jobs</a>
+        <a class="nav-link {% if request.path == '/admin/items' %}active{% endif %}" href="/admin/items">Items</a>
+        <a class="nav-link {% if request.path == '/admin/objects' %}active{% endif %}" href="/admin/objects">Objects</a>
+      </div>
+    </div>
+  </nav>
+  {% endif %}
 
   <main class="container mt-5">
     {% block content %}{% endblock %}
   </main>
 
   <footer class="footer">
-    <p>&copy; 2025 Grupo Arga. Todos los derechos reservados.</p>
+    <p>&copy; 2025 Grupo Arga. All rights reserved.</p>
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

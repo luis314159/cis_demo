@@ -1,0 +1,140 @@
+<!-- templates/home.html -->
+{% extends 'base.html' %}
+
+{% block title %}Administrar Jobs e Items{% endblock %}
+
+{% block content %}
+<h1 class="text-center">Administrar Jobs e Items</h1>
+
+<!-- Tabla de Jobs -->
+<h2 class="mt-4">Jobs</h2>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Job Code</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody id="jobs-table">
+        <!-- Los datos serán cargados dinámicamente -->
+    </tbody>
+</table>
+
+<!-- Tabla de Items -->
+<h2 class="mt-4">Items</h2>
+<div class="mb-3">
+    <label for="job-filter" class="form-label">Filtrar por Job:</label>
+    <select id="job-filter" class="form-select">
+        <!-- Opciones serán cargadas dinámicamente -->
+    </select>
+</div>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Item Name</th>
+            <th>OCR</th>
+            <th>Ratio</th>
+            <th>Status</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody id="items-table">
+        <!-- Los datos serán cargados dinámicamente -->
+    </tbody>
+</table>
+
+<script>
+    // Función para cargar los Jobs
+    async function loadJobs() {
+        const response = await fetch('/jobs/list');
+        const jobs = await response.json();
+        const jobsTable = document.getElementById('jobs-table');
+        const jobFilter = document.getElementById('job-filter');
+
+        jobsTable.innerHTML = '';
+        jobFilter.innerHTML = '<option value="">Selecciona un Job</option>';
+
+        jobs.forEach(job => {
+            // Agregar fila a la tabla de Jobs
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${job.job_code}</td>
+                <td>
+                    <button class="btn btn-danger" onclick="deleteJob('${job.job_code}')">Eliminar</button>
+                </td>
+            `;
+            jobsTable.appendChild(row);
+
+            // Agregar opción al filtro de Items
+            const option = document.createElement('option');
+            option.value = job.job_code;
+            option.textContent = job.job_code;
+            jobFilter.appendChild(option);
+        });
+    }
+
+    // Función para cargar los Items
+    async function loadItems(jobCode) {
+        if (!jobCode) {
+            document.getElementById('items-table').innerHTML = '';
+            return;
+        }
+
+        const response = await fetch(`/jobs/${jobCode}/status`);
+        const data = await response.json();
+        const itemsTable = document.getElementById('items-table');
+
+        itemsTable.innerHTML = '';
+        data.stages.forEach(stage => {
+            stage.items.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.item_name}</td>
+                    <td>${item.item_ocr}</td>
+                    <td>${item.ratio}</td>
+                    <td>${item.status ? 'Completado' : 'Pendiente'}</td>
+                    <td>
+                        <button class="btn btn-danger" onclick="deleteItem('${item.item_ocr}')">Eliminar</button>
+                    </td>
+                `;
+                itemsTable.appendChild(row);
+            });
+        });
+    }
+
+    // Función para eliminar un Job
+    async function deleteJob(jobCode) {
+        if (confirm(`¿Estás seguro de que quieres eliminar el Job '${jobCode}'?`)) {
+            const response = await fetch(`/jobs/${jobCode}`, { method: 'DELETE' });
+            if (response.ok) {
+                alert('Job eliminado correctamente');
+                loadJobs();
+            } else {
+                alert('Error al eliminar el Job');
+            }
+        }
+    }
+
+    // Función para eliminar un Item
+    async function deleteItem(itemOCR) {
+        if (confirm(`¿Estás seguro de que quieres eliminar el Item '${itemOCR}'?`)) {
+            const response = await fetch(`/items/${itemOCR}`, { method: 'DELETE' });
+            if (response.ok) {
+                alert('Item eliminado correctamente');
+                const jobCode = document.getElementById('job-filter').value;
+                loadItems(jobCode);
+            } else {
+                alert('Error al eliminar el Item');
+            }
+        }
+    }
+
+    // Eventos para cargar datos dinámicamente
+    document.getElementById('job-filter').addEventListener('change', (e) => {
+        loadItems(e.target.value);
+    });
+
+    // Cargar Jobs al inicio
+    loadJobs();
+</script>
+{% endblock %}

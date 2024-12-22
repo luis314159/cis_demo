@@ -1,0 +1,175 @@
+<!-- templates/admin_objects.html -->
+{% extends 'base.html' %}
+
+{% block title %}Administrar Objects{% endblock %}
+
+{% block content %}
+<h1 class="text-center">Administrar Objects</h1>
+
+<!-- Filtro de Jobs -->
+<div class="mb-3">
+    <label for="job-filter" class="form-label">Seleccionar Job (Opcional):</label>
+    <select id="job-filter" class="form-select">
+        <option value="">Selecciona un Job</option>
+        <!-- Opciones de Jobs serán cargadas dinámicamente -->
+    </select>
+</div>
+
+<!-- Filtro de Items con búsqueda -->
+<div class="mb-3">
+    <label for="item-search" class="form-label">Buscar y seleccionar Item (OCR):</label>
+    <input list="item-options" id="item-search" class="form-control" placeholder="Escribe o selecciona un OCR...">
+    <datalist id="item-options">
+        <!-- Opciones de Items serán cargadas dinámicamente -->
+    </datalist>
+</div>
+
+<!-- Tabla de Objects -->
+<h2 class="mt-4">Objects</h2>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Object ID</th>
+            <th>OCR</th>
+            <th>Stage</th>
+            <th>Rework</th>
+            <th>Scrap</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody id="objects-table">
+        <!-- Los datos serán cargadas dinámicamente -->
+    </tbody>
+</table>
+
+<script>
+    let allItems = []; // Para almacenar todos los Items cargados dinámicamente
+
+    // Función para cargar Jobs para el filtro
+    async function loadJobs() {
+        const response = await fetch('/jobs/list');
+        const jobs = await response.json();
+        const jobFilter = document.getElementById('job-filter');
+
+        jobs.forEach(job => {
+            const option = document.createElement('option');
+            option.value = job.job_code;
+            option.textContent = job.job_code;
+            jobFilter.appendChild(option);
+        });
+    }
+
+    // Función para cargar Items según el Job seleccionado o globalmente si no se selecciona un Job
+    async function loadItems(jobCode = null) {
+        const itemOptions = document.getElementById('item-options');
+        allItems = []; // Reiniciar los items almacenados
+        itemOptions.innerHTML = ''; // Limpiar opciones previas
+
+        if (jobCode) {
+            // Cargar Items de un Job específico
+            const response = await fetch(`/jobs/${jobCode}/status`);
+            const data = await response.json();
+            data.stages.forEach(stage => {
+                stage.items.forEach(item => {
+                    allItems.push(item);
+                    const option = document.createElement('option');
+                    option.value = item.item_ocr;
+                    itemOptions.appendChild(option);
+                });
+            });
+        } else {
+            // Cargar Items globalmente
+            const response = await fetch('/jobs/list');
+            const jobs = await response.json();
+            for (const job of jobs) {
+                const response = await fetch(`/jobs/${job.job_code}/status`);
+                const data = await response.json();
+                data.stages.forEach(stage => {
+                    stage.items.forEach(item => {
+                        allItems.push(item);
+                        const option = document.createElement('option');
+                        option.value = item.item_ocr;
+                        itemOptions.appendChild(option);
+                    });
+                });
+            }
+        }
+    }
+
+    // Función para cargar Objects de un Item
+    async function loadObjects(itemOCR) {
+        if (!itemOCR) {
+            document.getElementById('objects-table').innerHTML = '';
+            return;
+        }
+
+        try {
+            const response = await fetch(`/object/${itemOCR}`);
+            if (!response.ok) {
+                throw new Error('Error al obtener los datos de los objetos');
+            }
+
+            const data = await response.json();
+            const objectsTable = document.getElementById('objects-table');
+
+            objectsTable.innerHTML = '';
+
+            data.objects.forEach((obj, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${obj.object_id}</td>
+                    <td>${data.item_ocr}</td>
+                    <td>${obj.current_stage}</td>
+                    <td>${obj.rework}</td>
+                    <td>${obj.scrap}</td>
+                    <td>
+                        <button class="btn btn-danger" onclick="deleteObject('${data.item_ocr}', ${index + 1})">Eliminar</button>
+                    </td>
+                `;
+                objectsTable.appendChild(row);
+            });
+        } catch (error) {
+            console.error('Error al cargar objetos:', error);
+            alert('No se pudo cargar la información de los objetos.');
+        }
+    }
+
+    // Función para eliminar un Object
+    async function deleteObject(itemOCR, pieceNumber) {
+        if (confirm(`¿Estás seguro de que quieres eliminar la pieza #${pieceNumber} del Item '${itemOCR}'?`)) {
+            try {
+                const response = await fetch(`/${itemOCR}/${pieceNumber}`, { method: 'DELETE' });
+                if (response.ok) {
+                    alert('Pieza eliminada correctamente');
+                    loadObjects(itemOCR);
+                } else {
+                    throw new Error('Error al eliminar la pieza');
+                }
+            } catch (error) {
+                console.error('Error al eliminar pieza:', error);
+                alert('No se pudo eliminar la pieza.');
+            }
+        }
+    }
+
+    // Eventos
+    document.getElementById('job-filter').addEventListener('change', (e) => {
+        loadItems(e.target.value);
+    });
+
+    document.getElementById('item-search').addEventListener('change', (e) => {
+        const selectedItem = e.target.value;
+        const validItem = allItems.find(item => item.item_ocr === selectedItem);
+        if (validItem) {
+            loadObjects(selectedItem);
+        } else {
+            document.getElementById('objects-table').innerHTML = '';
+        }
+    });
+
+    // Inicializar
+    loadJobs();
+    loadItems(); // Cargar todos los Items por defecto
+</script>
+{% endblock %}
+

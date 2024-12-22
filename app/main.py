@@ -64,6 +64,23 @@ async def get_info(request: Request):
 async def get_documentation(request: Request):
     return templates.TemplateResponse("documentation.html", {"request": request})
 
+@app.get("/admin", response_class=HTMLResponse)
+async def admin(request: Request):
+    return templates.TemplateResponse("admin.html", {"request": request})
+
+@app.get("/admin/jobs", response_class=HTMLResponse)
+async def admin_jobs(request: Request):
+    return templates.TemplateResponse("admin_jobs.html", {"request": request})
+
+@app.get("/admin/items", response_class=HTMLResponse)
+async def admin_items(request: Request):
+    return templates.TemplateResponse("admin_items.html", {"request": request})
+
+
+@app.get("/admin/objects", response_class=HTMLResponse)
+async def admin_iobjects(request: Request):
+    return templates.TemplateResponse("admin_objects.html", {"request": request})
+
 @app.get("/cis_apk")
 async def redirect_to_apk(request: Request):
     # Generar la URL base dinámicamente
@@ -75,6 +92,8 @@ async def redirect_to_qr_pdf(request: Request):
     # Generar la URL base dinámicamente
     base_url = request.base_url
     return RedirectResponse(url=f"{base_url}static/documents/qr.pdf")
+
+
 
 @app.get("/item", response_model=list[Item])
 def get_item(session: SessionDep):

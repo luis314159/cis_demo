@@ -9,12 +9,12 @@ router = APIRouter(
     tags=["Details"]
 )
 
-@router.get("/item/{item_id}", response_model=Item)
-def get_item_by_id(item_id: int, session: SessionDep):
+@router.get("/item/{ocr}", response_model=Item)
+def get_item_by_id(ocr: str, session: SessionDep):
     # Buscar el Item por su ID
-    item = session.exec(select(Item).where(Item.item_id == item_id)).first()
+    item = session.exec(select(Item).where(Item.ocr == ocr)).first()
     if not item:
-        raise HTTPException(status_code=404, detail=f"El Item con ID '{item_id}' no existe.")
+        raise HTTPException(status_code=404, detail=f"El Item con ocr '{ocr}' no existe.")
     return item
 
 @router.get("/object/{object_id}", response_model=Object)
