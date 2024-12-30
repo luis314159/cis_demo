@@ -1,0 +1,45 @@
+<!-- login.html -->
+{% extends 'base.html' %}
+
+{% block title %}Login{% endblock %}
+
+{% block navbar_content %}
+<!-- Mantén el navbar vacío -->
+{% endblock navbar_content %}
+
+{% block content %}
+<div class="container d-flex flex-column align-items-center justify-content-center mt-5">
+    <!-- Div para mensajes de error -->
+    <div id="error-message" class="alert alert-danger mt-3" style="display: none;">
+        <!-- Aquí se mostrará el mensaje de error -->
+    </div>
+
+    <!-- Logo de la empresa -->
+    <img src="{{ url_for('static', path='images/logo.jpg') }}" alt="Logo de Grupo Arga" class="logo mb-4">
+
+    <!-- Título principal -->
+    <h1 class="mb-4">Login</h1>
+
+    <!-- Formulario de inicio de sesión -->
+    <form action="{{ url_for('authenticate') }}" method="POST" class="w-50">
+        <div class="mb-3">
+            <label for="username" class="form-label">Username</label>
+            <input type="text" id="username" name="username" class="form-control" placeholder="Enter your username" required>
+        </div>
+        <div class="mb-3">
+            <label for="password" class="form-label">Password</label>
+            <input type="password" id="password" name="password" class="form-control" placeholder="Enter your password" required>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Login</button>
+    </form>
+
+    <!-- Link de recuperación de contraseña -->
+    <div class="mt-3">
+        <a href="{{ url_for('login') }}">Forgot your password?</a>
+    </div>
+</div>
+{% endblock content %}
+{% block extra_scripts %}
+<script src="{{ url_for('static', path='js/login.js') }}"></script>
+
+{% endblock %}
