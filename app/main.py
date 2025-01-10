@@ -6,7 +6,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from models import Item
-from routers import object_router, process_router, stage_router, test_jobs, ocr_routes, validate_csv, list_jobs, details, job_status, object_current_stage, item_router, user_router, auth_router
+from routers import object_router, process_router, stage_router, test_jobs, ocr_routes, validate_csv, list_jobs, details, job_status, object_current_stage, item_router, user_router, auth_router, rest_password_router
 from generate_qr import generate_qr, generate_pdf
 
 qr_path = generate_qr()
@@ -16,6 +16,7 @@ generate_pdf(qr_path)
 
 app = FastAPI(lifespan=create_all_tables)
 
+app.include_router(rest_password_router.router)
 app.include_router(test_jobs.router)
 app.include_router(ocr_routes.router)
 app.include_router(validate_csv.router)
@@ -31,12 +32,14 @@ app.include_router(item_router.router)
 app.include_router(user_router.router)
 app.include_router(auth_router.router)
 
+
 # Show files
 app.mount("/static", StaticFiles(directory="./static"), name="static")
 app.mount("/apk", StaticFiles(directory="./apk"), name="apk")
 
 # Template configuration
 templates = Jinja2Templates(directory="templates")
+
 
 # Render main
 @app.get("/new_job", response_class=HTMLResponse)

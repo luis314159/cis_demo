@@ -5,7 +5,6 @@ from sqlmodel import select
 from models import Item, Object
 
 
-
 router = APIRouter(
     prefix="/items",
     tags=["Items"]

@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from typing import Annotated
 from datetime import timedelta
 from sqlmodel import select
-from models import Token, User, Role
+from models import Token, User, Role, ReponseUser
 from db import SessionDep
 import auth
 from fastapi.responses import RedirectResponse
@@ -61,7 +61,7 @@ def login_for_access_token(
     
     return Token(access_token=access_token, token_type="bearer")
 
-@router.get("/users/me", response_model=User, response_model_exclude={"hashed_password"})
+@router.get("/users/me", response_model=ReponseUser)
 def read_users_me(
     current_user: Annotated[User, Depends(auth.get_current_active_user)]
 ):
@@ -98,7 +98,7 @@ def read_users_me(
     """
     return current_user
 
-@router.get("/admin/users", response_model=list[User], response_model_exclude={"hashed_password"})
+@router.get("/admin/users", response_model=list[ReponseUser])
 def admin_users(
     session: SessionDep,
     current_user: Annotated[User, Depends(auth.require_role("admin"))]
@@ -183,13 +183,13 @@ def admin_roles(
         ```
     """
     return session.exec(select(Role)).all()
+
 from fastapi.responses import JSONResponse
 
 @router.post("/authenticate", name="authenticate")
 def authenticate_and_redirect(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-    session: SessionDep
-):
+    session: SessionDep):
     """
     Autentica al usuario, genera un token y redirige a /home.
     Si las credenciales son incorrectas, devuelve un mensaje de error.

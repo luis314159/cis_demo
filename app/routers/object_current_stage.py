@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends
-from sqlmodel import Session, select
+from sqlmodel import select
 from db import SessionDep
 from models import Object, Item, Stage
 

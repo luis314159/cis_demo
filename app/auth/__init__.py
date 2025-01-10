@@ -91,3 +91,44 @@ def require_role(required_role: str):
     return role_checker
 
 
+def verify_token(token: str) -> dict | None:
+    """
+    Verifica la validez de un token JWT y retorna su payload si es válido.
+    
+    Args:
+        token: El token JWT a verificar
+        
+    Returns:
+        dict: El payload del token si es válido
+        None: Si el token es inválido o ha expirado
+        
+    Raises:
+        jwt.InvalidTokenError: Si el token es inválido
+        jwt.ExpiredSignatureError: Si el token ha expirado
+    """
+    try:
+        # Decodificar el token usando la clave secreta y el algoritmo configurado
+        payload = jwt.decode(
+            token,
+            SECRET_KEY,
+            algorithms=[ALGORITHM]
+        )
+        
+        # Verificar que el token contiene un subject (sub)
+        if not payload.get("sub"):
+            return None
+            
+        # Verificar que el token no ha expirado
+        exp = payload.get("exp")
+        if not exp:
+            return None
+            
+        # Convertir exp a datetime para comparación
+        exp_datetime = datetime.fromtimestamp(exp, tz=timezone.utc)
+        if datetime.now(timezone.utc) >= exp_datetime:
+            return None
+            
+        return payload
+        
+    except jwt.InvalidTokenError:
+        return None

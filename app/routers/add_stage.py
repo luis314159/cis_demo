@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException
 from sqlalchemy.exc import IntegrityError
 from db import SessionDep
 from models import Stage, StageCreate
