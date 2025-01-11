@@ -16,7 +16,29 @@ generate_pdf(qr_path)
 
 app = FastAPI(lifespan=create_all_tables)
 
+# Not needed for token
 app.include_router(rest_password_router.router)
+app.include_router(auth_router.router)
+
+@app.get("/cis_apk")
+async def redirect_to_apk(request: Request):
+    # Generar la URL base dinámicamente
+    base_url = request.base_url
+    return RedirectResponse(url=f"{base_url}apk/current_app.apk")
+
+
+@app.get("/cis_qr_pdf")
+async def redirect_to_qr_pdf(request: Request):
+    # Generar la URL base dinámicamente
+    base_url = request.base_url
+    return RedirectResponse(url=f"{base_url}static/documents/qr.pdf")
+
+
+@app.get("/item", response_model=list[Item])
+def get_item(session: SessionDep):
+    return session.exec(select(Item)).all()
+
+#Token needed
 app.include_router(test_jobs.router)
 app.include_router(ocr_routes.router)
 app.include_router(validate_csv.router)
@@ -30,7 +52,7 @@ app.include_router(job_status.router)
 app.include_router(object_current_stage.router)
 app.include_router(item_router.router)
 app.include_router(user_router.router)
-app.include_router(auth_router.router)
+
 
 
 # Show files
@@ -41,15 +63,20 @@ app.mount("/apk", StaticFiles(directory="./apk"), name="apk")
 templates = Jinja2Templates(directory="templates")
 
 
-# Render main
-@app.get("/new_job", response_class=HTMLResponse)
-async def read_root(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+# tamaplates
 
+# No token needed
 
 @app.get("/login", response_class=HTMLResponse, name="login")
 async def admin(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
+
+#token needed
+
+# Render new job
+@app.get("/new_job", response_class=HTMLResponse)
+async def read_root(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
 
 @app.get("/QR", response_class=HTMLResponse)
@@ -84,21 +111,3 @@ async def admin_items(request: Request):
 @app.get("/admin/objects", response_class=HTMLResponse)
 async def admin_iobjects(request: Request):
     return templates.TemplateResponse("admin_objects.html", {"request": request})
-
-@app.get("/cis_apk")
-async def redirect_to_apk(request: Request):
-    # Generar la URL base dinámicamente
-    base_url = request.base_url
-    return RedirectResponse(url=f"{base_url}apk/current_app.apk")
-
-@app.get("/cis_qr_pdf")
-async def redirect_to_qr_pdf(request: Request):
-    # Generar la URL base dinámicamente
-    base_url = request.base_url
-    return RedirectResponse(url=f"{base_url}static/documents/qr.pdf")
-
-
-@app.get("/item", response_model=list[Item])
-def get_item(session: SessionDep):
-    return session.exec(select(Item)).all()
-

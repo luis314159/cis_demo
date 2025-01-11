@@ -58,23 +58,12 @@ class User(BaseUser, table=True):
         """Actualiza el campo updated_at al momento de modificar el registro."""
         self.updated_at = datetime.now(timezone.utc)
 
-class ReponseUser(SQLModel):
+class ReponseUser(BaseUser):
     user_id: Optional[int]
     role_id: int
     is_active: bool
 
-class BaseUser(SQLModel):
-    username: str = Field(nullable=False)
-    email: EmailStr = Field(nullable=False)
-    first_name: str = Field(nullable=False)
-    last_name: str = Field(nullable=False)
-
-
-class UpdateUserRequest(SQLModel):
-    user_name : Optional[str] = None
-    email: Optional[EmailStr] = None
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
+class UpdateUserRequest(BaseUser):
     password: Optional[str] = None
     role_name: Optional[str] = None
     is_active: Optional[bool] = None

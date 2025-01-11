@@ -1,11 +1,12 @@
-from fastapi import APIRouter, HTTPException, BackgroundTasks, status
+from typing import Annotated
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, status
 from pydantic import BaseModel
-from datetime import timedelta
+from datetime import timedelta, timezone
 from passlib.context import CryptContext
 from sqlmodel import select
 from db import SessionDep
 from models import User
-from auth import create_access_token, verify_token
+from auth import create_access_token, require_role, verify_token
 from config import settings
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -18,7 +19,8 @@ from fastapi.templating import Jinja2Templates
 from email.mime.image import MIMEImage
 import os
 from models import ForgetPasswordRequest, ResetPasswordRequest
-
+from datetime import datetime
+ 
 # Configuración
 RESET_TOKEN_EXPIRE_MINUTES = 10
 PWD_CONTEXT = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -213,3 +215,62 @@ async def show_reset_password_form(
             "user_email": user.email
         }
     )
+
+@router.post("/admin-reset/{email}")
+async def admin_reset_password(
+    email: str,
+    current_user: Annotated[User, Depends(require_role("admin"))],
+    session: SessionDep
+):
+    """
+    Resetea la contraseña de un usuario a un valor predeterminado (Arga2025).
+    Solo puede ser ejecutado por usuarios con rol de admin.
+    
+    Args:
+        email: El email del usuario cuya contraseña se reseteará
+        current_user: Usuario administrador (inyectado por el decorador require_role)
+        session: Sesión de base de datos
+        
+    Returns:
+        dict: Mensaje de confirmación y detalles del usuario actualizado
+        
+    Raises:
+        HTTPException: Si el usuario no existe o hay un error en la operación
+    """
+    # Buscar el usuario objetivo
+    statement = select(User).where(User.email == email)
+    target_user = session.exec(statement).first()
+    
+    if not target_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario no encontrado"
+        )
+        
+    if not target_user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No se puede resetear la contraseña de un usuario inactivo"
+        )
+
+    # Resetear la contraseña
+    default_password = "Arga2025"
+    hashed_password = PWD_CONTEXT.hash(default_password)
+    
+    # Actualizar la contraseña y timestamp
+    target_user.hashed_password = hashed_password
+    target_user.updated_at = datetime.now(timezone.utc)
+    
+    session.add(target_user)
+    session.commit()
+
+    return {
+        "message": f"Contraseña reseteada exitosamente para el usuario {target_user.email}",
+        "user": {
+            "email": target_user.email,
+            "username": target_user.username,
+            "first_name": target_user.first_name,
+            "last_name": target_user.last_name,
+            "updated_at": target_user.updated_at
+        }
+    }
