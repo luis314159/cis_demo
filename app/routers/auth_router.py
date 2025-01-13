@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from typing import Annotated
 from datetime import timedelta
@@ -6,12 +6,27 @@ from sqlmodel import select
 from models import Token, User, Role, ReponseUser
 from db import SessionDep
 import auth
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, JSONResponse
+
 
 router = APIRouter(
     prefix="",
     tags=["auth"]
 )
+
+@router.post("/logout")
+async def logout():
+    response = RedirectResponse(
+        url="/login",
+        status_code=status.HTTP_303_SEE_OTHER
+    )
+    # Eliminar la cookie
+    response.delete_cookie(
+        key="auth_token",
+        httponly=True,
+        samesite="lax"
+    )
+    return response
 
 @router.post("/token", response_model=Token)
 def login_for_access_token(
@@ -184,37 +199,32 @@ def admin_roles(
     """
     return session.exec(select(Role)).all()
 
-from fastapi.responses import JSONResponse
 
-@router.post("/authenticate", name="authenticate")
-def authenticate_and_redirect(
+@router.post("/authenticate")
+async def authenticate(
+    request: Request,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-    session: SessionDep):
-    """
-    Autentica al usuario, genera un token y redirige a /home.
-    Si las credenciales son incorrectas, devuelve un mensaje de error.
-    """
+    session: SessionDep
+):
     user = auth.authenticate_user(session, form_data.username, form_data.password)
     if not user:
-        # Devuelve un JSON con el error en lugar de redirigir
-        return JSONResponse(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            content={"detail": "Usuario o contraseña incorrectos"}
-        )
+        raise HTTPException(status_code=401, detail="Credenciales inválidas")
     
-    # Generar token JWT
-    access_token = auth.create_access_token(
-        data={"sub": user.username},
-        expires_delta=timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
-    )
-
-    # Configurar la redirección y la cookie
-    response = RedirectResponse(url="/home", status_code=status.HTTP_303_SEE_OTHER)
+    access_token = auth.create_access_token({"sub": user.username})
+    
+    if "application/json" in request.headers.get("accept", ""):
+        return {"access_token": access_token, "token_type": "bearer"}
+    
+    response = RedirectResponse("/home", status_code=303)
+    # Modificamos cómo se establece la cookie
     response.set_cookie(
-        key="Authorization",
-        value=f"Bearer {access_token}",
+        key="auth_token",
+        value=access_token,
+        secure=False,  # Cambiado a False para pruebas
         httponly=True,
-        secure=True,  # Asegúrate de usar HTTPS en producción
-        samesite="Lax",
+        samesite="lax",
+        max_age=7200  # 2 horas
     )
+    # Debug
+    print("Setting cookie:", access_token)
     return response

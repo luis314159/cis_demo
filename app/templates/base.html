@@ -83,6 +83,9 @@
             <i class="bi bi-person"></i>
           </div>
         </div>
+        <form class="d-flex ms-3" action="{{ url_for('logout') }}" method="POST">
+          <button type="submit" class="btn btn-outline-danger">Log Out</button>
+        </form>
         {% endif %}
       </div>
     </div>

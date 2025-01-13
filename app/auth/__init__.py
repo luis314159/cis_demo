@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
 from sqlmodel import Session, select
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jwt.exceptions import InvalidTokenError
 from passlib.context import CryptContext
@@ -17,6 +17,16 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 720
 # Configuración de hashing y OAuth2
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+def get_token(request: Request) -> str | None:
+    """Obtiene el token de la request, ya sea de las cookies o del header"""
+    token = request.cookies.get("auth_token")
+    if not token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.split(" ")[1]
+    return token
+
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
@@ -44,28 +54,45 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
-def get_current_user(
+async def get_current_user(
+    request: Request,
     session: SessionDep,
-    token: Annotated[str, Depends(oauth2_scheme)]
+    token: str | None = None
 ) -> User:
+    """
+    Verifica el token y retorna el usuario actual.
+    El token puede venir de OAuth2 o de las cookies.
+    """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
     
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
-        if not username:
-            raise credentials_exception
-        token_data = TokenData(username=username)
-    except InvalidTokenError:
+    # Intentar obtener el token de diferentes fuentes
+    if not token:
+        token = get_token(request)
+        if not token:
+            try:
+                # Intenta obtener el token via OAuth2
+                token = await oauth2_scheme(request)
+            except HTTPException:
+                raise credentials_exception
+    
+    # Verificar el token
+    payload = verify_token(token)
+    if not payload:
         raise credentials_exception
     
-    user = get_user(session, token_data.username)
+    username = payload.get("sub")
+    if not username:
+        raise credentials_exception
+    
+    # Obtener y verificar usuario
+    user = get_user(session, username)
     if not user:
         raise credentials_exception
+    
     return user
 
 def get_current_active_user(
