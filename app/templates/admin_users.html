@@ -1,0 +1,353 @@
+<!-- templates/admin_objects.html -->
+{% extends 'base.html' %}
+
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% block title %}Administración de Usuarios{% endblock %}
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+{% block extra_head %}
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.tailwindcss.com"></script>
+{% endblock %}
+{% block content %}
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold">Administración de Usuarios</h1>
+            <button onclick="openModal()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                </svg>
+                Nuevo Usuario
+            </button>
+        </div>
+
+        <!-- Filtros -->
+        <div class="flex gap-4 mb-6">
+            <div class="flex-1 relative">
+                <input 
+                    type="text" 
+                    id="searchInput"
+                    placeholder="Buscar por nombre o apellido" 
+                    class="pl-10 pr-4 py-2 border rounded-lg w-full"
+                    oninput="filterUsers()"
+                >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 absolute left-3 top-2.5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                </svg>
+            </div>
+            <select id="roleFilter" class="border rounded-lg px-4 py-2 w-48" onchange="filterUsers()">
+                <option value="">Todos los roles</option>
+            </select>
+        </div>
+
+        <!-- Tabla de Usuarios -->
+        <div class="bg-white rounded-lg shadow overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rol</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="usersTableBody" class="divide-y divide-gray-200">
+                    <!-- Los usuarios se cargarán aquí dinámicamente -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal para Crear/Editar Usuario -->
+    <div id="userModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md">
+            <h2 id="modalTitle" class="text-xl font-bold mb-4">Nuevo Usuario</h2>
+            <form id="userForm" onsubmit="handleSubmit(event)">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Username</label>
+                        <input type="text" id="username" name="username" required 
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Email</label>
+                        <input type="email" id="email" name="email" required 
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Nombre</label>
+                        <input type="text" id="first_name" name="first_name" required 
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Apellido</label>
+                        <input type="text" id="last_name" name="last_name" required 
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Contraseña</label>
+                        <input type="password" id="password" name="password" 
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Rol</label>
+                        <select id="role_name" name="role_name" required 
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <option value="">Seleccionar rol</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end gap-4">
+                    <button type="button" onclick="closeModal()" 
+                        class="px-4 py-2 border rounded-md text-gray-600 hover:bg-gray-50">
+                        Cancelar
+                    </button>
+                    <button type="submit" 
+                        class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+                        Guardar
+                    </button>
+                </div>
+                <input type="hidden" id="editingUserId">
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let users = [];
+        let roles = [];
+        let editingUser = null;
+
+        // Cargar datos iniciales
+        async function loadInitialData() {
+            await Promise.all([
+                fetchUsers(),
+                fetchRoles()
+            ]);
+        }
+
+        // Obtener usuarios
+        async function fetchUsers() {
+            try {
+                const response = await fetch('/users/list_users');
+                users = await response.json();
+                filterUsers();
+            } catch (error) {
+                console.error('Error al obtener usuarios:', error);
+            }
+        }
+
+        // Obtener roles
+        async function fetchRoles() {
+            try {
+                const response = await fetch('/users/list_roles');
+                roles = await response.json();
+                updateRolesDropdowns();
+            } catch (error) {
+                console.error('Error al obtener roles:', error);
+            }
+        }
+
+        // Actualizar dropdowns de roles
+        function updateRolesDropdowns() {
+            const roleFilter = document.getElementById('roleFilter');
+            const roleSelect = document.getElementById('role_name');
+            
+            // Limpiar opciones existentes
+            roleFilter.innerHTML = '<option value="">Todos los roles</option>';
+            roleSelect.innerHTML = '<option value="">Seleccionar rol</option>';
+            
+            // Agregar roles a ambos dropdowns
+            roles.forEach(role => {
+                roleFilter.add(new Option(role.role_name, role.role_name));
+                roleSelect.add(new Option(role.role_name, role.role_name));
+            });
+        }
+
+        // Filtrar usuarios
+        function filterUsers() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const selectedRole = document.getElementById('roleFilter').value;
+            
+            let filtered = users;
+            
+            if (searchTerm) {
+                filtered = filtered.filter(user => 
+                    user.first_name?.toLowerCase().includes(searchTerm) ||
+                    user.last_name?.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            if (selectedRole) {
+                filtered = filtered.filter(user => user.role?.role_name === selectedRole);
+            }
+            
+            renderUsers(filtered);
+        }
+
+        // Renderizar usuarios en la tabla
+        function renderUsers(usersToRender) {
+            const tbody = document.getElementById('usersTableBody');
+            tbody.innerHTML = '';
+            
+            usersToRender.forEach(user => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-6 py-4">${user.username}</td>
+                    <td class="px-6 py-4">${user.first_name} ${user.last_name}</td>
+                    <td class="px-6 py-4">${user.email}</td>
+                    <td class="px-6 py-4">${user.role?.role_name || 'Sin rol'}</td>
+                    <td class="px-6 py-4">
+                        <div class="flex gap-2">
+                            <button onclick="editUser('${user.username}')" class="text-blue-600 hover:text-blue-800">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                                </svg>
+                            </button>
+                            <button onclick="resetPassword('${user.email}')" class="text-yellow-600 hover:text-yellow-800">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                            <button onclick="deleteUser('${user.username}')" class="text-red-600 hover:text-red-800">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Abrir modal para nuevo usuario
+        function openModal() {
+            document.getElementById('modalTitle').textContent = 'Nuevo Usuario';
+            document.getElementById('userForm').reset();
+            document.getElementById('username').disabled = false;
+            document.getElementById('password').required = true;
+            document.getElementById('editingUserId').value = '';
+            editingUser = null;
+            document.getElementById('userModal').classList.remove('hidden');
+        }
+
+        // Cerrar modal
+        function closeModal() {
+            document.getElementById('userModal').classList.add('hidden');
+            document.getElementById('userForm').reset();
+        }
+
+        // Editar usuario
+        async function editUser(username) {
+            const user = users.find(u => u.username === username);
+            if (!user) return;
+
+            editingUser = user;
+            document.getElementById('modalTitle').textContent = 'Editar Usuario';
+            document.getElementById('username').value = user.username;
+            document.getElementById('username').disabled = true;
+            document.getElementById('email').value = user.email;
+            document.getElementById('first_name').value = user.first_name;
+            document.getElementById('last_name').value = user.last_name;
+            document.getElementById('role_name').value = user.role_name;
+            document.getElementById('password').required = false;
+            document.getElementById('password').value = '';
+            document.getElementById('editingUserId').value = user.username;
+            document.getElementById('userModal').classList.remove('hidden');
+        }
+
+        // Manejar envío del formulario
+        async function handleSubmit(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const data = Object.fromEntries(formData.entries());
+            
+            if (!data.password) {
+                delete data.password;
+            }
+
+            try {
+                const url = editingUser 
+                    ? `/users/${editingUser.username}`
+                    : '/users/add_user';
+                const method = editingUser ? 'PATCH' : 'POST';
+                
+                const response = await fetch(url, {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    closeModal();
+                    await fetchUsers();
+                } else {
+                    const errorData = await response.json();
+                    alert(errorData.detail || 'Error al guardar el usuario');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al procesar la solicitud');
+            }
+        }
+
+        // Eliminar usuario
+        async function deleteUser(username) {
+            if (!confirm('¿Estás seguro de que quieres eliminar este usuario?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/users/${username}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    await fetchUsers();
+                } else {
+                    const errorData = await response.json();
+                    alert(errorData.detail || 'Error al eliminar el usuario');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al eliminar el usuario');
+            }
+        }
+
+        // Resetear contraseña
+        async function resetPassword(email) {
+            if (!confirm('¿Estás seguro de que quieres resetear la contraseña de este usuario?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/password-reset/admin-reset/${email}`, {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    alert('Contraseña reseteada correctamente');
+                } else {
+                    const errorData = await response.json();
+                    alert(errorData.detail || 'Error al resetear la contraseña');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al resetear la contraseña');
+            }
+        }
+
+        // Cargar datos iniciales cuando se carga la página
+        document.addEventListener('DOMContentLoaded', loadInitialData);
+    </script>
+</body>
+</html>
+
+{% endblock %}

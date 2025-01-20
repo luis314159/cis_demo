@@ -58,35 +58,25 @@ class User(BaseUser, table=True):
         """Actualiza el campo updated_at al momento de modificar el registro."""
         self.updated_at = datetime.now(timezone.utc)
 
-class ReponseUser(BaseUser):
-    user_id: Optional[int]
+class ResponseUser(SQLModel):
+    username: str
+    email: EmailStr
+    first_name: str
+    last_name: str
+    user_id: int
     role_id: int
+    role: Role
     is_active: bool
 
-class UpdateUserRequest(BaseUser):
+class UpdateUserRequest(SQLModel):
+    # No heredamos de BaseUser porque queremos todos los campos opcionales
+    username: Optional[str] = None
+    email: Optional[EmailStr] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
     password: Optional[str] = None
     role_name: Optional[str] = None
     is_active: Optional[bool] = None
-
-    @field_validator("role_name")
-    @classmethod
-    def validate_role_name(cls, value, info: FieldValidationInfo):
-        if value is None:
-            return value
-        
-        # Get the SQLModel session from the context
-        session: Session = info.context.get("session")
-        if session is None:
-            raise ValueError("No database session provided for validation")
-        
-        # Query to check if the role exists
-        query = select(Role).where(Role.role_name == value)
-        role = session.exec(query).first()
-        
-        if role is None:
-            raise ValueError(f"The role '{value}' does not exist.")
-        
-        return value
     
 
 # Modelos para el flujo

@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from typing import Annotated
 from datetime import timedelta
 from sqlmodel import select
-from models import Token, User, Role, ReponseUser
+from models import Token, User, Role, ResponseUser
 from db import SessionDep
 import auth
 from fastapi.responses import RedirectResponse, JSONResponse
@@ -76,7 +76,7 @@ def login_for_access_token(
     
     return Token(access_token=access_token, token_type="bearer")
 
-@router.get("/users/me", response_model=ReponseUser)
+@router.get("/users/me", response_model=ResponseUser)
 def read_users_me(
     current_user: Annotated[User, Depends(auth.get_current_active_user)]
 ):
@@ -113,7 +113,7 @@ def read_users_me(
     """
     return current_user
 
-@router.get("/admin/users", response_model=list[ReponseUser])
+@router.get("/admin/users", response_model=list[ResponseUser])
 def admin_users(
     session: SessionDep,
     current_user: Annotated[User, Depends(auth.require_role("admin"))]
@@ -210,21 +210,24 @@ async def authenticate(
     if not user:
         raise HTTPException(status_code=401, detail="Credenciales inválidas")
     
-    access_token = auth.create_access_token({"sub": user.username})
+    # Incluimos el rol del usuario en el payload del token
+    access_token = auth.create_access_token(
+        data={
+            "sub": user.username,
+            "role": user.role.role_name  # Agregamos el rol al token
+        }
+    )
     
     if "application/json" in request.headers.get("accept", ""):
         return {"access_token": access_token, "token_type": "bearer"}
     
     response = RedirectResponse("/home", status_code=303)
-    # Modificamos cómo se establece la cookie
     response.set_cookie(
         key="auth_token",
         value=access_token,
-        secure=False,  # Cambiado a False para pruebas
+        secure=False,
         httponly=True,
         samesite="lax",
-        max_age=7200  # 2 horas
+        max_age=7200
     )
-    # Debug
-    print("Setting cookie:", access_token)
     return response

@@ -62,12 +62,16 @@
           <li class="nav-item">
             <a class="nav-link {% if request.path == '/QR' %}active{% endif %}" href="/QR">QR</a>
           </li>
+          {% if current_user.role.role_name in ["admin", "ingeniero", "supervisor"] %}
           <li class="nav-item">
             <a class="nav-link {% if request.path == '/new_job' %}active{% endif %}" href="/new_job">Add Job</a>
           </li>
+          {% endif %}
+          {% if current_user.role.role_name in ["admin", "ingeniero", "supervisor"] %}
           <li class="nav-item">
             <a class="nav-link {% if request.path.startswith('/admin') %}active{% endif %}" href="/admin">Admin</a>
           </li>
+          {% endif %}
         </ul>
         {% endblock %}
         
@@ -99,6 +103,9 @@
         <a class="nav-link {% if request.path == '/admin/jobs' %}active{% endif %}" href="/admin/jobs">Jobs</a>
         <a class="nav-link {% if request.path == '/admin/items' %}active{% endif %}" href="/admin/items">Items</a>
         <a class="nav-link {% if request.path == '/admin/objects' %}active{% endif %}" href="/admin/objects">Objects</a>
+        {% if current_user.role.role_name in ["admin", "ingeniero", "supervisor"] %}
+        <a class="nav-link {% if request.path == '/admin/users_panel' %}active{% endif %}" href="/admin/users_panel">Users</a>
+        {% endif %}
       </div>
     </div>
   </nav>

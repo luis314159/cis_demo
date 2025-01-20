@@ -3,7 +3,7 @@ from sqlmodel import select, Session
 from models import User, Role, UpdateUserRequest
 from db import SessionDep
 from auth import get_password_hash, get_current_active_user
-from models import CreateUser, CreateRole, ReponseUser
+from models import CreateUser, CreateRole, ResponseUser
 from typing import Annotated, Optional
 
 
@@ -13,7 +13,7 @@ router = APIRouter(
 )
 
 
-@router.post("/add_user", response_model=ReponseUser)
+@router.post("/add_user", response_model=ResponseUser)
 def add_user(user_data: CreateUser, session: SessionDep):
     # Verificar si el usuario ya existe
     existing_user = session.exec(select(User).where(User.username == user_data.username)).first()
@@ -54,7 +54,7 @@ def add_role(role_data: CreateRole, session: SessionDep):
     return role
 
 
-@router.get("/list_users", response_model=list[ReponseUser], response_model_exclude={"hashed_password"})
+@router.get("/list_users", response_model=list[ResponseUser], response_model_exclude={"hashed_password"})
 def list_users(session: SessionDep):
     users = session.exec(select(User)).all()
     return users
@@ -66,7 +66,7 @@ def list_roles(session: SessionDep):
     return roles
 
 
-@router.patch("/{username}", response_model=ReponseUser)
+@router.patch("/{username}", response_model=ResponseUser)
 def update_user(
     username: str,
     user_update: UpdateUserRequest,
@@ -152,4 +152,43 @@ def update_user(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error al actualizar el usuario"
+        )
+    
+@router.delete("/{username}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_user(
+    username: str,
+    session: SessionDep,
+    current_user: Annotated[User, Depends(get_current_active_user)]
+):
+    """
+    Elimina un usuario existente dado su username.
+    Retorna 204 No Content si la eliminación fue exitosa.
+    """
+    # Buscar el usuario a eliminar
+    db_user = session.exec(
+        select(User).where(User.username == username)
+    ).first()
+
+    if not db_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario no encontrado"
+        )
+
+    # Prevenir que un usuario se elimine a sí mismo
+    if current_user.username == username:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No puedes eliminar tu propio usuario"
+        )
+
+    try:
+        session.delete(db_user)
+        session.commit()
+        return None
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al eliminar el usuario"
         )

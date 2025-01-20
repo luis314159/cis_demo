@@ -17,13 +17,14 @@ from routers import (
 import jwt
 from generate_qr import generate_qr, generate_pdf
 from jwt.exceptions import InvalidTokenError
-
+from middleware import auth_middleware
 
 logger = setup_api_logger("main")
 qr_path = generate_qr()
 generate_pdf(qr_path)
 
 app = FastAPI(lifespan=create_all_tables)
+app.middleware("http")(auth_middleware)
 
 # Rutas públicas (no necesitan token)
 app.include_router(rest_password_router.router)
@@ -127,11 +128,11 @@ async def get_documentation(
 async def admin(
     request: Request,
     current_user: Annotated[User, Depends(get_current_active_user)]
-):
+):  
     return templates.TemplateResponse(
-        "admin.html", 
-        {"request": request, "current_user": current_user}
-    )
+            "admin.html", 
+            {"request": request, "current_user": current_user}
+        )
 
 @app.get("/admin/jobs", response_class=HTMLResponse)
 async def admin_jobs(
@@ -162,6 +163,19 @@ async def admin_objects(
         "admin_objects.html", 
         {"request": request, "current_user": current_user}
     )
+
+@app.get("/admin/users_panel", response_class=HTMLResponse)
+async def admin_objects(
+    request: Request,
+    current_user: Annotated[User, Depends(get_current_active_user)]
+):
+    return templates.TemplateResponse(
+        "admin_users.html", 
+        {"request": request, "current_user": current_user}
+    )
+
+
+
 
 # # Middleware para redirigir a login si no hay autenticación
 # from fastapi.middleware.cors import CORSMiddleware

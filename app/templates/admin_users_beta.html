@@ -1,0 +1,325 @@
+{% extends 'base.html' %}
+
+{% block title %}Administrar Usuarios{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold">Administración de Usuarios</h1>
+        <button onclick="openModal()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Nuevo Usuario
+        </button>
+    </div>
+
+    <div class="flex gap-4 mb-6">
+        <div class="flex-1 relative">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 absolute left-3 top-2.5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="searchInput" placeholder="Buscar por nombre o apellido" 
+                   class="pl-10 pr-4 py-2 border rounded-lg w-full" 
+                   oninput="filterUsers()">
+        </div>
+        <select id="roleFilter" class="border rounded-lg px-4 py-2 w-48" onchange="filterUsers()">
+            <option value="">Todos los roles</option>
+        </select>
+    </div>
+
+    <div class="bg-white rounded-lg shadow overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rol</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="usersTable" class="divide-y divide-gray-200">
+                <!-- Los usuarios se cargarán aquí dinámicamente -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal para crear/editar usuario -->
+<div id="userModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
+    <div class="bg-white rounded-lg p-6 w-full max-w-md">
+        <h2 id="modalTitle" class="text-xl font-bold mb-4">Nuevo Usuario</h2>
+        <form id="userForm" onsubmit="handleSubmit(event)">
+            <input type="hidden" id="editingUsername">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Username</label>
+                    <input type="text" id="username" name="username" required
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Email</label>
+                    <input type="email" id="email" name="email" required
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Nombre</label>
+                    <input type="text" id="first_name" name="first_name" required
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Apellido</label>
+                    <input type="text" id="last_name" name="last_name" required
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Contraseña</label>
+                    <input type="password" id="password" name="password"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Rol</label>
+                    <select id="role_name" name="role_name" required
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        <option value="">Seleccionar rol</option>
+                    </select>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-4">
+                <button type="button" onclick="closeModal()"
+                        class="px-4 py-2 border rounded-md text-gray-600 hover:bg-gray-50">
+                    Cancelar
+                </button>
+                <button type="submit"
+                        class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+                    Guardar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+let users = [];
+let roles = [];
+
+// Cargar datos iniciales
+async function initialize() {
+    await Promise.all([
+        loadUsers(),
+        loadRoles()
+    ]);
+}
+
+// Cargar usuarios
+async function loadUsers() {
+    try {
+        const response = await fetch('/users/list_users');
+        users = await response.json();
+        filterUsers();
+    } catch (error) {
+        console.error('Error cargando usuarios:', error);
+        alert('Error al cargar los usuarios');
+    }
+}
+
+// Cargar roles
+async function loadRoles() {
+    try {
+        const response = await fetch('/users/list_roles');
+        roles = await response.json();
+        populateRoleSelects();
+    } catch (error) {
+        console.error('Error cargando roles:', error);
+        alert('Error al cargar los roles');
+    }
+}
+
+// Poblar selects de roles
+function populateRoleSelects() {
+    const roleSelects = ['roleFilter', 'role_name'];
+    roleSelects.forEach(selectId => {
+        const select = document.getElementById(selectId);
+        if (!select) return;
+        
+        // Mantener la opción "Todos los roles" solo para el filtro
+        if (selectId === 'roleFilter') {
+            select.innerHTML = '<option value="">Todos los roles</option>';
+        } else {
+            select.innerHTML = '<option value="">Seleccionar rol</option>';
+        }
+        
+        roles.forEach(role => {
+            const option = document.createElement('option');
+            option.value = role.role_name;
+            option.textContent = role.role_name;
+            select.appendChild(option);
+        });
+    });
+}
+
+// Filtrar usuarios
+function filterUsers() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const selectedRole = document.getElementById('roleFilter').value;
+    
+    const filtered = users.filter(user => {
+        const nameMatch = (user.first_name + ' ' + user.last_name)
+            .toLowerCase()
+            .includes(searchTerm);
+        const roleMatch = !selectedRole || user.role_name === selectedRole;
+        return nameMatch && roleMatch;
+    });
+    
+    renderUsers(filtered);
+}
+
+// Renderizar usuarios en la tabla
+function renderUsers(usersToRender) {
+    const tbody = document.getElementById('usersTable');
+    tbody.innerHTML = '';
+    
+    usersToRender.forEach(user => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="px-6 py-4">${user.username}</td>
+            <td class="px-6 py-4">${user.first_name} ${user.last_name}</td>
+            <td class="px-6 py-4">${user.email}</td>
+            <td class="px-6 py-4">${user.role_name}</td>
+            <td class="px-6 py-4">
+                <div class="flex gap-2">
+                    <button onclick="editUser('${user.username}')" 
+                            class="text-blue-600 hover:text-blue-800">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" 
+                             stroke="currentColor" stroke-width="2">
+                            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                        </svg>
+                    </button>
+                    <button onclick="resetPassword('${user.email}')"
+                            class="text-yellow-600 hover:text-yellow-800">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" 
+                             stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg>
+                    </button>
+                    <button onclick="deleteUser('${user.username}')"
+                            class="text-red-600 hover:text-red-800">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" 
+                             stroke="currentColor" stroke-width="2">
+                            <path d="M3 6h18"></path>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
+                            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                    </button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// Abrir modal
+function openModal() {
+    document.getElementById('userModal').classList.remove('hidden');
+    document.getElementById('modalTitle').textContent = 'Nuevo Usuario';
+    document.getElementById('userForm').reset();
+    document.getElementById('editingUsername').value = '';
+    document.getElementById('username').disabled = false;
+    document.getElementById('password').required = true;
+}
+
+// Cerrar modal
+function closeModal() {
+    document.getElementById('userModal').classList.add('hidden');
+}
+
+// Editar usuario
+function editUser(username) {
+    const user = users.find(u => u.username === username);
+    if (!user) return;
+    
+    document.getElementById('modalTitle').textContent = 'Editar Usuario';
+    document.getElementById('editingUsername').value = username;
+    document.getElementById('username').value = user.username;
+    document.getElementById('username').disabled = true;
+    document.getElementById('email').value = user.email;
+    document.getElementById('first_name').value = user.first_name;
+    document.getElementById('last_name').value = user.last_name;
+    document.getElementById('role_name').value = user.role_name;
+    document.getElementById('password').required = false;
+    document.getElementById('password').value = '';
+    
+    document.getElementById('userModal').classList.remove('hidden');
+}
+
+// Manejar envío del formulario
+async function handleSubmit(event) {
+    event.preventDefault();
+    
+    const editingUsername = document.getElementById('editingUsername').value;
+    const isEditing = !!editingUsername;
+    
+    const formData = {
+        username: document.getElementById('username').value,
+        email: document.getElementById('email').value,
+        first_name: document.getElementById('first_name').value,
+        last_name: document.getElementById('last_name').value,
+        role_name: document.getElementById('role_name').value,
+    };
+    
+    const password = document.getElementById('password').value;
+    if (password) {
+        formData.password = password;
+    }
+    
+    try {
+        const url = isEditing ? `/users/${editingUsername}` : '/users/add_user';
+        const method = isEditing ? 'PATCH' : 'POST';
+        
+        const response = await fetch(url, {
+            method,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData),
+        });
+        
+        if (response.ok) {
+            closeModal();
+            loadUsers();
+        } else {
+            const error = await response.json();
+            alert(`Error: ${error.detail || 'Error al guardar el usuario'}`);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error al guardar el usuario');
+    }
+}
+
+// Eliminar usuario
+async function deleteUser(username) {
+    if (!confirm(`¿Estás seguro de que quieres eliminar al usuario ${username}?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/users/${username}`, {
+            method: 'DELETE',
+        });
+        
+        if (response.ok) {
+            loadUsers();
+        } else {
+            alert('Error al eliminar el usuario');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error al eliminar el usuario');
+    }
+}
+
