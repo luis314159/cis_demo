@@ -19,8 +19,9 @@ def validate_and_insert(file: UploadFile, session: SessionDep):
 
         df = None
         try:
-            df = pd.read_csv(file.file)
-        except UnicodeDecodeError:
+            df = pd.read_csv(file.file, encoding='utf-8')
+        except Exception as e:
+            # Si falla UTF-8, volver al inicio del archivo e intentar con Latin1
             file.file.seek(0)
             try:
                 df = pd.read_csv(file.file, encoding='latin1')
@@ -54,7 +55,7 @@ def validate_and_insert(file: UploadFile, session: SessionDep):
             })
 
         # Llenado de la base de datos
-        job_code = unique_jobs[0]
+        job_code = str(unique_jobs[0])
         existing_job = session.exec(select(Job).where(Job.job_code == job_code)).first()
 
         # Crear los Process necesarios
