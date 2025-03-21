@@ -90,7 +90,7 @@ def validate_and_insert(file: UploadFile, session: SessionDep):
             })
 
         # Database operations
-        job_code = unique_jobs[0]
+        job_code = str(unique_jobs[0])
         logger.info(f"Processing job_code: {job_code}")
         
         existing_job = session.exec(select(Job).where(Job.job_code == job_code)).first()
