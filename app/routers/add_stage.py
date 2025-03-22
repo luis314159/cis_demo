@@ -9,10 +9,54 @@ router = APIRouter(
     tags=["Stages"]
 )
 
-@router.post("/create", response_model=Stage)
+@router.post("/create", response_model=Stage,
+            summary="Create a new stage",
+            response_description="Returns the newly created stage",
+            tags=["Stages"],  # Agrupa en la sección "Stages"
+            responses={
+                200: {"description": "Stage created successfully"},
+                400: {"description": "A stage with this name already exists"},
+            },
+    )
 def create_stage(stage: StageCreate, session: SessionDep):
     """
-    Endpoint para crear un nuevo stage.
+    ## Endpoint to create a new stage
+
+    This endpoint creates a new stage in the system. It validates the input data and ensures that
+    no duplicate stage names exist.
+
+    ### Arguments:
+    - **stage** (StageCreate): The data required to create a new stage.
+
+    ### Returns:
+    - **Stage**: The newly created stage object.
+
+    ### Raises:
+    - `HTTPException`:
+        - `400`: If a stage with the same name already exists.
+
+    ### Example Usage:
+    ```http
+    POST /stages/create
+    Body:
+    {
+        "name": "Stage 1",
+        "description": "Initial stage of the process"
+    }
+
+    Response:
+    {
+        "stage_id": 1,
+        "name": "Stage 1",
+        "description": "Initial stage of the process"
+    }
+    ```
+
+    ### Workflow:
+    1. Validate the input data using the `StageCreate` model.
+    2. Check if a stage with the same name already exists.
+    3. If the name is unique, create and save the new stage in the database.
+    4. Return the newly created stage.
     """
     # Crear una nueva instancia del modelo Stage
     new_stage = Stage.model_validate(stage)

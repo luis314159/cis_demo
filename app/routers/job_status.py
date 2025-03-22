@@ -15,10 +15,84 @@ router = APIRouter(
 )
 
 
-@router.get("/{job_code}/status", response_model=JobStatus)
+@router.get("/{job_code}/status", response_model=JobStatus,
+        summary="Get the status of objects in a job",
+        response_description="Returns the status of objects in the specified job",
+        tags=["Jobs"],  # Agrupa en la sección "Jobs"
+        responses={
+            200: {"description": "Successfully returned the job status"},
+            404: {"description": "Job or related items not found"},
+        },
+    )
 def get_job_status(job_code: str, session: SessionDep):
     """
-    Endpoint para obtener el estado de los objetos de un Job.
+    ## Endpoint to retrieve the status of objects in a job
+
+    This endpoint retrieves the status of objects in the job identified by `job_code`.
+    It provides a detailed breakdown of the progress of each item in the job across different stages.
+
+    ### Arguments:
+    - **job_code** (str): The code of the job to retrieve the status for.
+
+    ### Returns:
+    - **JobStatus**: The status of the job, including progress by stage and item.
+
+    ### Raises:
+    - `HTTPException`:
+        - `404`: If the job or related items do not exist.
+
+    ### Example Usage:
+    ```http
+    GET /jobs/JOB123/status
+
+    Response:
+    {
+        "job_code": "JOB123",
+        "stages": [
+            {
+                "stage_name": "CUTTING",
+                "items": [
+                    {
+                        "item_name": "Item 1",
+                        "item_ocr": "123456",
+                        "ratio": "5/10",
+                        "status": false
+                    },
+                    {
+                        "item_name": "Item 2",
+                        "item_ocr": "789012",
+                        "ratio": "10/10",
+                        "status": true
+                    }
+                ]
+            },
+            {
+                "stage_name": "MACHINING",
+                "items": [
+                    {
+                        "item_name": "Item 1",
+                        "item_ocr": "123456",
+                        "ratio": "3/10",
+                        "status": false
+                    },
+                    {
+                        "item_name": "Item 2",
+                        "item_ocr": "789012",
+                        "ratio": "0/10",
+                        "status": false
+                    }
+                ]
+            }
+        ]
+    }
+    ```
+
+    ### Workflow:
+    1. Verify that the job exists.
+    2. Retrieve all items related to the job.
+    3. For each item, analyze the progress across its stages.
+    4. Calculate the completion ratio and status for each item in each stage.
+    5. Return the job status with detailed progress information.
     """
     # Verificar que el Job existe
     job = session.exec(select(Job).where(Job.job_code == job_code)).first()
@@ -118,13 +192,48 @@ def get_job_status(job_code: str, session: SessionDep):
         stages=stages
     )
 
-@router.delete("/{job_code}")
+@router.delete("/{job_code}",
+        summary="Delete a job and its related items and objects",
+        response_description="Confirmation message after deleting the job and its related data",
+        tags=["Jobs"],  # Agrupa en la sección "Jobs"
+        responses={
+            200: {"description": "Job and related data deleted successfully"},
+            404: {"description": "Job not found"},
+        },
+    )
 async def delete_job(job_code: str, session: SessionDep):
     """
-    Endpoint para eliminar un Job y todos los Items y Objects relacionados.
+    ## Endpoint to delete a job and its related items and objects
 
-    Parámetros:
-        - job_code: Código del Job que se desea eliminar.
+    This endpoint deletes the job identified by `job_code` and all items and objects related to it.
+
+    ### Arguments:
+    - **job_code** (str): The code of the job to delete.
+
+    ### Returns:
+    - **dict**: A confirmation message.
+
+    ### Raises:
+    - `HTTPException`:
+        - `404`: If the job does not exist.
+
+    ### Example Usage:
+    ```http
+    DELETE /jobs/JOB123
+
+    Response:
+    {
+        "message": "El Job 'JOB123' y todos los datos relacionados fueron eliminados exitosamente."
+    }
+    ```
+
+    ### Workflow:
+    1. Verify that the job exists.
+    2. Retrieve all items related to the job.
+    3. Delete all objects related to each item.
+    4. Delete all items related to the job.
+    5. Delete the job.
+    6. Commit the changes to the database.
     """
     # Verificar si el Job existe
     job = session.exec(select(Job).where(Job.job_code == job_code)).first()

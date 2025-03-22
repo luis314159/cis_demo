@@ -8,18 +8,61 @@ router = APIRouter(
     tags=["Object"]
 )
 
-@router.put("/update_stage")
+@router.put("/update_stage",
+            summary="Update the current stage of an object",
+            response_description="Confirmation message after updating the object's stage",
+            tags=["Object"],
+            responses={
+                200: {"description": "Stage updated successfully"},
+                404: {"description": "Item, stage, or object not found"},
+            },
+    )
 def update_object_stage(
     ocr: str,
     new_stage_name: str,
     session: SessionDep
 ):
     """
-    Actualiza el current_stage de un objeto dado el OCR del item asociado
-    y el nuevo stage_name al que se quiere actualizar.
-    
-    :param ocr: OCR del item asociado al objeto (ignorar último carácter).
-    :param new_stage_name: Nombre del nuevo stage.
+    ## Endpoint to update the current stage of an object
+
+    This endpoint updates the `current_stage` of an object based on the OCR of the associated item
+    and the name of the new stage.
+
+    ### Arguments:
+    - **ocr** (str): OCR of the item associated with the object (ignore the last character).
+    - **new_stage_name** (str): Name of the new stage.
+
+    ### Returns:
+    - **dict**: A confirmation message with the updated object ID and new stage name.
+
+    ### Raises:
+    - `HTTPException`:
+        - `404`: If the item, stage, or object is not found.
+
+    ### Example Usage:
+    ```http
+    PUT /object/update_stage
+    Body:
+    {
+        "ocr": "ITEM123_1",
+        "new_stage_name": "CUTTING"
+    }
+
+    Response:
+    {
+        "message": "Stage actualizado correctamente",
+        "object_id": 1,
+        "new_stage": "CUTTING"
+    }
+    ```
+
+    ### Workflow:
+    1. Clean the OCR by ignoring the last character.
+    2. Retrieve the item associated with the cleaned OCR.
+    3. Verify that the new stage exists.
+    4. Retrieve the object associated with the item and the specified part number.
+    5. Update the `current_stage` of the object.
+    6. Commit the changes to the database.
     """
     # Ignorar el último carácter del OCR
     delimitador = "_"
@@ -64,18 +107,65 @@ def update_object_stage(
 
 
 
-@router.put("/test_update_stage")
+@router.put("/test_update_stage",
+            summary="Test updating the current stage of an object",
+            response_description="Simulation of updating the object's stage without making changes to the database",
+            tags=["Object"], 
+            responses={
+                200: {"description": "Test successful, returns the values that would be updated"},
+                404: {"description": "Item, stage, or object not found"},
+            },
+    )
 def test_update_object_stage(
     ocr: str,
     new_stage_name: str,
     session: SessionDep
 ):
     """
-    Prueba de actualización del current_stage de un objeto dado el OCR del item asociado
-    y el nuevo stage_name al que se quiere actualizar. No realiza cambios en la base de datos.
-    
-    :param ocr: OCR del item asociado al objeto (ignorar último carácter).
-    :param new_stage_name: Nombre del nuevo stage.
+    ## Endpoint to test updating the current stage of an object
+
+    This endpoint simulates updating the `current_stage` of an object based on the OCR of the associated item
+    and the name of the new stage. No changes are made to the database.
+
+    ### Arguments:
+    - **ocr** (str): OCR of the item associated with the object (ignore the last character).
+    - **new_stage_name** (str): Name of the new stage.
+
+    ### Returns:
+    - **dict**: A confirmation message with the values that would be updated.
+
+    ### Raises:
+    - `HTTPException`:
+        - `404`: If the item, stage, or object is not found.
+
+    ### Example Usage:
+    ```http
+    PUT /object/test_update_stage
+    Body:
+    {
+        "ocr": "ITEM123_1",
+        "new_stage_name": "CUTTING"
+    }
+
+    Response:
+    {
+        "message": "Prueba exitosa. Estos serían los valores actualizados:",
+        "object_id": 1,
+        "Pieza": "1",
+        "current_stage": 1,
+        "new_stage": "CUTTING",
+        "associated_item_ocr": "ITEM123",
+        "associated_item_id": 1,
+        "associated_item_name": "Item 1"
+    }
+    ```
+
+    ### Workflow:
+    1. Clean the OCR by ignoring the last character.
+    2. Retrieve the item associated with the cleaned OCR.
+    3. Verify that the new stage exists.
+    4. Retrieve the object associated with the item and the specified part number.
+    5. Return the values that would be updated.
     """
     # Ignorar el último carácter del OCR
     delimitador = "_"
@@ -120,14 +210,51 @@ def test_update_object_stage(
     }
 
 
-@router.delete("/{item_ocr}/{piece_number}")
+@router.delete("/{item_ocr}/{piece_number}",
+            summary="Delete an object by item OCR and piece number",
+            response_description="Confirmation message after deleting the object",
+            tags=["Object"],
+            responses={
+                200: {"description": "Object deleted successfully"},
+                404: {"description": "Item or object not found"},
+                400: {"description": "Piece number out of range"},
+            },
+    )
 def delete_object(item_ocr: str, piece_number: int, session: SessionDep):
     """
-    Endpoint para eliminar un Object relacionado con un Item dado su OCR y el número de pieza.
+    ## Endpoint to delete an object by item OCR and piece number
 
-    Parámetros:
-        - item_ocr: OCR del Item al que pertenece el Object.
-        - piece_number: Número de pieza (1-indexado) del Object a eliminar.
+    This endpoint deletes an object associated with an item identified by its OCR and a specific piece number.
+
+    ### Arguments:
+    - **item_ocr** (str): OCR of the item associated with the object.
+    - **piece_number** (int): Piece number (1-indexed) of the object to delete.
+
+    ### Returns:
+    - **dict**: A confirmation message.
+
+    ### Raises:
+    - `HTTPException`:
+        - `404`: If the item or object is not found.
+        - `400`: If the piece number is out of range.
+
+    ### Example Usage:
+    ```http
+    DELETE /object/ITEM123/1
+
+    Response:
+    {
+        "message": "Object con ID '1' eliminado exitosamente del Item 'ITEM123'."
+    }
+    ```
+
+    ### Workflow:
+    1. Retrieve the item associated with the OCR.
+    2. Retrieve all objects associated with the item.
+    3. Validate that the piece number is within range.
+    4. Delete the specified object.
+    5. If the item has no more objects, delete the item as well.
+    6. Commit the changes to the database.
     """
     # Buscar el Item asociado al OCR
     item = session.exec(select(Item).where(Item.ocr == item_ocr)).first()
@@ -160,16 +287,62 @@ def delete_object(item_ocr: str, piece_number: int, session: SessionDep):
     return {"message": f"Object con ID '{object_to_delete.object_id}' eliminado exitosamente del Item '{item_ocr}'."}
 
 
-@router.get("/{item_ocr}")
+@router.get("/{item_ocr}",
+            summary="List all objects associated with an item by OCR",
+            response_description="Returns a list of objects associated with the item",
+            tags=["Object"],
+            responses={
+                200: {"description": "Successfully returned the list of objects"},
+                404: {"description": "Item or objects not found"},
+            },
+        )
 def list_objects(item_ocr: str, session: SessionDep):
     """
-    Endpoint para listar todos los Objects relacionados con un Item dado su OCR.
+    ## Endpoint to list all objects associated with an item by OCR
 
-    Parámetros:
-        - item_ocr: OCR del Item cuyos Objects se desean listar.
+    This endpoint retrieves a list of all objects associated with an item identified by its OCR.
 
-    Retorna:
-        - Una lista de Objects relacionados con el Item, incluyendo el nombre del stage actual.
+    ### Arguments:
+    - **item_ocr** (str): OCR of the item whose objects are to be listed.
+
+    ### Returns:
+    - **dict**: A list of objects associated with the item, including the current stage name.
+
+    ### Raises:
+    - `HTTPException`:
+        - `404`: If the item or objects are not found.
+
+    ### Example Usage:
+    ```http
+    GET /object/ITEM123
+
+    Response:
+    {
+        "item_ocr": "ITEM123",
+        "objects": [
+            {
+                "object_id": 1,
+                "item_id": 1,
+                "rework": false,
+                "scrap": false,
+                "current_stage": "CUTTING"
+            },
+            {
+                "object_id": 2,
+                "item_id": 1,
+                "rework": false,
+                "scrap": false,
+                "current_stage": "MACHINING"
+            }
+        ]
+    }
+    ```
+
+    ### Workflow:
+    1. Retrieve the item associated with the OCR.
+    2. Retrieve all objects associated with the item.
+    3. Replace the `current_stage` ID with the stage name.
+    4. Return the list of objects.
     """
     # Buscar el Item asociado al OCR
     item = session.exec(select(Item).where(Item.ocr == item_ocr)).first()
