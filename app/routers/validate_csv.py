@@ -22,7 +22,54 @@ router = APIRouter(
 )
 
 def log_dataframe_info(df: pd.DataFrame) -> Dict[str, Any]:
-    """Helper function to create a structured log of DataFrame information"""
+    """
+    ## Generate structured logging information for a DataFrame
+
+    Creates a dictionary containing key metrics and metadata about a pandas DataFrame
+    for structured logging purposes.
+
+    ### Parameters:
+    - **df** (pd.DataFrame): The DataFrame to analyze
+
+    ### Returns:
+    - **Dict[str, Any]**: Structured log information containing:
+        - shape: Tuple of (rows, columns)
+        - columns: List of column names
+        - unique_jobs: List of unique job identifiers
+        - total_rows: Total number of rows
+
+    ### Example Usage:
+    ```python
+    df = pd.DataFrame({
+        'Job': ['JOB1', 'JOB1', 'JOB2'],
+        'Value': [10, 20, 30]
+    })
+    
+    log_info = log_dataframe_info(df)
+    logger.info("DataFrame metrics", extra={"df_info": log_info})
+    ```
+
+    ### Example Output:
+    ```python
+    {
+        "shape": (3, 2),
+        "columns": ["Job", "Value"],
+        "unique_jobs": ["JOB1", "JOB2"],
+        "total_rows": 3
+    }
+    ```
+
+    ### Use Cases:
+    - Debugging data processing pipelines
+    - Monitoring data quality
+    - Tracking data transformations
+    - Auditing data inputs
+
+    ### Notes:
+    - Assumes the DataFrame contains a 'Job' column
+    - Designed for use with structured logging systems
+    - Can be extended with additional metrics as needed
+    """
     return {
         "shape": df.shape,
         "columns": df.columns.tolist(),
@@ -30,8 +77,143 @@ def log_dataframe_info(df: pd.DataFrame) -> Dict[str, Any]:
         "total_rows": len(df)
     }
 
-@router.post('/validate-and-insert')
+@router.post('/validate-and-insert',
+            response_description="Process result message",
+            tags=["Object"],
+            responses={
+                201: {
+                    "description": "Data successfully processed",
+                    "content": {
+                        "application/json": {
+                            "examples": {
+                                "new_job": {
+                                    "summary": "New job created",
+                                    "value": {
+                                        "message": "Job, Items, Objects y Process creados exitosamente."
+                                    }
+                                },
+                                "existing_job": {
+                                    "summary": "Existing job updated",
+                                    "value": {
+                                        "message": "Se agregaron nuevos Items y Objects al Job existente."
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                400: {
+                    "description": "Invalid input data",
+                    "content": {
+                        "application/json": {
+                            "examples": {
+                                "missing_file": {
+                                    "summary": "No file provided",
+                                    "value": {
+                                        "error": "No se encontró el archivo en la solicitud."
+                                    }
+                                },
+                                "invalid_csv": {
+                                    "summary": "Invalid CSV file",
+                                    "value": {
+                                        "error": "El archivo no es un CSV válido o no pudo ser leído.",
+                                        "details": "Specific error details"
+                                    }
+                                },
+                                "missing_columns": {
+                                    "summary": "Missing required columns",
+                                    "value": {
+                                        "error": "Faltan columnas en el archivo CSV.",
+                                        "missing_columns": ["Column1", "Column2"]
+                                    }
+                                },
+                                "multiple_jobs": {
+                                    "summary": "Multiple jobs in file",
+                                    "value": {
+                                        "error": "Los valores de 'Job' no son consistentes.",
+                                        "unique_jobs": ["JOB1", "JOB2"]
+                                    }
+                                },
+                                "duplicates": {
+                                    "summary": "Duplicate entries",
+                                    "value": {
+                                        "error": "Existen combinaciones duplicadas de 'Job' e 'Item'.",
+                                        "duplicates": [
+                                            {"Job": "JOB1", "Item": "ITEM1"},
+                                            {"Job": "JOB1", "Item": "ITEM2"}
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                500: {
+                    "description": "Internal server error",
+                    "content": {
+                        "application/json": {
+                            "example": {
+                                "error": "Ocurrió un error inesperado.",
+                                "details": "Specific error details"
+                            }
+                        }
+                    }
+                }
+            }
+    )
 def validate_and_insert(file: UploadFile, session: SessionDep):
+    """
+    ## Validate and insert manufacturing objects from CSV
+
+    Processes a CSV file containing manufacturing object data, validates it,
+    and inserts the data into the system. Handles both new jobs and updates
+    to existing jobs.
+
+    ### Parameters:
+    - **file** (UploadFile): CSV file containing object data with columns:
+        - Job: Job identifier (must be consistent across file)
+        - Item: Item identifier
+        - Material: Material type
+        - Espesor: Thickness
+        - Cantidad: Quantity
+        - OCR: Optical Character Recognition code
+        - Clase: Process class
+        - Longitud: Length
+        - Ancho: Width
+        - Alto: Height
+        - Volumen: Volume
+        - Área Superficial: Surface area
+
+    ### Returns:
+    - **201 Created**:
+        - New job: Creates new job, items, objects, and processes
+        - Existing job: Adds new items and objects to existing job
+
+    ### Example CSV Format:
+    ```csv
+    Job,Item,Material,Espesor,Cantidad,OCR,Clase,Longitud,Ancho,Alto,Volumen,Área Superficial
+    JOB123,ITEM001,Steel,10,5,OCR001,Cutting,1000,500,20,10000000,3400000
+    JOB123,ITEM002,Aluminum,5,3,OCR002,Machining,800,400,15,4800000,1840000
+    ```
+
+    ### Workflow:
+    1. Validate file existence and format
+    2. Check for required columns
+    3. Validate job consistency
+    4. Check for duplicate entries
+    5. Process data:
+        - Create new job if needed
+        - Create/update items
+        - Create objects
+        - Handle processes
+    6. Commit changes to database
+    7. Return appropriate response
+
+    ### Error Handling:
+    - Detailed validation errors with specific feedback
+    - Comprehensive logging for debugging
+    - Graceful handling of encoding issues
+    """
     logger.info(f"Starting validate_and_insert for file: {file.filename}")
     
     try:

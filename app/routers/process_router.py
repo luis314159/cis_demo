@@ -10,19 +10,99 @@ router = APIRouter(
 )
 
 
-@router.get('', response_model=list[Process])
+@router.get('', response_model=list[Process],
+            summary="List all processes",
+            response_description="Returns a list of all available processes",
+            responses={
+                200: {"description": "Successfully retrieved list of processes"}
+            }
+    )
 def list_processes(session: SessionDep):
+    """
+    ## Get all processes
+
+    Retrieves a complete list of all manufacturing processes registered in the system.
+
+    ### Returns:
+    - **List[Process]**: List of process objects containing:
+        - process_id: Unique identifier
+        - process_name: Name of the process
+        - description: Process description
+
+    ### Example Response:
+    ```json
+    [
+        {
+            "process_id": 1,
+            "process_name": "Metal Fabrication",
+            "description": "Standard metal fabrication process"
+        },
+        {
+            "process_id": 2,
+            "process_name": "Plastic Molding",
+            "description": "Injection molding process"
+        }
+    ]
+    ```
+    """
     processes = session.exec(select(Process)).all()
     return processes
 
 from models import ProcessStage, Process, Stage
 
-@router.post('/{process_name}/order-stages')
+@router.post('/{process_name}/order-stages',
+            response_description="Confirmation of stage order update",
+            responses={
+                200: {"description": "Stage order updated successfully"},
+                404: {"description": "Process not found"},
+                400: {"description": "Invalid stage names provided"}
+            }
+    )
 def order_stages(process_name: str, stage_order: list[str], session: SessionDep):
     """
-    Parámetros:
-        - process_name: Nombre del proceso al que se le asignarán las etapas.
-        - stage_order: Lista de nombres de las etapas en el orden deseado.
+    ## Define stage execution order for a process
+
+    Sets or updates the execution order of stages for a specific manufacturing process.
+
+    ### Parameters:
+    - **process_name** (str): Name of the target process
+    - **stage_order** (List[str]): Ordered list of stage names
+
+    ### Request Example:
+    ```json
+    {
+        "stage_order": ["Cutting", "Bending", "Welding", "Painting"]
+    }
+    ```
+
+    ### Responses:
+    - **Success**:
+    ```json
+    {
+        "message": "El orden de los Stages para el Process 'Metal Fabrication' fue actualizado correctamente."
+    }
+    ```
+    
+    - **Error** (Process not found):
+    ```json
+    {
+        "detail": "El Process no existe."
+    }
+    ```
+
+    - **Error** (Invalid stages):
+    ```json
+    {
+        "detail": "Uno o más Stages no existen: Painting"
+    }
+    ```
+
+    ### Workflow:
+    1. Validate process existence
+    2. Verify all stage names exist
+    3. Delete previous stage order (if exists)
+    4. Create new stage order relationships
+    5. Commit changes to database
     """
     # Verificar que el Process exista
     process = session.exec(select(Process).where(Process.process_name == process_name)).first()
@@ -52,12 +132,93 @@ def order_stages(process_name: str, stage_order: list[str], session: SessionDep)
     session.commit()
     return {"message": f"El orden de los Stages para el Process '{process_name}' fue actualizado correctamente."}
 
-@router.get("/{process_name}/stages-order", response_model=list[dict])
+@router.get("/{process_name}/stages-order", response_model=list[dict],
+            summary="Get stage execution order for a process",
+            response_description="Ordered list of stages with details",
+            tags=["Process"],
+            responses={
+                200: {
+                    "description": "Successfully retrieved stage order",
+                    "content": {
+                        "application/json": {
+                            "example": [
+                                {
+                                    "order": 1,
+                                    "stage_id": 3,
+                                    "stage_name": "Cutting"
+                                },
+                                {
+                                    "order": 2,
+                                    "stage_id": 5,
+                                    "stage_name": "Bending"
+                                }
+                            ]
+                        }
+                    }
+                },
+                404: {
+                    "description": "Process not found",
+                    "content": {
+                        "application/json": {
+                            "example": {"detail": "El Process no existe."}
+                        }
+                    }
+                }
+            }
+    )
 def get_stages_order(process_name: str, session: SessionDep):
     """
-    Endpoint para listar el orden de los Stages para un Process dado.
-    Parámetros:
-        - process_name: Nombre del proceso.
+    ## Retrieve stage execution order for a process
+
+    Returns the defined execution sequence of stages for a specific manufacturing process.
+
+    ### Parameters:
+    - **process_name** (str): Name of the target process
+
+    ### Returns:
+    - **List[StageOrderResponse]**: Ordered list containing:
+        - order: Execution sequence number
+        - stage_id: Unique identifier of the stage
+        - stage_name: Name of the stage
+
+    ### Example Usage:
+    ```http
+    GET /processes/metal-fabrication/stages-order
+    ```
+
+    ### Example Response:
+    ```json
+    [
+        {
+            "order": 1,
+            "stage_id": 3,
+            "stage_name": "Cutting"
+        },
+        {
+            "order": 2,
+            "stage_id": 5,
+            "stage_name": "Bending"
+        },
+        {
+            "order": 3,
+            "stage_id": 7,
+            "stage_name": "Welding"
+        }
+    ]
+    ```
+
+    ### Empty State Response:
+    ```json
+    {
+        "message": "No hay stages asignados para el Process 'metal-fabrication'."
+    }
+    ```
+
+    ### Workflow:
+    1. Validate process existence
+    2. Retrieve stage order relationships
+    3. Enrich with stage details
+    4. Return ordered list
     """
     # Verificar que el Process exista
     process = session.exec(select(Process).where(Process.process_name == process_name)).first()

@@ -13,8 +13,58 @@ router = APIRouter(
 )
 
 
-@router.post("/add_user", response_model=ResponseUser)
+@router.post("/add_user", response_model=ResponseUser,
+            summary="Create new user",
+            response_description="Returns the created user",
+            responses={
+                201: {"description": "User created successfully"},
+                400: {"description": "Username already exists"},
+                404: {"description": "Specified role not found"}
+            }
+    )
 def add_user(user_data: CreateUser, session: SessionDep):
+    """
+    ## Create a new user account
+
+    Registers a new user in the system with the provided credentials and role.
+
+    ### Parameters:
+    - **user_data** (CreateUser): User creation data including:
+        - username: Unique identifier for the user
+        - password: Plain text password (will be hashed)
+        - email: User's email address
+        - first_name: User's first name
+        - last_name: User's last name
+        - role_name: Name of the assigned role
+
+    ### Returns:
+    - **ResponseUser**: Created user details (excluding password)
+
+    ### Example Request:
+    ```json
+    {
+        "username": "jdoe",
+        "password": "securepassword123",
+        "email": "jdoe@example.com",
+        "first_name": "John",
+        "last_name": "Doe",
+        "role_name": "operator"
+    }
+    ```
+
+    ### Example Response:
+    ```json
+    {
+        "user_id": 5,
+        "username": "jdoe",
+        "email": "jdoe@example.com",
+        "first_name": "John",
+        "last_name": "Doe",
+        "role_id": 2,
+        "is_active": true
+    }
+    ```
+    """
     # Verificar si el usuario ya existe
     existing_user = session.exec(select(User).where(User.username == user_data.username)).first()
     if existing_user:
@@ -41,8 +91,39 @@ def add_user(user_data: CreateUser, session: SessionDep):
     return user
 
 
-@router.post("/add_role", response_model=Role)
+@router.post("/add_role", response_model=Role,
+            summary="Create new role",
+            response_description="Returns the created role",
+            responses={
+                201: {"description": "Role created successfully"},
+                400: {"description": "Role already exists"}
+            }
+        )
 def add_role(role_data: CreateRole, session: SessionDep):
+    """
+    ## Create a new system role
+
+    Adds a new role to the system's role-based access control.
+
+    ### Parameters:
+    - **role_data** (CreateRole): Role creation data including:
+        - role_name: Unique name for the new role
+
+    ### Example Request:
+    ```json
+    {
+        "role_name": "quality_inspector"
+    }
+    ```
+
+    ### Example Response:
+    ```json
+    {
+        "role_id": 3,
+        "role_name": "quality_inspector"
+    }
+    ```
+    """
     existing_role = session.exec(select(Role).where(Role.role_name == role_data.role_name)).first()
     if existing_role:
         raise HTTPException(status_code=400, detail="El rol ya existe.")
@@ -54,19 +135,88 @@ def add_role(role_data: CreateRole, session: SessionDep):
     return role
 
 
-@router.get("/list_users", response_model=list[ResponseUser], response_model_exclude={"hashed_password"})
+@router.get("/list_users", response_model=list[ResponseUser], response_model_exclude={"hashed_password"},
+            summary="List all users",
+            response_description="Returns list of all users",
+            response_model_exclude={"hashed_password"}
+        )
 def list_users(session: SessionDep):
+    """
+    ## Get all system users
+
+    Retrieves a complete list of all registered users.
+
+    ### Returns:
+    - **List[ResponseUser]**: List of user objects excluding sensitive data
+
+    ### Example Response:
+    ```json
+    [
+        {
+            "user_id": 1,
+            "username": "admin",
+            "email": "admin@example.com",
+            "first_name": "System",
+            "last_name": "Admin",
+            "role_id": 1,
+            "is_active": true
+        },
+        {
+            "user_id": 2,
+            "username": "jdoe",
+            "email": "jdoe@example.com",
+            "first_name": "John",
+            "last_name": "Doe",
+            "role_id": 2,
+            "is_active": true
+        }
+    ]
+    ```
+    """
     users = session.exec(select(User)).all()
     return users
 
 
-@router.get("/list_roles", response_model=list[Role])
+@router.get("/list_roles", response_model=list[Role],
+            summary="List all roles",
+            response_description="Returns list of all roles"
+    )
 def list_roles(session: SessionDep):
+    """
+    ## Get all system roles
+
+    Retrieves a complete list of all available roles.
+
+    ### Returns:
+    - **List[Role]**: List of role objects
+
+    ### Example Response:
+    ```json
+    [
+        {
+            "role_id": 1,
+            "role_name": "admin"
+        },
+        {
+            "role_id": 2,
+            "role_name": "operator"
+        }
+    ]
+    ```
+    """
     roles = session.exec(select(Role)).all()
     return roles
 
 
-@router.patch("/{username}", response_model=ResponseUser)
+@router.patch("/{username}", response_model=ResponseUser,
+            summary="Update user information",
+            response_description="Returns updated user details",
+            responses={
+                200: {"description": "User updated successfully"},
+                400: {"description": "Invalid update data"},
+                404: {"description": "User not found"}
+            }
+    )
 def update_user(
     username: str,
     user_update: UpdateUserRequest,
@@ -74,8 +224,40 @@ def update_user(
     current_user: Annotated[User, Depends(get_current_active_user)]
 ):
     """
-    Actualiza los datos de un usuario existente parcialmente.
-    Los campos que no se incluyan no serán modificados.
+    ## Update user information
+
+    Partially updates user information. Only included fields will be modified.
+
+    ### Parameters:
+    - **username** (str): Username of the user to update
+    - **user_update** (UpdateUserRequest): Fields to update including:
+        - email: New email address
+        - first_name: New first name
+        - last_name: New last name
+        - password: New password
+        - role_name: New role name
+        - is_active: Account status
+
+    ### Example Request:
+    ```json
+    {
+        "email": "new.email@example.com",
+        "role_name": "supervisor"
+    }
+    ```
+
+    ### Example Response:
+    ```json
+    {
+        "user_id": 2,
+        "username": "jdoe",
+        "email": "new.email@example.com",
+        "first_name": "John",
+        "last_name": "Doe",
+        "role_id": 3,
+        "is_active": true
+    }
+    ```
     """
     # Buscar el usuario a actualizar
     db_user = session.exec(
@@ -154,15 +336,32 @@ def update_user(
             detail="Error al actualizar el usuario"
         )
     
-@router.delete("/{username}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{username}", status_code=status.HTTP_204_NO_CONTENT,
+                responses={
+                    204: {"description": "User deleted successfully"},
+                    400: {"description": "Cannot delete self"},
+                    404: {"description": "User not found"}
+                }
+    )
 def delete_user(
     username: str,
     session: SessionDep,
     current_user: Annotated[User, Depends(get_current_active_user)]
 ):
     """
-    Elimina un usuario existente dado su username.
-    Retorna 204 No Content si la eliminación fue exitosa.
+    ## Delete user account
+
+    Permanently removes a user account from the system.
+
+    ### Parameters:
+    - **username** (str): Username of the user to delete
+
+    ### Security:
+    - Requires authentication
+    - Cannot delete your own account
+
+    ### Returns:
+    - 204 No Content on success
     """
     # Buscar el usuario a eliminar
     db_user = session.exec(

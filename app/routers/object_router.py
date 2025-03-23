@@ -10,8 +10,73 @@ router = APIRouter(
     tags=["Jobs"]
 )
 
-@router.get("/{job_code}/objects", response_model=JobObjectsResponse)
+@router.get("/{job_code}/objects", response_model=JobObjectsResponse,
+        summary="Get job objects distribution by stage",
+        response_description="Returns object count grouped by item and stage",
+        tags=["Jobs"],
+        responses={
+            200: {"description": "Successfully retrieved job objects distribution"},
+            404: {"description": "Job not found"},
+        },
+    )
 def get_objects_by_job(job_code: str, session: SessionDep):
+    """
+    ## Endpoint to get object distribution by processing stage for a job
+
+    Retrieves detailed information about all objects associated with a job,
+    grouped by item and their current processing stage.
+
+    ### Arguments:
+    - **job_code** (str): Unique identifier code for the job
+
+    ### Returns:
+    - **JobObjectsResponse**:
+        - job_code: Original job code
+        - objects: List of object groups containing:
+            - item_name: Name of the parent item
+            - stage_name: Current processing stage name
+            - count: Number of objects in this stage
+
+    ### Raises:
+    - `HTTPException`:
+        - 404: If specified job doesn't exist
+
+    ### Example Usage:
+    ```http
+    GET /jobs/JOB-1234/objects
+
+    Response:
+    {
+        "job_code": "JOB-1234",
+        "objects": [
+            {
+                "item_name": "Steel Beam",
+                "stage_name": "Cutting",
+                "count": 15
+            },
+            {
+                "item_name": "Steel Beam",
+                "stage_name": "Welding",
+                "count": 8
+            },
+            {
+                "item_name": "Support Bracket",
+                "stage_name": "Cutting",
+                "count": 12
+            }
+        ]
+    }
+    ```
+
+    ### Workflow:
+    1. Validate job existence using provided job_code
+    2. Retrieve all items associated with the job
+    3. For each item:
+        - Get all related objects
+        - Group objects by their current processing stage
+        - Count objects per stage
+    4. Return aggregated results with stage names and counts
+    """
     # Verificar si el Job existe
     job = session.exec(select(Job).where(Job.job_code == job_code)).first()
     if not job:
