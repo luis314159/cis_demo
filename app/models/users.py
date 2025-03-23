@@ -30,11 +30,13 @@ class BaseUser(SQLModel):
     email: EmailStr = Field(nullable=False)
     first_name: str = Field(nullable=False)
     last_name: str = Field(nullable=False)
+    employee_number: Optional[str] = Field(default=None)
 
 
 class CreateUser(BaseUser):
     role_name: str = Field(nullable=False)
     password: str = Field(nullable=False)
+    supervisor_number: Optional[str] = Field(default=None)
 
 
 class User(BaseUser, table=True):
@@ -53,6 +55,27 @@ class User(BaseUser, table=True):
     )
     role_id: int = Field(foreign_key="role.role_id", nullable=False)
     role: "Role" = Relationship(back_populates="users")
+    
+    # Nuevo campo para todos los usuarios
+    employee_number: Optional[str] = Field(default=None)
+    
+    # Campo específico para supervisores
+    supervisor_number: Optional[str] = Field(default=None)
+
+    @field_validator('supervisor_number')
+    @classmethod
+    def validate_supervisor_number(cls, v, info: FieldValidationInfo):
+        # Este validador solo se ejecuta cuando se proporciona un valor
+        if v is not None:
+            # Obtenemos el role_id o role_name si está disponible
+            values = info.data
+            role = values.get('role')
+            role_name = getattr(role, 'role_name', None) if role else None
+            
+            # Si tenemos acceso directo al nombre del rol
+            if role_name and role_name.lower() != 'supervisor':
+                raise ValueError("El número de administrador solo es válido para usuarios con rol de supervisor")
+        return v
 
     def update_timestamps(self):
         """Actualiza el campo updated_at al momento de modificar el registro."""
@@ -67,6 +90,8 @@ class ResponseUser(SQLModel):
     role_id: int
     role: Role
     is_active: bool
+    employee_number: Optional[str] = None
+    supervisor_number: Optional[str] = None
 
 class UpdateUserRequest(SQLModel):
     # No heredamos de BaseUser porque queremos todos los campos opcionales
@@ -77,6 +102,8 @@ class UpdateUserRequest(SQLModel):
     password: Optional[str] = None
     role_name: Optional[str] = None
     is_active: Optional[bool] = None
+    employee_number: Optional[str] = None
+    supervisor_number: Optional[str] = None
     
 
 # Modelos para el flujo
