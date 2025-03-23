@@ -137,8 +137,7 @@ def add_role(role_data: CreateRole, session: SessionDep):
 
 @router.get("/list_users", response_model=list[ResponseUser], response_model_exclude={"hashed_password"},
             summary="List all users",
-            response_description="Returns list of all users",
-            response_model_exclude={"hashed_password"}
+            response_description="Returns list of all users"
         )
 def list_users(session: SessionDep):
     """
