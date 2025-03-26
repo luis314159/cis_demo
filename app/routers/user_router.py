@@ -36,6 +36,8 @@ def add_user(user_data: CreateUser, session: SessionDep):
         - first_name: User's first name
         - last_name: User's last name
         - role_name: Name of the assigned role
+        - employee_number: Optional employee number (for all users)
+        - supervisor_number: Optional supervisor number (only for supervisors)
 
     ### Returns:
     - **ResponseUser**: Created user details (excluding password)
@@ -48,7 +50,8 @@ def add_user(user_data: CreateUser, session: SessionDep):
         "email": "jdoe@example.com",
         "first_name": "John",
         "last_name": "Doe",
-        "role_name": "operator"
+        "role_name": "operator",
+        "employee_number": "EMP-001"
     }
     ```
 
@@ -61,7 +64,9 @@ def add_user(user_data: CreateUser, session: SessionDep):
         "first_name": "John",
         "last_name": "Doe",
         "role_id": 2,
-        "is_active": true
+        "is_active": true,
+        "employee_number": "EMP-001",
+        "supervisor_number": null
     }
     ```
     """
@@ -74,6 +79,34 @@ def add_user(user_data: CreateUser, session: SessionDep):
     role = session.exec(select(Role).where(Role.role_name == user_data.role_name)).first()
     if not role:
         raise HTTPException(status_code=404, detail="El rol especificado no existe.")
+    
+    # Verificar si es un supervisor
+    is_supervisor = role.role_name.lower() == 'supervisor'
+    
+    # Verificar número de supervisor (solo si es supervisor y se proporciona un número)
+    if user_data.supervisor_number:
+        if not is_supervisor:
+            raise HTTPException(
+                status_code=400, 
+                detail="Solo los usuarios con rol de supervisor pueden tener número de supervisor"
+            )
+            
+        # Verificar si el número de supervisor ya está en uso
+        existing_supervisor = session.exec(
+            select(User).where(User.supervisor_number == user_data.supervisor_number)
+        ).first()
+        if existing_supervisor:
+            raise HTTPException(
+                status_code=400, 
+                detail="El número de supervisor ya está en uso"
+            )
+    
+    # Verificar que un supervisor tenga número de supervisor
+    if is_supervisor and not user_data.supervisor_number:
+        raise HTTPException(
+            status_code=400,
+            detail="Los usuarios con rol de supervisor deben tener un número de supervisor"
+        )
 
     # Crear una instancia de User con la contraseña hasheada
     hashed_password = get_password_hash(user_data.password)
@@ -83,7 +116,9 @@ def add_user(user_data: CreateUser, session: SessionDep):
         first_name=user_data.first_name,
         last_name=user_data.last_name,
         hashed_password=hashed_password,
-        role_id=role.role_id  # Asignar el role_id encontrado
+        role_id=role.role_id,
+        employee_number=user_data.employee_number,  # Añadido el campo de número de empleado
+        supervisor_number=user_data.supervisor_number if is_supervisor else None  # Añadido el campo de número de supervisor
     )
     session.add(user)
     session.commit()
@@ -236,12 +271,15 @@ def update_user(
         - password: New password
         - role_name: New role name
         - is_active: Account status
+        - employee_number: Employee identification number
+        - supervisor_number: Supervisor identification number (only for supervisor role)
 
     ### Example Request:
     ```json
     {
         "email": "new.email@example.com",
-        "role_name": "supervisor"
+        "role_name": "supervisor",
+        "supervisor_number": "SUP-1234"
     }
     ```
 
@@ -254,7 +292,9 @@ def update_user(
         "first_name": "John",
         "last_name": "Doe",
         "role_id": 3,
-        "is_active": true
+        "is_active": true,
+        "employee_number": "EMP-001",
+        "supervisor_number": "SUP-1234"
     }
     ```
     """
@@ -271,6 +311,30 @@ def update_user(
 
     # Bandera para rastrear si se realizó algún cambio
     changes_made = False
+    
+    # Variable para rastrear si el rol ha cambiado y qué rol es
+    new_role = None
+    is_supervisor = False
+    
+    # Verificar si se está cambiando el rol
+    if user_update.role_name is not None:
+        # Verificar si el nuevo rol existe
+        new_role = session.exec(
+            select(Role).where(Role.role_name == user_update.role_name)
+        ).first()
+        if not new_role:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="El rol especificado no existe"
+            )
+        # Determinar si el nuevo rol es de supervisor
+        is_supervisor = new_role.role_name.lower() == 'supervisor'
+    else:
+        # Obtener el rol actual
+        current_role = session.exec(
+            select(Role).where(Role.role_id == db_user.role_id)
+        ).first()
+        is_supervisor = current_role.role_name.lower() == 'supervisor'
 
     # Actualizar los campos opcionales
     if user_update.email is not None and user_update.email != db_user.email:
@@ -300,23 +364,57 @@ def update_user(
         db_user.hashed_password = get_password_hash(user_update.password)
         changes_made = True
 
-    if user_update.role_name is not None:
-        # Verificar si el nuevo rol existe
-        new_role = session.exec(
-            select(Role).where(Role.role_name == user_update.role_name)
-        ).first()
-        if not new_role:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="El rol especificado no existe"
-            )
-        if new_role.role_id != db_user.role_id:
-            db_user.role_id = new_role.role_id
+    # Actualizar el rol si se ha proporcionado y es diferente
+    if new_role and new_role.role_id != db_user.role_id:
+        db_user.role_id = new_role.role_id
+        changes_made = True
+        
+        # Si cambia de supervisor a otro rol, eliminar el número de supervisor
+        if not is_supervisor and db_user.supervisor_number:
+            db_user.supervisor_number = None
             changes_made = True
 
     if user_update.is_active is not None and user_update.is_active != db_user.is_active:
         db_user.is_active = user_update.is_active
         changes_made = True
+    
+    # Manejar el número de empleado
+    if user_update.employee_number is not None and user_update.employee_number != db_user.employee_number:
+        db_user.employee_number = user_update.employee_number
+        changes_made = True
+    
+    # Manejar el número de supervisor
+    if user_update.supervisor_number is not None:
+        # Verificar si el rol es de supervisor
+        if not is_supervisor:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Solo los usuarios con rol de supervisor pueden tener número de supervisor"
+            )
+        
+        # Verificar si el número de supervisor ya está en uso por otro usuario
+        if user_update.supervisor_number != db_user.supervisor_number:
+            existing_supervisor = session.exec(
+                select(User)
+                .where(User.supervisor_number == user_update.supervisor_number)
+                .where(User.username != username)
+            ).first()
+            
+            if existing_supervisor:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="El número de supervisor ya está en uso"
+                )
+                
+            db_user.supervisor_number = user_update.supervisor_number
+            changes_made = True
+    
+    # Verificar que un usuario con rol de supervisor tenga número de supervisor
+    if is_supervisor and not (db_user.supervisor_number or user_update.supervisor_number):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Los usuarios con rol de supervisor deben tener un número de supervisor"
+        )
 
     # Actualizar timestamp solo si se realizaron cambios
     if changes_made:
@@ -332,7 +430,7 @@ def update_user(
         session.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error al actualizar el usuario"
+            detail=f"Error al actualizar el usuario: {str(e)}"
         )
     
 @router.delete("/{username}", status_code=status.HTTP_204_NO_CONTENT,
