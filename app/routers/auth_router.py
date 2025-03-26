@@ -10,6 +10,7 @@ from fastapi.responses import RedirectResponse, JSONResponse
 from logs_setup import setup_api_logger
 
 logger = setup_api_logger(__name__)
+logger.propagate = False
 
 router = APIRouter(
     prefix="",
