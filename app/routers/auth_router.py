@@ -7,7 +7,9 @@ from models import Token, User, Role, ResponseUser
 from db import SessionDep
 import auth
 from fastapi.responses import RedirectResponse, JSONResponse
+from logs_setup import setup_api_logger
 
+logger = setup_api_logger(__name__)
 
 router = APIRouter(
     prefix="",
@@ -345,6 +347,9 @@ async def authenticate(
     if not user:
         raise HTTPException(status_code=401, detail="Credenciales inválidas")
     
+    # Registrar el login exitoso
+    logger.info("Login success for user: %s", user.username)
+
     # Incluimos el rol del usuario en el payload del token
     access_token = auth.create_access_token(
         data={
