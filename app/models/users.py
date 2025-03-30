@@ -1,9 +1,9 @@
 from sqlmodel import SQLModel, Field, Relationship
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime, timezone
 from pydantic import EmailStr, FieldValidationInfo, field_validator
 from sqlmodel import Field, Relationship, SQLModel, Session, select
-
+from models import DefectRecord
 
 class BaseRole(SQLModel):
     role_name: str = Field(unique=True)
@@ -26,15 +26,21 @@ class TokenData(SQLModel):
 
 
 class BaseUser(SQLModel):
-    username: str = Field(nullable=False)
-    email: EmailStr = Field(nullable=False)
-    first_name: str = Field(nullable=False)
-    last_name: str = Field(nullable=False)
-    employee_number: Optional[str] = Field(default=None)
-
+    employee_number: int = Field(unique=True, nullable=False)
+    username: str = Field(max_length=50, unique=True, nullable=False)
+    email: str = Field(max_length=255, nullable=False)
+    first_name: str = Field(max_length=50)
+    middle_name: Optional[str] = Field(max_length=50, default=None)
+    first_surname: str = Field(max_length=50)
+    second_surname: Optional[str] = Field(max_length=50, default=None)
+    hashed_password: str = Field(max_length=255, nullable=False)
+    is_active: bool = Field(default=True)
+    created_at: Optional[datetime] = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: Optional[datetime] = Field(default=None)
+    deleted_at: Optional[datetime] = Field(default=None)
 
 class CreateUser(BaseUser):
-    role_name: str = Field(nullable=False)
+    role_name: int = Field(foreign_key="role.role_id", nullable=False)
     password: str = Field(nullable=False)
     supervisor_number: Optional[str] = Field(default=None)
 
@@ -42,68 +48,59 @@ class CreateUser(BaseUser):
 class User(BaseUser, table=True):
     __tablename__ = "user"
     user_id: Optional[int] = Field(default=None, primary_key=True)
-    is_active: bool = Field(default=True)
     hashed_password: str = Field(nullable=False)
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
-        nullable=False
-    )
-
-    updated_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
-        nullable=False
-    )
+    is_active: bool = Field(default=True)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: Optional[datetime] = Field(default=None)
+    deleted_at: Optional[datetime] = Field(default=None)
     role_id: int = Field(foreign_key="role.role_id", nullable=False)
-    role: "Role" = Relationship(back_populates="users")
+    role: Role = Relationship(back_populates="users")
+    supervisor_number: Optional[int] = Field(default=None)
     
-    # Nuevo campo para todos los usuarios
-    employee_number: Optional[str] = Field(default=None)
-    
-    # Campo específico para supervisores
-    supervisor_number: Optional[str] = Field(default=None)
+    # Relaciones con DefectRecord
+    inspected_defects: List["DefectRecord"] = Relationship(
+        back_populates="inspector",
+        sa_relationship_kwargs={"foreign_keys": "DefectRecord.inspector_user_id"}
+    )
+    family_defects: List["DefectRecord"] = Relationship(
+        back_populates="family_user",
+        sa_relationship_kwargs={"foreign_keys": "DefectRecord.family_user_id"}
+    )
 
     @field_validator('supervisor_number')
     @classmethod
     def validate_supervisor_number(cls, v, info: FieldValidationInfo):
-        # Este validador solo se ejecuta cuando se proporciona un valor
         if v is not None:
-            # Obtenemos el role_id o role_name si está disponible
-            values = info.data
-            role = values.get('role')
-            role_name = getattr(role, 'role_name', None) if role else None
-            
-            # Si tenemos acceso directo al nombre del rol
-            if role_name and role_name.lower() != 'supervisor':
-                raise ValueError("El número de administrador solo es válido para usuarios con rol de supervisor")
+            role = info.data.get('role')
+            if role and role.role_name.lower() != 'supervisor':
+                raise ValueError("Solo supervisores pueden tener número de supervisor")
         return v
 
     def update_timestamps(self):
-        """Actualiza el campo updated_at al momento de modificar el registro."""
         self.updated_at = datetime.now(timezone.utc)
 
+
 class ResponseUser(SQLModel):
+    user_id: int
+    employee_number: int
     username: str
     email: EmailStr
     first_name: str
-    last_name: str
-    user_id: int
-    role_id: int
+    first_surname: str
     role: Role
     is_active: bool
-    employee_number: Optional[str] = None
-    supervisor_number: Optional[str] = None
+    created_at: datetime
+    supervisor_number: Optional[int] = None
 
 class UpdateUserRequest(SQLModel):
-    # No heredamos de BaseUser porque queremos todos los campos opcionales
     username: Optional[str] = None
     email: Optional[EmailStr] = None
     first_name: Optional[str] = None
-    last_name: Optional[str] = None
+    first_surname: Optional[str] = None
     password: Optional[str] = None
-    role_name: Optional[str] = None
+    role_id: Optional[int] = None
     is_active: Optional[bool] = None
-    employee_number: Optional[str] = None
-    supervisor_number: Optional[str] = None
+    supervisor_number: Optional[int] = None
     
 
 # Modelos para el flujo
