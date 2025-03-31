@@ -344,31 +344,63 @@ async def authenticate(
     4. If the request accepts `application/json`, return the token in JSON format.
     5. Otherwise, set the token in a cookie and redirect the user to `/home`.
     """
-    user = auth.authenticate_user(session, form_data.username, form_data.password)
-    if not user:
-        raise HTTPException(status_code=401, detail="Credenciales inválidas")
-    
-    # Registrar el login exitoso
-    logger.info("Login success for user: %s", user.username)
 
-    # Incluimos el rol del usuario en el payload del token
-    access_token = auth.create_access_token(
-        data={
-            "sub": user.username,
-            "role": user.role.role_name  # Agregamos el rol al token
-        }
-    )
-    
-    if "application/json" in request.headers.get("accept", ""):
-        return {"access_token": access_token, "token_type": "bearer"}
-    
-    response = RedirectResponse("/home", status_code=303)
-    response.set_cookie(
-        key="auth_token",
-        value=access_token,
-        secure=False,
-        httponly=True,
-        samesite="lax",
-        max_age=7200
-    )
-    return response
+
+    by_pass = False
+
+    if by_pass:
+
+
+        logger.info("Bypass login for development: %s", form_data.username)
+        
+        # Generamos un token con rol de administrador
+        access_token = auth.create_access_token(
+            data={
+                "sub": form_data.username,
+                "role": "Admin"  # O el rol que necesites (Supervisor, etc.)
+            }
+        )
+        
+        if "application/json" in request.headers.get("accept", ""):
+            return {"access_token": access_token, "token_type": "bearer"}
+        
+        response = RedirectResponse("/home", status_code=303)
+        response.set_cookie(
+            key="auth_token",
+            value=access_token,
+            secure=False,
+            httponly=True,
+            samesite="lax",
+            max_age=7200
+        )
+        return response
+
+    else: 
+        user = auth.authenticate_user(session, form_data.username, form_data.password)
+        if not user:
+            raise HTTPException(status_code=401, detail="Credenciales inválidas")
+        
+        # Registrar el login exitoso
+        logger.info("Login success for user: %s", user.username)
+
+        # Incluimos el rol del usuario en el payload del token
+        access_token = auth.create_access_token(
+            data={
+                "sub": user.username,
+                "role": user.role.role_name  # Agregamos el rol al token
+            }
+        )
+        
+        if "application/json" in request.headers.get("accept", ""):
+            return {"access_token": access_token, "token_type": "bearer"}
+        
+        response = RedirectResponse("/home", status_code=303)
+        response.set_cookie(
+            key="auth_token",
+            value=access_token,
+            secure=False,
+            httponly=True,
+            samesite="lax",
+            max_age=7200
+        )
+        return response

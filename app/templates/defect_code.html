@@ -1,0 +1,443 @@
+{% extends 'base.html' %}
+
+{% block title %}Códigos de Defecto{% endblock %}
+
+{% block extra_head %}
+<style>
+  .table td, .table th {
+    vertical-align: middle;
+  }
+  .code-badge {
+    font-size: 0.9rem;
+    font-weight: bold;
+    padding: 6px 10px;
+    border-radius: 4px;
+    background-color: #f5f5f5;
+    border: 1px solid #e0e0e0;
+  }
+  .search-container {
+    position: relative;
+  }
+  .search-container i {
+    position: absolute;
+    left: 10px;
+    top: 10px;
+    color: #6c757d;
+  }
+  .search-input {
+    padding-left: 35px;
+  }
+  .tooltip-inner {
+    max-width: 300px;
+    text-align: left;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h2">Códigos de Defecto</h1>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newDefectCodeModal">
+      <i class="bi bi-plus-lg me-2"></i>Nuevo Código
+    </button>
+  </div>
+
+  <div class="row mb-4">
+    <div class="col-md-6">
+      <div class="search-container">
+        <i class="bi bi-search"></i>
+        <input type="text" id="searchInput" class="form-control search-input" 
+               placeholder="Buscar por código o descripción" oninput="filterDefectCodes()">
+      </div>
+    </div>
+    <div class="col-md-6 text-end">
+      <button class="btn btn-outline-secondary" onclick="exportToCSV()">
+        <i class="bi bi-download me-2"></i>Exportar
+      </button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>ID</th>
+              <th>Código</th>
+              <th>Descripción</th>
+              <th>Uso</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="defectCodesTable">
+            <!-- Códigos de defecto serán cargados dinámicamente -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para crear nuevo código de defecto -->
+<div class="modal fade" id="newDefectCodeModal" tabindex="-1" aria-labelledby="newDefectCodeModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="newDefectCodeModalLabel">Nuevo Código de Defecto</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="defectCodeForm">
+          <div class="mb-3">
+            <label for="code" class="form-label">Código</label>
+            <input type="number" id="code" name="code" class="form-control" required>
+            <div class="form-text">Número único que identifica el tipo de defecto</div>
+          </div>
+          <div class="mb-3">
+            <label for="description" class="form-label">Descripción</label>
+            <textarea id="description" name="description" class="form-control" rows="3" required></textarea>
+            <div class="form-text">Descripción detallada del tipo de defecto</div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="saveDefectCode()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para editar código de defecto -->
+<div class="modal fade" id="editDefectCodeModal" tabindex="-1" aria-labelledby="editDefectCodeModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editDefectCodeModalLabel">Editar Código de Defecto</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="editDefectCodeForm">
+          <input type="hidden" id="edit_defect_code_id">
+          <div class="mb-3">
+            <label for="edit_code" class="form-label">Código</label>
+            <input type="number" id="edit_code" name="code" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label for="edit_description" class="form-label">Descripción</label>
+            <textarea id="edit_description" name="description" class="form-control" rows="3" required></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="updateDefectCode()">Actualizar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let defectCodes = [];
+let usageData = {}; // Para almacenar cuántos punch items usan cada código
+
+// Inicializar la página
+document.addEventListener('DOMContentLoaded', function() {
+  initialize();
+  
+  // Inicializar tooltips
+  const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+  tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl, {
+      html: true
+    });
+  });
+});
+
+// Inicializar datos
+async function initialize() {
+  try {
+    await Promise.all([
+      loadDefectCodes(),
+      loadUsageData()
+    ]);
+  } catch (error) {
+    console.error('Error initializing data:', error);
+    alert('Error al cargar los datos');
+  }
+}
+
+// Cargar códigos de defecto
+async function loadDefectCodes() {
+  try {
+    const response = await fetch('/defect-codes');
+    defectCodes = await response.json();
+    filterDefectCodes();
+  } catch (error) {
+    console.error('Error loading defect codes:', error);
+    alert('Error al cargar los códigos de defecto');
+  }
+}
+
+// Cargar datos de uso
+async function loadUsageData() {
+  try {
+    // En un sistema real, esta sería una API para obtener el conteo de uso por código
+    // Como ejemplo, simularemos algunos datos
+    const response = await fetch('/punch-list');
+    const punchList = await response.json();
+    
+    // Contar cuántos punch items usan cada código de defecto
+    usageData = {};
+    punchList.forEach(item => {
+      if (!usageData[item.defect_code_id]) {
+        usageData[item.defect_code_id] = 0;
+      }
+      usageData[item.defect_code_id]++;
+    });
+  } catch (error) {
+    console.error('Error loading usage data:', error);
+    // No mostrar alerta, no es crítico
+  }
+}
+
+// Filtrar códigos de defecto
+function filterDefectCodes() {
+  const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+  
+  const filtered = defectCodes.filter(defectCode => {
+    return defectCode.code.toString().includes(searchTerm) || 
+           defectCode.description.toLowerCase().includes(searchTerm);
+  });
+  
+  renderDefectCodes(filtered);
+}
+
+// Renderizar códigos de defecto
+function renderDefectCodes(codes) {
+  const tbody = document.getElementById('defectCodesTable');
+  tbody.innerHTML = '';
+  
+  codes.forEach(defectCode => {
+    const tr = document.createElement('tr');
+    
+    // Obtener conteo de uso
+    const usageCount = usageData[defectCode.defect_code_id] || 0;
+    
+    tr.innerHTML = `
+      <td>${defectCode.defect_code_id}</td>
+      <td><span class="code-badge">${defectCode.code}</span></td>
+      <td>${defectCode.description}</td>
+      <td>
+        <span class="badge ${usageCount > 0 ? 'bg-info' : 'bg-secondary'}" 
+              data-bs-toggle="tooltip" 
+              data-bs-placement="top" 
+              title="Este código se utiliza en ${usageCount} punch list items">
+          ${usageCount} ${usageCount === 1 ? 'uso' : 'usos'}
+        </span>
+      </td>
+      <td>
+        <div class="btn-group" role="group">
+          <button type="button" class="btn btn-sm btn-outline-primary" 
+                  onclick="editDefectCode(${defectCode.defect_code_id})">
+            <i class="bi bi-pencil"></i>
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-danger ${usageCount > 0 ? 'disabled' : ''}" 
+                  ${usageCount > 0 ? 'disabled' : ''}
+                  onclick="deleteDefectCode(${defectCode.defect_code_id})">
+            <i class="bi bi-trash"></i>
+          </button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+  
+  // Reinicializar tooltips
+  const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+  tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl, {
+      html: true
+    });
+  });
+}
+
+// Guardar nuevo código de defecto
+async function saveDefectCode() {
+  const form = document.getElementById('defectCodeForm');
+  if (!form.checkValidity()) {
+    form.reportValidity();
+    return;
+  }
+  
+  const formData = {
+    code: parseInt(document.getElementById('code').value),
+    description: document.getElementById('description').value
+  };
+  
+  try {
+    const response = await fetch('/defect-codes', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(formData)
+    });
+    
+    if (response.ok) {
+      const modal = bootstrap.Modal.getInstance(document.getElementById('newDefectCodeModal'));
+      modal.hide();
+      form.reset();
+      await loadDefectCodes();
+    } else {
+      const error = await response.json();
+      alert(`Error: ${error.detail || 'Error al guardar el código de defecto'}`);
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Error al guardar el código de defecto');
+  }
+}
+
+// Editar código de defecto
+function editDefectCode(id) {
+  const defectCode = defectCodes.find(code => code.defect_code_id === id);
+  if (!defectCode) return;
+  
+  document.getElementById('edit_defect_code_id').value = defectCode.defect_code_id;
+  document.getElementById('edit_code').value = defectCode.code;
+  document.getElementById('edit_description').value = defectCode.description;
+  
+  const modal = new bootstrap.Modal(document.getElementById('editDefectCodeModal'));
+  modal.show();
+}
+
+// Actualizar código de defecto
+async function updateDefectCode() {
+  const form = document.getElementById('editDefectCodeForm');
+  if (!form.checkValidity()) {
+    form.reportValidity();
+    return;
+  }
+  
+  const defectCodeId = document.getElementById('edit_defect_code_id').value;
+  const formData = {
+    code: parseInt(document.getElementById('edit_code').value),
+    description: document.getElementById('edit_description').value
+  };
+  
+  try {
+    const response = await fetch(`/defect-codes/${defectCodeId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(formData)
+    });
+    
+    if (response.ok) {
+      const modal = bootstrap.Modal.getInstance(document.getElementById('editDefectCodeModal'));
+      modal.hide();
+      await loadDefectCodes();
+    } else {
+      const error = await response.json();
+      alert(`Error: ${error.detail || 'Error al actualizar el código de defecto'}`);
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Error al actualizar el código de defecto');
+  }
+}
+
+// Eliminar código de defecto
+async function deleteDefectCode(id) {
+  // Verificar si el código está en uso
+  if (usageData[id] && usageData[id] > 0) {
+    alert('No se puede eliminar este código porque está en uso en punch list items');
+    return;
+  }
+  
+  if (!confirm('¿Estás seguro de que quieres eliminar este código de defecto?')) {
+    return;
+  }
+  
+  try {
+    const response = await fetch(`/defect-codes/${id}`, {
+      method: 'DELETE'
+    });
+    
+    if (response.ok) {
+      await loadDefectCodes();
+    } else {
+      const error = await response.json();
+      alert(`Error: ${error.detail || 'Error al eliminar el código de defecto'}`);
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Error al eliminar el código de defecto');
+  }
+}
+
+// Exportar a CSV
+function exportToCSV() {
+  const filtered = defectCodes.filter(defectCode => {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    return defectCode.code.toString().includes(searchTerm) || 
+           defectCode.description.toLowerCase().includes(searchTerm);
+  });
+  
+  if (filtered.length === 0) {
+    alert('No hay datos para exportar');
+    return;
+  }
+  
+  const headers = ['ID', 'Código', 'Descripción', 'Usos'];
+  let csvContent = headers.join(',') + '\n';
+  
+  filtered.forEach(defectCode => {
+    const usageCount = usageData[defectCode.defect_code_id] || 0;
+    
+    const row = [
+      defectCode.defect_code_id,
+      defectCode.code,
+      escapeCsvValue(defectCode.description),
+      usageCount
+    ];
+    
+    csvContent += row.join(',') + '\n';
+  });
+  
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  
+  link.setAttribute('href', url);
+  link.setAttribute('download', `defect-codes-export-${formatDateForFilename(new Date())}.csv`);
+  link.style.visibility = 'hidden';
+  
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+// Escapar valores para CSV
+function escapeCsvValue(value) {
+  if (!value) return '';
+  const stringValue = String(value);
+  if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+    return `"${stringValue.replace(/"/g, '""')}"`;
+  }
+  return stringValue;
+}
+
+// Formatear fecha para nombre de archivo
+function formatDateForFilename(date) {
+  return date.toISOString().split('T')[0];
+}
+</script>
+{% endblock %}

@@ -6,17 +6,15 @@ from typing import Annotated
 from db import SessionDep, create_all_tables
 from sqlmodel import select
 from models import Item, User
-from auth import get_current_active_user, SECRET_KEY, ALGORITHM
+from auth import get_current_active_user
 from logs_setup import setup_api_logger
 from routers import (
     object_router, process_router, stage_router, test_jobs, 
     ocr_routes, validate_csv, list_jobs, details, job_status, 
     object_current_stage, item_router, user_router, auth_router, 
-    rest_password_router
+    rest_password_router, products_router
 )
-import jwt
 from generate_qr import generate_qr, generate_pdf
-from jwt.exceptions import InvalidTokenError
 from middleware import auth_middleware
 
 logger = setup_api_logger("main")
@@ -172,6 +170,7 @@ app.include_router(job_status.router)
 app.include_router(object_current_stage.router)
 app.include_router(item_router.router)
 app.include_router(user_router.router)
+app.include_router(products_router.router)
 
 # Configuración de archivos estáticos
 app.mount("/static", StaticFiles(directory="./static"), name="static")
@@ -520,72 +519,3 @@ async def admin_objects(
         "admin_users.html", 
         {"request": request, "current_user": current_user}
     )
-
-
-
-
-# # Middleware para redirigir a login si no hay autenticación
-# from fastapi.middleware.cors import CORSMiddleware
-# from fastapi import HTTPException, status
-
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=["*"],
-#     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )
-# open_paths = [
-#     "/login",
-#     "/token",
-#     "/static",
-#     "/apk",
-#     "/cis_apk",
-#     "/cis_qr_pdf",
-#     "/authenticate",
-#     "/docs",
-#     "/openapi.json",
-#     "/redoc",
-#     "/token"
-# ]
-
-# @app.middleware("http")
-# async def auth_middleware(request: Request, call_next):
-#     # Skip auth for open paths
-#     if (request.url.path in open_paths or
-#         request.url.path.startswith(tuple(open_paths))):
-#         return await call_next(request)
-    
-#     token = None
-#     auth_header = request.headers.get("Authorization")
-#     auth_cookie = request.cookies.get("auth_token")
-    
-#     if auth_header and auth_header.startswith("Bearer "):
-#         token = auth_header.split(" ")[1]
-#     elif auth_cookie:
-#         token = auth_cookie
-    
-#     if not token:
-#         return handle_unauthorized(request)
-    
-#     try:
-#         decoded = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-#         # Si llegamos aquí, el token es válido
-#         print("Token válido para usuario:", decoded.get("sub"))
-#         # Continuar con la request
-#         response = await call_next(request)
-#         return response
-        
-#     except Exception as e:
-#         print("Error en token:", str(e))
-#         return handle_unauthorized(request)
-
-# def handle_unauthorized(request: Request):
-#     # Para peticiones web (HTML)
-#     if "html" in request.headers.get("accept", ""):
-#         return RedirectResponse("/login", status_code=303)
-#     # Para peticiones API
-#     raise HTTPException(
-#         status_code=status.HTTP_401_UNAUTHORIZED,
-#         detail="Token inválido o expirado"
-#     )

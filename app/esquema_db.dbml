@@ -1,0 +1,140 @@
+// Esquema de la base de datos SQLite extraído automáticamente
+
+Table stage {
+  stage_name varchar(50) [not null]
+  stage_id integer [pk, not null]
+}
+
+Table process {
+  process_name varchar(50) [not null]
+  process_id integer [pk, not null]
+}
+
+Table product {
+  product_name varchar(255) [not null]
+  product_id integer [pk, not null]
+}
+
+Table issue {
+  issue_description varchar(255) [not null]
+  issue_id integer [pk, not null]
+}
+
+Table status {
+  status_name varchar(50) [not null]
+  status_id integer [pk, not null]
+}
+
+Table correctionprocess {
+  correction_process_description varchar(255) [not null]
+  correction_process_id integer [pk, not null]
+}
+
+Table imagetype {
+  type_name varchar(50) [not null]
+  image_type_id integer [pk, not null]
+}
+
+Table role {
+  role_name varchar [not null]
+  role_id integer [pk, not null]
+}
+
+Table job {
+  job_code varchar(50) [not null]
+  status boolean [not null]
+  created_at datetime
+  job_id integer [pk, not null]
+  product_id integer [not null]
+}
+
+Table processstage {
+  id integer [pk, not null]
+  process_id integer [not null]
+  stage_id integer [not null]
+  order integer [not null]
+}
+
+Table user {
+  employee_number integer [not null]
+  username varchar(50) [not null]
+  email varchar(255) [not null]
+  first_name varchar(50) [not null]
+  middle_name varchar(50)
+  first_surname varchar(50) [not null]
+  second_surname varchar(50)
+  hashed_password varchar [not null]
+  is_active boolean [not null]
+  created_at datetime [not null]
+  updated_at datetime
+  deleted_at datetime
+  user_id integer [pk, not null]
+  role_id integer [not null]
+  supervisor_number integer
+}
+
+Table item {
+  item_name varchar(255) [not null]
+  espesor float [not null]
+  longitud float [not null]
+  ancho float [not null]
+  alto float [not null]
+  volumen float [not null]
+  area_superficial float [not null]
+  cantidad integer [not null]
+  material varchar [not null]
+  ocr varchar(255) [not null]
+  item_id integer [pk, not null]
+  job_id integer [not null]
+  process_id integer [not null]
+}
+
+Table defectrecord {
+  date_opened datetime [not null]
+  date_closed datetime
+  product_id integer [not null]
+  job_id integer [not null]
+  process_id integer [not null]
+  inspector_user_id integer [not null]
+  issue_by integer [not null]
+  issue_id integer [not null]
+  correction_process_id integer [not null]
+  status_id integer [not null]
+  description varchar(255)
+  defect_record_id integer [pk, not null]
+}
+
+Table object {
+  current_stage integer [not null]
+  rework integer [not null]
+  scrap integer
+  object_id integer [pk, not null]
+  item_id integer [not null]
+}
+
+Table defectimage {
+  image_url varchar(255) [not null]
+  image_id integer [pk, not null]
+  defect_record_id integer [not null]
+  image_type_id integer [not null]
+}
+
+// Relaciones
+Ref: job.product_id > product.product_id
+Ref: processstage.stage_id > stage.stage_id
+Ref: processstage.process_id > process.process_id
+Ref: user.role_id > role.role_id
+Ref: item.process_id > process.process_id
+Ref: item.job_id > job.job_id
+Ref: defectrecord.status_id > status.status_id
+Ref: defectrecord.correction_process_id > correctionprocess.correction_process_id
+Ref: defectrecord.issue_id > issue.issue_id
+Ref: defectrecord.issue_by > user.user_id
+Ref: defectrecord.inspector_user_id > user.user_id
+Ref: defectrecord.process_id > process.process_id
+Ref: defectrecord.job_id > job.job_id
+Ref: defectrecord.product_id > product.product_id
+Ref: object.item_id > item.item_id
+Ref: object.current_stage > stage.stage_id
+Ref: defectimage.image_type_id > imagetype.image_type_id
+Ref: defectimage.defect_record_id > defectrecord.defect_record_id

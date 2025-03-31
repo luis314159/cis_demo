@@ -22,13 +22,14 @@ class JobBase(SQLModel):
     created_at: Optional[datetime] = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
-class Job(JobBase, table=True):
+class JobCreate(JobBase):
+    product_id: int = Field(foreign_key="product.product_id", nullable=False)
+    product: "Product" = Relationship()
+
+class Job(JobCreate, table=True):
     job_id: Optional[int] = Field(default=None, primary_key=True)
     items: list["Item"] = Relationship(back_populates="job")
 
-
-class JobCreate(JobBase):
-    client_id: int
 
 
 class JobUpdate(JobBase):
@@ -192,6 +193,7 @@ class ProductBase(SQLModel):
 class Product(ProductBase, table = True):
     product_id: Optional[int] = Field(default = None, primary_key = True)
     defect_records: List["DefectRecord"] = Relationship(back_populates= "product")
+    Job = List["Job"] = Relationship(back_populates="product")
 
 class ProductCreate(ProductBase):
     pass

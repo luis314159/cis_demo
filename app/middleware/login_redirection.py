@@ -47,6 +47,7 @@ async def check_admin_access(request: Request, allowed_roles):
 allowed_roles = ["admin", "ingeniero", "supervisor"]
 
 async def auth_middleware(request: Request, call_next):
+    #return await call_next(request)
     # Rutas que no requieren autenticación
     public_paths = {"/login", "/token", "/authenticate", "/static", "/apk", 
                    "/cis_apk", "/cis_qr_pdf", "/rest-password"}

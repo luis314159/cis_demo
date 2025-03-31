@@ -2,7 +2,7 @@ from fastapi import APIRouter, UploadFile, HTTPException
 import pandas as pd
 from fastapi.responses import JSONResponse
 from db import SessionDep
-from models import Job, Item, Object, Process
+from models import Job, Item, Object, Process, Product
 from sqlmodel import select
 import logging
 import traceback
@@ -77,6 +77,7 @@ def log_dataframe_info(df: pd.DataFrame) -> Dict[str, Any]:
         "total_rows": len(df)
     }
 
+
 @router.post('/validate-and-insert',
             response_description="Process result message",
             tags=["Object"],
@@ -143,6 +144,13 @@ def log_dataframe_info(df: pd.DataFrame) -> Dict[str, Any]:
                                             {"Job": "JOB1", "Item": "ITEM2"}
                                         ]
                                     }
+                                },
+                                "product_not_found": {
+                                    "summary": "Product not found",
+                                    "value": {
+                                        "error": "El producto especificado no existe.",
+                                        "product_name": "Nombre del producto"
+                                    }
                                 }
                             }
                         }
@@ -161,7 +169,10 @@ def log_dataframe_info(df: pd.DataFrame) -> Dict[str, Any]:
                 }
             }
     )
-def validate_and_insert(file: UploadFile, session: SessionDep):
+def validate_and_insert(
+    file: UploadFile, 
+    product_name: str, session: SessionDep
+):
     """
     ## Validate and insert manufacturing objects from CSV
 
@@ -183,6 +194,7 @@ def validate_and_insert(file: UploadFile, session: SessionDep):
         - Alto: Height
         - Volumen: Volume
         - Área Superficial: Surface area
+    - **product_name** (str): Name of the product to associate with the job
 
     ### Returns:
     - **201 Created**:
@@ -214,9 +226,21 @@ def validate_and_insert(file: UploadFile, session: SessionDep):
     - Comprehensive logging for debugging
     - Graceful handling of encoding issues
     """
-    logger.info(f"Starting validate_and_insert for file: {file.filename}")
+    logger.info(f"Starting validate_and_insert for file: {file.filename} with product_name: {product_name}")
     
     try:
+        # Verify product exists
+        product = session.exec(select(Product).where(Product.product_name == product_name)).first()
+        if not product:
+            logger.error(f"Product with name '{product_name}' not found")
+            raise HTTPException(status_code=400, detail={
+                "error": "El producto especificado no existe.",
+                "product_name": product_name
+            })
+
+        product_id = product.product_id
+        logger.info(f"Found product with ID: {product_id}")
+
         if not file:
             logger.error("No file found in request")
             raise HTTPException(status_code=400, detail="No se encontró el archivo en la solicitud.")
@@ -297,6 +321,16 @@ def validate_and_insert(file: UploadFile, session: SessionDep):
                 process_map[process_name] = existing_process
 
         if existing_job:
+            # Verify that the existing job belongs to the specified product
+            if existing_job.product_id != product_id:
+                product_name_in_db = session.exec(select(Product.product_name).where(Product.product_id == existing_job.product_id)).first()
+                logger.error(f"Job {job_code} exists but belongs to product '{product_name_in_db}', not '{product_name}'")
+                raise HTTPException(status_code=400, detail={
+                    "error": "El Job ya existe pero está asociado a otro producto.",
+                    "current_product": product_name_in_db,
+                    "requested_product": product_name
+                })
+                
             logger.info(f"Updating existing job: {job_code}")
             existing_items = session.exec(select(Item).where(Item.job_id == existing_job.job_id)).all()
             existing_item_names = {item.item_name for item in existing_items}
@@ -351,8 +385,11 @@ def validate_and_insert(file: UploadFile, session: SessionDep):
             return JSONResponse(content={"message": "Se agregaron nuevos Items y Objects al Job existente."}, status_code=201)
         
         else:
-            logger.info(f"Creating new job: {job_code}")
-            job = Job(job_code=job_code)
+            logger.info(f"Creating new job: {job_code} for product: {product_name}")
+            job = Job(
+                job_code=job_code,
+                product_id=product_id
+            )
             session.add(job)
             session.commit()
             session.refresh(job)

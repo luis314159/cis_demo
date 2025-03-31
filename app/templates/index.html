@@ -12,6 +12,15 @@
 
     <!-- Formulario de subida -->
     <form id="uploadForm" class="text-center w-50 p-4 border rounded shadow-sm bg-light">
+        <!-- Selector de producto -->
+        <div class="form-group mb-3">
+            <label for="productSelect" class="form-label">Seleccionar Producto</label>
+            <select id="productSelect" class="form-select" required>
+                <option value="" selected disabled>-- Seleccione un producto --</option>
+                <!-- Los productos se cargarán dinámicamente desde JS -->
+            </select>
+        </div>
+
         <label for="fileInput" class="file-label btn btn-primary w-100 mb-3">
             Seleccionar archivo CSV
             <input type="file" id="fileInput" accept=".csv" hidden>

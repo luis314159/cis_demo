@@ -1,0 +1,750 @@
+{% extends 'base.html' %}
+
+{% block title %}Punch List{% endblock %}
+
+{% block extra_head %}
+<style>
+  .status-open {
+    background-color: #ffecb3;
+  }
+  .status-in-progress {
+    background-color: #e3f2fd;
+  }
+  .status-closed {
+    background-color: #e8f5e9;
+  }
+  .image-preview {
+    max-width: 100px;
+    max-height: 100px;
+    cursor: pointer;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  .modal-image {
+    max-width: 100%;
+    max-height: 80vh;
+  }
+  .search-container {
+    position: relative;
+  }
+  .search-container i {
+    position: absolute;
+    left: 10px;
+    top: 10px;
+    color: #6c757d;
+  }
+  .search-input {
+    padding-left: 35px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h2">Lista de Punch Items</h1>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newPunchListModal">
+      <i class="bi bi-plus-lg me-2"></i>Nuevo Punch Item
+    </button>
+  </div>
+
+  <div class="row mb-4">
+    <div class="col-md-4">
+      <div class="search-container">
+        <i class="bi bi-search"></i>
+        <input type="text" id="searchInput" class="form-control search-input" 
+               placeholder="Buscar por descripción o problema" oninput="filterPunchList()">
+      </div>
+    </div>
+    <div class="col-md-3">
+      <select id="jobFilter" class="form-select" onchange="filterPunchList()">
+        <option value="">Todos los Jobs</option>
+      </select>
+    </div>
+    <div class="col-md-3">
+      <select id="statusFilter" class="form-select" onchange="filterPunchList()">
+        <option value="">Todos los estados</option>
+        <option value="Open">Abierto</option>
+        <option value="In Progress">En Progreso</option>
+        <option value="Closed">Cerrado</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <button class="btn btn-outline-secondary w-100" onclick="exportToCSV()">
+        <i class="bi bi-download me-2"></i>Exportar
+      </button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover table-striped mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>ID</th>
+              <th>Job</th>
+              <th>Object</th>
+              <th>Descripción</th>
+              <th>Inspector</th>
+              <th>Fecha Abierto</th>
+              <th>Fecha Estimada</th>
+              <th>Estado</th>
+              <th>Imágenes</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="punchListTable">
+            <!-- Punch List items serán cargados dinámicamente -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para crear nuevo punch list item -->
+<div class="modal fade" id="newPunchListModal" tabindex="-1" aria-labelledby="newPunchListModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="newPunchListModalLabel">Nuevo Punch List Item</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="punchListForm" enctype="multipart/form-data">
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label for="job_id" class="form-label">Job</label>
+              <select id="job_id" name="job_id" class="form-select" required>
+                <option value="">Seleccionar Job</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label for="object_id" class="form-label">Object</label>
+              <select id="object_id" name="object_id" class="form-select" required>
+                <option value="">Seleccionar Object</option>
+              </select>
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label for="description" class="form-label">Descripción</label>
+              <input type="text" id="description" name="description" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label for="defect_code_id" class="form-label">Código de Defecto</label>
+              <select id="defect_code_id" name="defect_code_id" class="form-select" required>
+                <option value="">Seleccionar Código</option>
+              </select>
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label for="inspected_by" class="form-label">Inspector</label>
+              <input type="text" id="inspected_by" name="inspected_by" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label for="by_when" class="form-label">Fecha Estimada</label>
+              <input type="date" id="by_when" name="by_when" class="form-control" required>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label for="issue" class="form-label">Problema</label>
+            <textarea id="issue" name="issue" class="form-control" rows="3" required></textarea>
+          </div>
+          <div class="mb-3">
+            <label for="todolist" class="form-label">Lista de Tareas</label>
+            <textarea id="todolist" name="todolist" class="form-control" rows="3" required></textarea>
+          </div>
+          <div class="mb-3">
+            <label for="picture_before_repair" class="form-label">Imagen Antes de Reparación</label>
+            <input type="file" id="picture_before_repair" name="picture_before_repair" class="form-control" accept="image/*">
+            <div id="image_preview" class="mt-2"></div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="savePunchList()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para ver/editar punch list item -->
+<div class="modal fade" id="editPunchListModal" tabindex="-1" aria-labelledby="editPunchListModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editPunchListModalLabel">Editar Punch List Item</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="editPunchListForm" enctype="multipart/form-data">
+          <input type="hidden" id="edit_punch_list_id">
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label for="edit_description" class="form-label">Descripción</label>
+              <input type="text" id="edit_description" name="description" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label for="edit_status" class="form-label">Estado</label>
+              <select id="edit_status" name="status" class="form-select" required>
+                <option value="Open">Abierto</option>
+                <option value="In Progress">En Progreso</option>
+                <option value="Closed">Cerrado</option>
+              </select>
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label for="edit_by_when" class="form-label">Fecha Estimada</label>
+              <input type="date" id="edit_by_when" name="by_when" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label for="edit_date_close" class="form-label">Fecha Cierre</label>
+              <input type="date" id="edit_date_close" name="date_close" class="form-control">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label for="edit_issue" class="form-label">Problema</label>
+            <textarea id="edit_issue" name="issue" class="form-control" rows="3" required></textarea>
+          </div>
+          <div class="mb-3">
+            <label for="edit_todolist" class="form-label">Lista de Tareas</label>
+            <textarea id="edit_todolist" name="todolist" class="form-control" rows="3" required></textarea>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label for="picture_after_repair" class="form-label">Imagen Después de Reparación</label>
+              <input type="file" id="picture_after_repair" name="picture_after_repair" class="form-control" accept="image/*">
+              <div id="after_image_preview" class="mt-2"></div>
+            </div>
+            <div class="col-md-6">
+              <label for="inspector_validation_image" class="form-label">Imagen de Validación</label>
+              <input type="file" id="inspector_validation_image" name="inspector_validation_image" class="form-control" accept="image/*">
+              <div id="validation_image_preview" class="mt-2"></div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="updatePunchList()">Actualizar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para mostrar imágenes en tamaño completo -->
+<div class="modal fade" id="imagePreviewModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="imagePreviewTitle">Vista previa de imagen</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-center">
+        <img id="previewImage" src="" class="modal-image">
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let punchListItems = [];
+let jobs = [];
+let objects = [];
+let defectCodes = [];
+
+// Inicializar la página
+document.addEventListener('DOMContentLoaded', function() {
+  initialize();
+
+  // Configurar vista previa de imágenes
+  document.getElementById('picture_before_repair').addEventListener('change', function(event) {
+    previewImage(event.target, 'image_preview');
+  });
+
+  document.getElementById('picture_after_repair').addEventListener('change', function(event) {
+    previewImage(event.target, 'after_image_preview');
+  });
+
+  document.getElementById('inspector_validation_image').addEventListener('change', function(event) {
+    previewImage(event.target, 'validation_image_preview');
+  });
+
+  // Actualizar objetos cuando cambia el job
+  document.getElementById('job_id').addEventListener('change', function() {
+    updateObjectsForJob(this.value);
+  });
+});
+
+// Inicializar datos
+async function initialize() {
+  try {
+    await Promise.all([
+      loadPunchList(),
+      loadJobs(),
+      loadDefectCodes()
+    ]);
+  } catch (error) {
+    console.error('Error initializing data:', error);
+    alert('Error al cargar los datos');
+  }
+}
+
+// Cargar punch list
+async function loadPunchList() {
+  try {
+    const response = await fetch('/punch-list');
+    punchListItems = await response.json();
+    filterPunchList();
+  } catch (error) {
+    console.error('Error loading punch list:', error);
+    alert('Error al cargar la lista de punch items');
+  }
+}
+
+// Cargar jobs
+async function loadJobs() {
+  try {
+    const response = await fetch('/jobs');
+    jobs = await response.json();
+    populateJobSelect();
+  } catch (error) {
+    console.error('Error loading jobs:', error);
+    alert('Error al cargar los jobs');
+  }
+}
+
+// Cargar objetos para un job específico
+async function loadObjectsForJob(jobId) {
+  try {
+    const response = await fetch(`/objects/job/${jobId}`);
+    objects = await response.json();
+    populateObjectSelect();
+  } catch (error) {
+    console.error('Error loading objects:', error);
+    alert('Error al cargar los objetos');
+  }
+}
+
+// Cargar códigos de defectos
+async function loadDefectCodes() {
+  try {
+    const response = await fetch('/defect-codes');
+    defectCodes = await response.json();
+    populateDefectCodeSelect();
+  } catch (error) {
+    console.error('Error loading defect codes:', error);
+    alert('Error al cargar los códigos de defectos');
+  }
+}
+
+// Poblar select de jobs
+function populateJobSelect() {
+  const jobSelects = ['job_id', 'jobFilter'];
+  
+  jobSelects.forEach(selectId => {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+    
+    // Mantener la opción predeterminada
+    if (selectId === 'jobFilter') {
+      select.innerHTML = '<option value="">Todos los Jobs</option>';
+    } else {
+      select.innerHTML = '<option value="">Seleccionar Job</option>';
+    }
+    
+    jobs.forEach(job => {
+      const option = document.createElement('option');
+      option.value = job.job_id;
+      option.textContent = `Job #${job.job_id} - ${job.client_name || 'Cliente'}`;
+      select.appendChild(option);
+    });
+  });
+}
+
+// Actualizar objetos cuando cambia el job
+function updateObjectsForJob(jobId) {
+  if (jobId) {
+    loadObjectsForJob(jobId);
+  } else {
+    document.getElementById('object_id').innerHTML = '<option value="">Seleccionar Object</option>';
+  }
+}
+
+// Poblar select de objetos
+function populateObjectSelect() {
+  const select = document.getElementById('object_id');
+  select.innerHTML = '<option value="">Seleccionar Object</option>';
+  
+  objects.forEach(obj => {
+    const option = document.createElement('option');
+    option.value = obj.object_id;
+    option.textContent = `Object #${obj.object_id} - ${obj.item.item_name || 'Item'}`;
+    select.appendChild(option);
+  });
+}
+
+// Poblar select de códigos de defectos
+function populateDefectCodeSelect() {
+  const select = document.getElementById('defect_code_id');
+  select.innerHTML = '<option value="">Seleccionar Código</option>';
+  
+  defectCodes.forEach(code => {
+    const option = document.createElement('option');
+    option.value = code.defect_code_id;
+    option.textContent = `${code.code} - ${code.description}`;
+    select.appendChild(option);
+  });
+}
+
+// Filtrar punch list
+function filterPunchList() {
+  const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+  const selectedJob = document.getElementById('jobFilter').value;
+  const selectedStatus = document.getElementById('statusFilter').value;
+  
+  const filtered = punchListItems.filter(item => {
+    const descriptionMatch = item.description.toLowerCase().includes(searchTerm) || 
+                             item.issue.toLowerCase().includes(searchTerm);
+    const jobMatch = !selectedJob || item.job_id.toString() === selectedJob;
+    const statusMatch = !selectedStatus || item.status === selectedStatus;
+    
+    return descriptionMatch && jobMatch && statusMatch;
+  });
+  
+  renderPunchList(filtered);
+}
+
+// Renderizar punch list
+function renderPunchList(items) {
+  const tbody = document.getElementById('punchListTable');
+  tbody.innerHTML = '';
+  
+  items.forEach(item => {
+    const tr = document.createElement('tr');
+    tr.className = item.status === 'Open' ? 'status-open' : 
+                   item.status === 'In Progress' ? 'status-in-progress' : 
+                   'status-closed';
+    
+    // Encontrar el nombre del job
+    const job = jobs.find(j => j.job_id === item.job_id);
+    const jobName = job ? `Job #${job.job_id}` : `Job #${item.job_id}`;
+    
+    tr.innerHTML = `
+      <td>${item.punch_list_id}</td>
+      <td>${jobName}</td>
+      <td>Object #${item.object_id}</td>
+      <td>${item.description}</td>
+      <td>${item.inspected_by}</td>
+      <td>${formatDate(item.date_open)}</td>
+      <td>${formatDate(item.by_when)}</td>
+      <td>
+        <span class="badge ${getStatusBadgeClass(item.status)}">${item.status}</span>
+      </td>
+      <td class="text-center">
+        ${renderImageThumbnails(item)}
+      </td>
+      <td>
+        <div class="btn-group" role="group">
+          <button type="button" class="btn btn-sm btn-outline-primary" 
+                  onclick="editPunchList(${item.punch_list_id})">
+            <i class="bi bi-pencil"></i>
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-danger" 
+                  onclick="deletePunchList(${item.punch_list_id})">
+            <i class="bi bi-trash"></i>
+          </button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+  
+  // Configurar clics en imágenes para vista previa
+  document.querySelectorAll('.image-preview').forEach(img => {
+    img.addEventListener('click', function() {
+      const modal = new bootstrap.Modal(document.getElementById('imagePreviewModal'));
+      document.getElementById('previewImage').src = this.src;
+      document.getElementById('imagePreviewTitle').textContent = this.alt;
+      modal.show();
+    });
+  });
+}
+
+// Renderizar miniaturas de imágenes
+function renderImageThumbnails(item) {
+  let html = '';
+  
+  if (item.picture_before_repair) {
+    html += `<img src="${item.picture_before_repair}" alt="Antes de reparación" class="image-preview me-1">`;
+  }
+  
+  if (item.picture_after_repair) {
+    html += `<img src="${item.picture_after_repair}" alt="Después de reparación" class="image-preview me-1">`;
+  }
+  
+  if (item.inspector_validation_image) {
+    html += `<img src="${item.inspector_validation_image}" alt="Validación del inspector" class="image-preview">`;
+  }
+  
+  return html || '<i class="bi bi-card-image text-muted"></i>';
+}
+
+// Obtener clase de badge según estado
+function getStatusBadgeClass(status) {
+  switch (status) {
+    case 'Open':
+      return 'bg-warning text-dark';
+    case 'In Progress':
+      return 'bg-primary';
+    case 'Closed':
+      return 'bg-success';
+    default:
+      return 'bg-secondary';
+  }
+}
+
+// Vista previa de imágenes
+function previewImage(input, previewId) {
+  const preview = document.getElementById(previewId);
+  preview.innerHTML = '';
+  
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    
+    reader.onload = function(e) {
+      const img = document.createElement('img');
+      img.src = e.target.result;
+      img.className = 'image-preview mt-2';
+      preview.appendChild(img);
+    }
+    
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
+// Guardar nuevo punch list item
+async function savePunchList() {
+  const form = document.getElementById('punchListForm');
+  if (!form.checkValidity()) {
+    form.reportValidity();
+    return;
+  }
+  
+  const formData = new FormData(form);
+  
+  try {
+    const response = await fetch('/punch-list', {
+      method: 'POST',
+      body: formData
+    });
+    
+    if (response.ok) {
+      const modal = bootstrap.Modal.getInstance(document.getElementById('newPunchListModal'));
+      modal.hide();
+      form.reset();
+      document.getElementById('image_preview').innerHTML = '';
+      await loadPunchList();
+    } else {
+      const error = await response.json();
+      alert(`Error: ${error.detail || 'Error al guardar el punch list item'}`);
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Error al guardar el punch list item');
+  }
+}
+
+// Editar punch list item
+async function editPunchList(id) {
+  const item = punchListItems.find(item => item.punch_list_id === id);
+  if (!item) return;
+  
+  document.getElementById('edit_punch_list_id').value = item.punch_list_id;
+  document.getElementById('edit_description').value = item.description;
+  document.getElementById('edit_issue').value = item.issue;
+  document.getElementById('edit_todolist').value = item.todolist;
+  document.getElementById('edit_by_when').value = formatDateForInput(item.by_when);
+  document.getElementById('edit_status').value = item.status;
+  
+  if (item.date_close) {
+    document.getElementById('edit_date_close').value = formatDateForInput(item.date_close);
+  } else {
+    document.getElementById('edit_date_close').value = '';
+  }
+  
+  // Mostrar imágenes si existen
+  const afterImagePreview = document.getElementById('after_image_preview');
+  const validationImagePreview = document.getElementById('validation_image_preview');
+  
+  afterImagePreview.innerHTML = '';
+  validationImagePreview.innerHTML = '';
+  
+  if (item.picture_after_repair) {
+    const img = document.createElement('img');
+    img.src = item.picture_after_repair;
+    img.className = 'image-preview mt-2';
+    afterImagePreview.appendChild(img);
+  }
+  
+  if (item.inspector_validation_image) {
+    const img = document.createElement('img');
+    img.src = item.inspector_validation_image;
+    img.className = 'image-preview mt-2';
+    validationImagePreview.appendChild(img);
+  }
+  
+  const modal = new bootstrap.Modal(document.getElementById('editPunchListModal'));
+  modal.show();
+}
+
+// Actualizar punch list item
+async function updatePunchList() {
+  const form = document.getElementById('editPunchListForm');
+  if (!form.checkValidity()) {
+    form.reportValidity();
+    return;
+  }
+  
+  const punchListId = document.getElementById('edit_punch_list_id').value;
+  const formData = new FormData(form);
+  
+  try {
+    const response = await fetch(`/punch-list/${punchListId}`, {
+      method: 'PUT',
+      body: formData
+    });
+    
+    if (response.ok) {
+      const modal = bootstrap.Modal.getInstance(document.getElementById('editPunchListModal'));
+      modal.hide();
+      await loadPunchList();
+    } else {
+      const error = await response.json();
+      alert(`Error: ${error.detail || 'Error al actualizar el punch list item'}`);
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Error al actualizar el punch list item');
+  }
+}
+
+// Eliminar punch list item
+async function deletePunchList(id) {
+  if (!confirm('¿Estás seguro de que quieres eliminar este punch list item?')) {
+    return;
+  }
+  
+  try {
+    const response = await fetch(`/punch-list/${id}`, {
+      method: 'DELETE'
+    });
+    
+    if (response.ok) {
+      await loadPunchList();
+    } else {
+      alert('Error al eliminar el punch list item');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Error al eliminar el punch list item');
+  }
+}
+
+// Exportar a CSV
+function exportToCSV() {
+  const filtered = punchListItems.filter(item => {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const selectedJob = document.getElementById('jobFilter').value;
+    const selectedStatus = document.getElementById('statusFilter').value;
+    
+    const descriptionMatch = item.description.toLowerCase().includes(searchTerm) || 
+                             item.issue.toLowerCase().includes(searchTerm);
+    const jobMatch = !selectedJob || item.job_id.toString() === selectedJob;
+    const statusMatch = !selectedStatus || item.status === selectedStatus;
+    
+    return descriptionMatch && jobMatch && statusMatch;
+  });
+  
+  if (filtered.length === 0) {
+    alert('No hay datos para exportar');
+    return;
+  }
+  
+  const headers = [
+    'ID', 'Job', 'Object', 'Descripción', 'Inspector', 
+    'Problema', 'Tareas', 'Fecha Abierto', 'Fecha Estimada',
+    'Fecha Cierre', 'Estado'
+  ];
+  
+  let csvContent = headers.join(',') + '\n';
+  
+  filtered.forEach(item => {
+    const row = [
+      item.punch_list_id,
+      item.job_id,
+      item.object_id,
+      escapeCsvValue(item.description),
+      escapeCsvValue(item.inspected_by),
+      escapeCsvValue(item.issue),
+      escapeCsvValue(item.todolist),
+      formatDate(item.date_open),
+      formatDate(item.by_when),
+      item.date_close ? formatDate(item.date_close) : '',
+      item.status
+    ];
+    
+    csvContent += row.join(',') + '\n';
+  });
+  
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  
+  link.setAttribute('href', url);
+  link.setAttribute('download', `punch-list-export-${formatDateForFilename(new Date())}.csv`);
+  link.style.visibility = 'hidden';
+  
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+// Escapar valores para CSV
+function escapeCsvValue(value) {
+  if (!value) return '';
+  const stringValue = String(value);
+  if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+    return `"${stringValue.replace(/"/g, '""')}"`;
+  }
+  return stringValue;
+}
+
+// Formatear fecha para mostrar
+function formatDate(dateString) {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  return date.toLocaleDateString();
+}
+
+// Formatear fecha para input
+function formatDateForInput(dateString) {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  return date.toISOString().split('T')[0];
+}
+
+// Formatear fecha para nombre de archivo
+function formatDateForFilename(date) {
+  return date.toISOString().split('T')[0];
+}
+</script>
+{% endblock %}

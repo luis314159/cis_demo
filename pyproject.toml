@@ -34,6 +34,9 @@ httpx = "^0.28.1"
 
 [tool.poetry.group.dev.dependencies]
 qrcode = {extras = ["pil"], version = "^8.0"}
+matplotlib = "^3.10.1"
+seaborn = "^0.13.2"
+networkx = "^3.4.2"
 
 [build-system]
 requires = ["poetry-core"]
