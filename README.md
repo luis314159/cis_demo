@@ -46,4 +46,4 @@ CIS Control Inventory System API es una aplicación que permite gestionar y cont
 1. Clona el repositorio:
 
    ```bash
-   git clone https://github.com/tu-usuario/cis-control-inventory-system-api.git
+   git clone [https://github.com/tu-usuario/cis-control-inventory-system-api.git](https://github.com/luis314159/cis_demo.git)
