@@ -162,6 +162,7 @@ class Process(ProcessBase, table=True):
     process_id: Optional[int] = Field(default=None, primary_key=True)
     process_stages: List[ProcessStage] = Relationship(back_populates="process")
     items: List["Item"] = Relationship(back_populates="process")  # Relación con Item
+    issues: List["Issue"] = Relationship(back_populates="process")
 
 
 class ProcessCreate(ProcessBase):
@@ -205,6 +206,8 @@ class IssueBase(SQLModel):
 class Issue(IssueBase, table=True):
     issue_id: Optional[int] = Field(default=None, primary_key=True)
     defect_records: List["DefectRecord"] = Relationship(back_populates="issue")
+    process_id: int = Field(foreign_key="process.process_id", nullable=False)
+    process: Process = Relationship(back_populates="issues")
 
 class IssueCreate(IssueBase):
     pass
@@ -256,48 +259,115 @@ class RoleCreate(RoleBase):
 
 # --- Defect Record ---
 class DefectRecordBase(SQLModel):
+    """
+    Clase base para registros de defectos que contiene todos los campos comunes
+    """
     date_opened: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     date_closed: Optional[datetime] = Field(default=None)
-
-class DefectRecord(DefectRecordBase, table=True):
-    defect_record_id: Optional[int] = Field(default=None, primary_key=True)
-    
-    # Claves foráneas
     product_id: int = Field(foreign_key="product.product_id")
     job_id: int = Field(foreign_key="job.job_id")
-    process_id: int = Field(foreign_key="process.process_id")
     inspector_user_id: int = Field(foreign_key="user.user_id")
-    family_user_id: int = Field(foreign_key="user.user_id")
+    issue_by: int = Field(foreign_key="user.user_id")
     issue_id: int = Field(foreign_key="issue.issue_id")
     correction_process_id: int = Field(foreign_key="correctionprocess.correction_process_id")
     status_id: int = Field(foreign_key="status.status_id")
+    description: Optional[str] = Field(default=None, max_length=255)
+
+
+
+class DefectRecord(DefectRecordBase, table=True):
+    """
+    Modelo de tabla para registros de defectos
+    """
+    defect_record_id: Optional[int] = Field(default=None, primary_key=True)
     
     # Relaciones
-    product: Product = Relationship(back_populates="defect_records")
-    job: Job = Relationship()
-    process: Process = Relationship()
-    inspector: User = Relationship(
+    product: "Product" = Relationship(back_populates="defect_records")
+    job: "Job" = Relationship()
+    inspector: "User" = Relationship(
         back_populates="inspected_defects",
         sa_relationship_kwargs={"foreign_keys": "DefectRecord.inspector_user_id"}
     )
-    family_user: User = Relationship(
-        back_populates="family_defects",
-        sa_relationship_kwargs={"foreign_keys": "DefectRecord.family_user_id"}
+    issue_by_user: "User" = Relationship(
+        back_populates="user_defects",
+        sa_relationship_kwargs={"foreign_keys": "DefectRecord.issue_by"}
     )
-    issue: Issue = Relationship(back_populates="defect_records")
-    correction_process: CorrectionProcess = Relationship(back_populates="defect_records")
-    status: Status = Relationship(back_populates="defect_records")
+    issue: "Issue" = Relationship(back_populates="defect_records")
+    correction_process: "CorrectionProcess" = Relationship(back_populates="defect_records")
+    status: "Status" = Relationship(back_populates="defect_records")
     images: List["DefectImage"] = Relationship(back_populates="defect_record")
 
+
 class DefectRecordCreate(DefectRecordBase):
-    product_id: int
-    job_id: int
-    process_id: int
-    inspector_user_id: int
-    family_user_id: int
-    issue_id: int
-    correction_process_id: int
-    status_id: int
+    """
+    Esquema para la creación de registros de defectos
+    """
+    pass
+
+#==================================#
+# --- Defect Record ---
+#==================================#
+
+class DefectRecordBase(SQLModel):
+    """
+    Clase base para registros de defectos que contiene todos los campos comunes
+    """
+    date_opened: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    date_closed: Optional[datetime] = Field(default=None)
+    product_id: int = Field(foreign_key="product.product_id")
+    job_id: int = Field(foreign_key="job.job_id")
+    inspector_user_id: int = Field(foreign_key="user.user_id")
+    issue_by: int = Field(foreign_key="user.user_id")
+    issue_id: int = Field(foreign_key="issue.issue_id")
+    correction_process_id: int = Field(foreign_key="correctionprocess.correction_process_id")
+    status_id: int = Field(foreign_key="status.status_id")
+    description: Optional[str] = Field(default=None, max_length=255)
+
+
+class DefectRecord(DefectRecordBase, table=True):
+    """
+    Modelo de tabla para registros de defectos
+    """
+    defect_record_id: Optional[int] = Field(default=None, primary_key=True)
+    
+    # Relaciones
+    product: "Product" = Relationship(back_populates="defect_records")
+    job: "Job" = Relationship()
+    inspector: "User" = Relationship(
+        back_populates="inspected_defects",
+        sa_relationship_kwargs={"foreign_keys": "DefectRecord.inspector_user_id"}
+    )
+    issue_by_user: "User" = Relationship(
+        back_populates="user_defects",
+        sa_relationship_kwargs={"foreign_keys": "DefectRecord.issue_by"}
+    )
+    issue: "Issue" = Relationship(back_populates="defect_records")
+    correction_process: "CorrectionProcess" = Relationship(back_populates="defect_records")
+    status: "Status" = Relationship(back_populates="defect_records")
+    images: List["DefectImage"] = Relationship(back_populates="defect_record")
+
+
+class DefectRecordCreate(DefectRecordBase):
+    """
+    Esquema para la creación de registros de defectos
+    """
+    pass
+
+
+
+class DefectRecordUpdate(SQLModel):
+    """
+    Esquema para actualización parcial de registros de defectos
+    """
+    date_closed: Optional[datetime] = None
+    product_id: Optional[int] = None
+    job_id: Optional[int] = None
+    inspector_user_id: Optional[int] = None
+    issue_by: Optional[int] = None
+    issue_id: Optional[int] = None
+    correction_process_id: Optional[int] = None
+    status_id: Optional[int] = None
+    description: Optional[str] = None
 
     # --- Defect Image ---
 class DefectImageBase(SQLModel):
