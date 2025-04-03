@@ -179,6 +179,9 @@ class ProcessCreate(ProcessBase):
 class ProcessUpdate(ProcessBase):
     pass
 
+class ProcessResponse(ProcessBase):
+    process_id: int
+    process_name: str
 
 class ItemStageStatus(SQLModel):
     item_name: str

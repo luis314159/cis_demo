@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from sqlmodel import select
-from models import Process  
+from models import Process, ProcessResponse, ProcessCreate, ProcessUpdate
 from db import SessionDep
 from fastapi import HTTPException
 
@@ -246,3 +246,214 @@ def get_stages_order(process_name: str, session: SessionDep):
     ]
 
     return stages_order
+
+@router.post(
+    "/create_process", 
+    response_model=ProcessResponse,
+    summary="Create a new process",
+    status_code=201,
+    responses={
+        201: {
+            "description": "Process created successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "process_id": 1,
+                        "process_name": "Example Process",
+                        "process_stages": []
+                    }
+                }
+            }
+        },
+        409: {
+            "description": "Process already exists",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "El proceso ya está registrado."
+                    }
+                }
+            }
+        }
+    }
+)
+def create_process(
+    process_data: ProcessCreate, 
+    session: SessionDep
+):
+    """
+    ## Create a new process
+    
+    Creates a new process with a unique name. Processes are initially created without stages.
+    
+    ### Parameters:
+    - **process_data** (ProcessCreate): Process creation data including:
+        - process_name: Unique name for the new process
+    
+    ### Example Request:
+    ```json
+    {
+        "process_name": "manufacturing_flow"
+    }
+    ```
+    
+    ### Example Response:
+    ```json
+    {
+        "process_id": 1,
+        "process_name": "manufacturing_flow",
+        "process_stages": []
+    }
+    ```
+    """
+    existing_process = session.exec(select(Process).where(Process.process_name == process_data.process_name)).first()
+    if existing_process:
+        raise HTTPException(status_code=409, detail="El proceso ya está registrado.")
+    
+    process = Process(
+        process_name=process_data.process_name
+    )
+
+    session.add(process)
+    session.commit()
+    session.refresh(process)
+    
+    # Establece el código de estado correcto para creación
+    return process
+
+@router.get(
+    "/{process_id}",
+    response_model=ProcessResponse,
+    summary="Retrieve a process by ID",
+    status_code=200,
+    responses={
+        200: {
+            "description": "Process details",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "process_id": 1,
+                        "process_name": "manufacturing_flow",
+                        "process_stages": []
+                    }
+                }
+            }
+        },
+        404: {
+            "description": "Process not found",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Proceso no encontrado"}
+                }
+            }
+        }
+    }
+)
+def get_process_by_id(process_id: int, session: SessionDep):
+    """
+    ## Get a single process
+    
+    Retrieves detailed information about a specific process by its ID.
+    
+    ### Parameters:
+    - **process_id** (int): ID of the process to retrieve
+    
+    ### Raises:
+    - 404: If process doesn't exist
+    """
+    process = session.get(Process, process_id)
+    if not process:
+        raise HTTPException(status_code=404, detail="Proceso no encontrado")
+    return process
+
+@router.put(
+    "/{process_id}",
+    response_model=ProcessResponse,
+    summary="Update a process",
+    status_code=200,
+    responses={
+        200: {
+            "description": "Process updated successfully",
+            "content": {"application/json": {"example": {
+                "process_id": 1,
+                "process_name": "updated_process",
+                "process_stages": []
+            }}}
+        },
+        404: {"description": "Process not found"},
+        409: {
+            "description": "Process name already exists",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "El nombre del proceso ya está registrado"}
+                }
+            }
+        }
+    }
+)
+def update_process(
+    process_id: int,
+    process_data: ProcessUpdate,
+    session: SessionDep
+):
+    """
+    ## Update a process
+    
+    Updates the name of an existing process while maintaining its unique constraint.
+    
+    ### Parameters:
+    - **process_id** (int): ID of the process to update
+    - **process_data** (ProcessUpdate): New process data
+    
+    ### Raises:
+    - 404: If process doesn't exist
+    - 409: If new process name already exists
+    """
+    process = session.get(Process, process_id)
+    if not process:
+        raise HTTPException(status_code=404, detail="Proceso no encontrado")
+    
+    # Verificar colisión de nombres
+    if process_data.process_name != process.process_name:
+        existing_process = session.exec(
+            select(Process)
+            .where(Process.process_name == process_data.process_name)
+            .where(Process.process_id != process_id)
+        ).first()
+        if existing_process:
+            raise HTTPException(status_code=409, detail="El nombre del proceso ya está registrado")
+    
+    process.process_name = process_data.process_name
+    session.add(process)
+    session.commit()
+    session.refresh(process)
+    return process
+
+@router.delete(
+    "/{process_id}",
+    summary="Delete a process",
+    status_code=204,
+    responses={
+        204: {"description": "Process deleted successfully"},
+        404: {"description": "Process not found"}
+    }
+)
+def delete_process(process_id: int, session: SessionDep):
+    """
+    ## Delete a process
+    
+    Permanently removes a process from the system.
+    
+    ### Parameters:
+    - **process_id** (int): ID of the process to delete
+    
+    ### Raises:
+    - 404: If process doesn't exist
+    """
+    process = session.get(Process, process_id)
+    if not process:
+        raise HTTPException(status_code=404, detail="Proceso no encontrado")
+    
+    session.delete(process)
+    session.commit()
+    return None
