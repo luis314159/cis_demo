@@ -10,7 +10,7 @@ from routers import (
     object_router, process_router, stage_router, test_jobs, 
     ocr_routes, validate_csv, list_jobs, details, job_status, 
     object_current_stage, item_router, user_router, auth_router, 
-    rest_password_router, products_router
+    rest_password_router, products_router, issue_router
 )
 from generate_qr import generate_qr, generate_pdf
 
@@ -102,6 +102,7 @@ app.include_router(object_current_stage.router)
 app.include_router(item_router.router)
 app.include_router(user_router.router)
 app.include_router(products_router.router)
+app.include_router(issue_router.router)
 
 # Configuración de archivos estáticos
 app.mount("/static", StaticFiles(directory="./static"), name="static")

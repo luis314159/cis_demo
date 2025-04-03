@@ -215,10 +215,19 @@ class IssueBase(SQLModel):
 
 class Issue(IssueBase, table=True):
     issue_id: Optional[int] = Field(default=None, primary_key=True)
+    process_id: int = Field(foreign_key="process.process_id", nullable=False)
     defect_records: List["DefectRecord"] = Relationship(back_populates="issue")
 
 class IssueCreate(IssueBase):
-    pass
+    process_id: int
+
+class IssueUpdate(IssueBase):
+    process_id: Optional[int]  # Optional if you want to allow changing the process association
+
+class IssueResponse(IssueBase):
+    issue_id: int
+    process_id: int  # Include the process association in the response
+
 
 # --- Status ---
 class StatusBase(SQLModel):
