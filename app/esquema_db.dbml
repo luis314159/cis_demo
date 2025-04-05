@@ -20,7 +20,7 @@ Table status {
   status_id integer [pk, not null]
 }
 
-Table correctionprocess {
+Table correction_process {
   correction_process_description varchar(255) [not null]
   correction_process_id integer [pk, not null]
 }
@@ -43,7 +43,7 @@ Table job {
   product_id integer [not null]
 }
 
-Table processstage {
+Table process_stage {
   id integer [pk, not null]
   process_id integer [not null]
   stage_id integer [not null]
@@ -111,7 +111,7 @@ Table object {
   item_id integer [not null]
 }
 
-Table defectimage {
+Table defect_image {
   image_url varchar(255) [not null]
   defect_image_id integer [pk, not null]
   defect_record_id integer [not null]
@@ -120,14 +120,14 @@ Table defectimage {
 
 // Relaciones
 Ref: job.product_id > product.product_id
-Ref: processstage.stage_id > stage.stage_id
-Ref: processstage.process_id > process.process_id
+Ref: process_stage.stage_id > stage.stage_id
+Ref: process_stage.process_id > process.process_id
 Ref: issue.process_id > process.process_id
 Ref: user.role_id > role.role_id
 Ref: item.process_id > process.process_id
 Ref: item.job_id > job.job_id
 Ref: defect_record.status_id > status.status_id
-Ref: defect_record.correction_process_id > correctionprocess.correction_process_id
+Ref: defect_record.correction_process_id > correction_process.correction_process_id
 Ref: defect_record.issue_id > issue.issue_id
 Ref: defect_record.issue_by_user_id > user.user_id
 Ref: defect_record.inspector_user_id > user.user_id
@@ -136,5 +136,5 @@ Ref: defect_record.job_id > job.job_id
 Ref: defect_record.product_id > product.product_id
 Ref: object.item_id > item.item_id
 Ref: object.current_stage > stage.stage_id
-Ref: defectimage.image_type_id > image_type.image_type_id
-Ref: defectimage.defect_record_id > defect_record.defect_record_id
+Ref: defect_image.image_type_id > image_type.image_type_id
+Ref: defect_image.defect_record_id > defect_record.defect_record_id
