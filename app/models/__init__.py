@@ -256,6 +256,7 @@ class ImageTypeBase(SQLModel):
     type_name: str = Field(max_length=50, unique=True, nullable=False)
 
 class ImageType(ImageTypeBase, table=True):
+    __tablename__ = "image_type"
     image_type_id: Optional[int] = Field(default=None, primary_key=True)
     defect_images: List["DefectImage"] = Relationship(back_populates="image_type")
 
@@ -317,7 +318,7 @@ class DefectRecordUpdate(SQLModel):
     job_id: Optional[int] = None
     process_id: Optional[int] = None
     inspector_user_id: Optional[int] = None
-    issue_by: Optional[int] = None
+    issue_by_user_id: Optional[int] = None
     issue_id: Optional[int] = None
     correction_process_id: Optional[int] = None
     status_id: Optional[int] = None
@@ -336,8 +337,8 @@ class DefectImageBase(SQLModel):
 
 class DefectImage(DefectImageBase, table=True):
     defect_image_id: Optional[int] = Field(default=None, primary_key=True)
-    defect_record_id: int = Field(foreign_key="defectrecord.defect_record_id")
-    image_type_id: int = Field(foreign_key="imagetype.image_type_id")
+    defect_record_id: int = Field(foreign_key="defect_record.defect_record_id")
+    image_type_id: int = Field(foreign_key="image_type.image_type_id")
     
     # Relaciones
     defect_record: DefectRecord = Relationship(back_populates="images")
@@ -411,7 +412,7 @@ class User(BaseUser, table=True):
     )
     user_defects: List["DefectRecord"] = Relationship(
         back_populates="issue_by_user",
-        sa_relationship_kwargs={"foreign_keys": "DefectRecord.issue_by"}
+        sa_relationship_kwargs={"foreign_keys": "DefectRecord.issue_by_user_id"}
     )
 
     def update_timestamps(self):

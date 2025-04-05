@@ -1,4 +1,4 @@
-// Esquema de la base de datos SQLite extraído automáticamente
+// Esquema de la base de datos SQLite extraÃ­do automÃ¡ticamente
 
 Table stage {
   stage_name varchar(50) [not null]
@@ -15,11 +15,6 @@ Table product {
   product_id integer [pk, not null]
 }
 
-Table issue {
-  issue_description varchar(255) [not null]
-  issue_id integer [pk, not null]
-}
-
 Table status {
   status_name varchar(50) [not null]
   status_id integer [pk, not null]
@@ -30,7 +25,7 @@ Table correctionprocess {
   correction_process_id integer [pk, not null]
 }
 
-Table imagetype {
+Table image_type {
   type_name varchar(50) [not null]
   image_type_id integer [pk, not null]
 }
@@ -55,6 +50,12 @@ Table processstage {
   order integer [not null]
 }
 
+Table issue {
+  issue_description varchar(255) [not null]
+  issue_id integer [pk, not null]
+  process_id integer [not null]
+}
+
 Table user {
   employee_number integer [not null]
   username varchar(50) [not null]
@@ -70,7 +71,6 @@ Table user {
   deleted_at datetime
   user_id integer [pk, not null]
   role_id integer [not null]
-  supervisor_number integer
 }
 
 Table item {
@@ -89,18 +89,17 @@ Table item {
   process_id integer [not null]
 }
 
-Table defectrecord {
-  date_opened datetime [not null]
-  date_closed datetime
+Table defect_record {
   product_id integer [not null]
   job_id integer [not null]
   process_id integer [not null]
   inspector_user_id integer [not null]
-  issue_by integer [not null]
+  issue_by_user_id integer [not null]
   issue_id integer [not null]
   correction_process_id integer [not null]
   status_id integer [not null]
-  description varchar(255)
+  date_closed datetime
+  date_opened datetime [not null]
   defect_record_id integer [pk, not null]
 }
 
@@ -114,7 +113,7 @@ Table object {
 
 Table defectimage {
   image_url varchar(255) [not null]
-  image_id integer [pk, not null]
+  defect_image_id integer [pk, not null]
   defect_record_id integer [not null]
   image_type_id integer [not null]
 }
@@ -123,18 +122,19 @@ Table defectimage {
 Ref: job.product_id > product.product_id
 Ref: processstage.stage_id > stage.stage_id
 Ref: processstage.process_id > process.process_id
+Ref: issue.process_id > process.process_id
 Ref: user.role_id > role.role_id
 Ref: item.process_id > process.process_id
 Ref: item.job_id > job.job_id
-Ref: defectrecord.status_id > status.status_id
-Ref: defectrecord.correction_process_id > correctionprocess.correction_process_id
-Ref: defectrecord.issue_id > issue.issue_id
-Ref: defectrecord.issue_by > user.user_id
-Ref: defectrecord.inspector_user_id > user.user_id
-Ref: defectrecord.process_id > process.process_id
-Ref: defectrecord.job_id > job.job_id
-Ref: defectrecord.product_id > product.product_id
+Ref: defect_record.status_id > status.status_id
+Ref: defect_record.correction_process_id > correctionprocess.correction_process_id
+Ref: defect_record.issue_id > issue.issue_id
+Ref: defect_record.issue_by_user_id > user.user_id
+Ref: defect_record.inspector_user_id > user.user_id
+Ref: defect_record.process_id > process.process_id
+Ref: defect_record.job_id > job.job_id
+Ref: defect_record.product_id > product.product_id
 Ref: object.item_id > item.item_id
 Ref: object.current_stage > stage.stage_id
-Ref: defectimage.image_type_id > imagetype.image_type_id
-Ref: defectimage.defect_record_id > defectrecord.defect_record_id
+Ref: defectimage.image_type_id > image_type.image_type_id
+Ref: defectimage.defect_record_id > defect_record.defect_record_id
