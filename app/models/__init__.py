@@ -34,7 +34,7 @@ class Job(JobBase, table=True):
     items: list["Item"] = Relationship(back_populates="job")
     product_id: int = Field(foreign_key="product.product_id", nullable=False)
     product: "Product" = Relationship(back_populates="jobs")
-
+    defect_records: List["DefectRecord"] = Relationship(back_populates="job")
 
 class JobCreate(JobBase):
     client_id: int
@@ -271,42 +271,34 @@ class DefectRecordBase(SQLModel):
     """
     Clase base para registros de defectos que contiene todos los campos comunes
     """
-    date_opened: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    date_closed: Optional[datetime] = Field(default=None)
     product_id: int = Field(foreign_key="product.product_id")
     job_id: int = Field(foreign_key="job.job_id")
     process_id: int = Field(foreign_key="process.process_id")
     inspector_user_id: int = Field(foreign_key="user.user_id")
-    issue_by: int = Field(foreign_key="user.user_id")
+    issue_by_user_id: int = Field(foreign_key="user.user_id")
     issue_id: int = Field(foreign_key="issue.issue_id")
     correction_process_id: int = Field(foreign_key="correctionprocess.correction_process_id")
     status_id: int = Field(foreign_key="status.status_id")
-    description: Optional[str] = Field(default=None, max_length=255)
+    date_closed: Optional[datetime] = Field(default=None)
+    date_opened: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class DefectRecord(DefectRecordBase, table=True):
     """
     Modelo de tabla para registros de defectos
     """
+    __tablename__ = "defect_record"
     defect_record_id: Optional[int] = Field(default=None, primary_key=True)
     
     # Relaciones
     product: "Product" = Relationship(back_populates="defect_records")
-    job: "Job" = Relationship()
-    process: "Process" = Relationship()
-    inspector: "User" = Relationship(
-        back_populates="inspected_defects",
-        sa_relationship_kwargs={"foreign_keys": "DefectRecord.inspector_user_id"}
-    )
-    issue_by_user: "User" = Relationship(
-        back_populates="user_defects",
-        sa_relationship_kwargs={"foreign_keys": "DefectRecord.issue_by"}
-    )
+    job: "Job" = Relationship(back_populates="defect_records")
+    inspector: "User" = Relationship(back_populates="inspected_defects",sa_relationship_kwargs={"foreign_keys": "DefectRecord.inspector_user_id"})
+    issue_by_user: "User" = Relationship(back_populates="user_defects",sa_relationship_kwargs={"foreign_keys": "DefectRecord.issue_by_user_id"})
     issue: "Issue" = Relationship(back_populates="defect_records")
     correction_process: "CorrectionProcess" = Relationship(back_populates="defect_records")
     status: "Status" = Relationship(back_populates="defect_records")
     images: List["DefectImage"] = Relationship(back_populates="defect_record")
-
 
 class DefectRecordCreate(DefectRecordBase):
     """
@@ -331,6 +323,11 @@ class DefectRecordUpdate(SQLModel):
     status_id: Optional[int] = None
     description: Optional[str] = None
 
+class DefectRecordRead(DefectRecordBase):
+    defect_record_id: int
+    date_opened: datetime
+    date_closed: Optional[datetime]
+
 #==================================#
 # --- Defect Image ---
 #==================================#
@@ -338,7 +335,7 @@ class DefectImageBase(SQLModel):
     image_url: str = Field(max_length=255, nullable=False)
 
 class DefectImage(DefectImageBase, table=True):
-    image_id: Optional[int] = Field(default=None, primary_key=True)
+    defect_image_id: Optional[int] = Field(default=None, primary_key=True)
     defect_record_id: int = Field(foreign_key="defectrecord.defect_record_id")
     image_type_id: int = Field(foreign_key="imagetype.image_type_id")
     
@@ -395,8 +392,6 @@ class BaseUser(SQLModel):
 class CreateUser(BaseUser):
     role_id: int = Field(foreign_key="role.role_id", nullable=False)
     password: str = Field(nullable=False)
-    supervisor_number: Optional[str] = Field(default=None)
-
 
 class User(BaseUser, table=True):
     __tablename__ = "user"
@@ -408,8 +403,7 @@ class User(BaseUser, table=True):
     deleted_at: Optional[datetime] = Field(default=None)
     role_id: int = Field(foreign_key="role.role_id", nullable=False)
     role: Role = Relationship(back_populates="users")
-    supervisor_number: Optional[int] = Field(default=None)
-    
+
     # Relaciones con DefectRecord
     inspected_defects: List["DefectRecord"] = Relationship(
         back_populates="inspector",
@@ -419,15 +413,6 @@ class User(BaseUser, table=True):
         back_populates="issue_by_user",
         sa_relationship_kwargs={"foreign_keys": "DefectRecord.issue_by"}
     )
-
-    @field_validator('supervisor_number')
-    @classmethod
-    def validate_supervisor_number(cls, v, info: FieldValidationInfo):
-        if v is not None:
-            role = info.data.get('role')
-            if role and role.role_name.lower() != 'supervisor':
-                raise ValueError("Solo supervisores pueden tener número de supervisor")
-        return v
 
     def update_timestamps(self):
         self.updated_at = datetime.now(timezone.utc)
@@ -443,7 +428,6 @@ class ResponseUser(SQLModel):
     role: Role
     is_active: bool
     created_at: datetime
-    supervisor_number: Optional[int] = None
 
 class UpdateUserRequest(SQLModel):
     username: Optional[str] = None
@@ -453,7 +437,6 @@ class UpdateUserRequest(SQLModel):
     password: Optional[str] = None
     role_id: Optional[int] = None
     is_active: Optional[bool] = None
-    supervisor_number: Optional[int] = None
     
 
 # Modelos para el flujo
