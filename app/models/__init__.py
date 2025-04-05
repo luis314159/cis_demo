@@ -152,6 +152,7 @@ class JobObjectsResponse(SQLModel):
 
 # Tabla intermedia ProcessStage
 class ProcessStage(SQLModel, table=True):
+    __tablename__ = "process_stage"
     id: Optional[int] = Field(default=None, primary_key=True)
     process_id: int = Field(foreign_key="process.process_id", nullable=False)
     stage_id: int = Field(foreign_key="stage.stage_id", nullable=False)
@@ -245,6 +246,7 @@ class CorrectionProcessBase(SQLModel):
     correction_process_description: str = Field(max_length=255, nullable=False)
 
 class CorrectionProcess(CorrectionProcessBase, table=True):
+    __tablename__ = "correction_process"
     correction_process_id: Optional[int] = Field(default=None, primary_key=True)
     defect_records: List["DefectRecord"] = Relationship(back_populates="correction_process")
 
@@ -278,7 +280,7 @@ class DefectRecordBase(SQLModel):
     inspector_user_id: int = Field(foreign_key="user.user_id")
     issue_by_user_id: int = Field(foreign_key="user.user_id")
     issue_id: int = Field(foreign_key="issue.issue_id")
-    correction_process_id: int = Field(foreign_key="correctionprocess.correction_process_id")
+    correction_process_id: int = Field(foreign_key="correction_process.correction_process_id")
     status_id: int = Field(foreign_key="status.status_id")
     date_closed: Optional[datetime] = Field(default=None)
     date_opened: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -336,6 +338,7 @@ class DefectImageBase(SQLModel):
     image_url: str = Field(max_length=255, nullable=False)
 
 class DefectImage(DefectImageBase, table=True):
+    __tablename__ = "defect_image"
     defect_image_id: Optional[int] = Field(default=None, primary_key=True)
     defect_record_id: int = Field(foreign_key="defect_record.defect_record_id")
     image_type_id: int = Field(foreign_key="image_type.image_type_id")
