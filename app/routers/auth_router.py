@@ -378,7 +378,7 @@ async def authenticate(
     else: 
         user = auth.authenticate_user(session, form_data.username, form_data.password)
         if not user:
-            raise HTTPException(status_code=401, detail="Credenciales inválidas")
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Credenciales inválidas")
         
         # Registrar el login exitoso
         logger.info("Login success for user: %s", user.username)
@@ -394,7 +394,7 @@ async def authenticate(
         if "application/json" in request.headers.get("accept", ""):
             return {"access_token": access_token, "token_type": "bearer"}
         
-        response = RedirectResponse("/home", status_code=303)
+        response = RedirectResponse("/home", status_code=status.HTTP_303_SEE_OTHER)
         response.set_cookie(
             key="auth_token",
             value=access_token,

@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, status
 from sqlmodel import select
 from db import SessionDep
 from models import Job
@@ -19,9 +19,7 @@ router = APIRouter(
                 summary="List all jobs",
                 response_description="Returns a list of all jobs",
                 tags=["Jobs"],  # Agrupa en la sección "Jobs"
-                responses={
-                    200: {"description": "Successfully returned the list of jobs"},
-                },
+                status_code=status.HTTP_200_OK,
             )
 def list_jobs(session: SessionDep):
     """

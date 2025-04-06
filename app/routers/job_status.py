@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, status
 from sqlmodel import select
 from db import SessionDep
 from models import Job, Item, JobStatus, ProcessStage, StageStatus, ItemStageStatus, Object, Stage, Process
@@ -98,12 +98,12 @@ def get_job_status(job_code: str, session: SessionDep):
     job = session.exec(select(Job).where(Job.job_code == job_code)).first()
     job_id = session.exec(select(Job.job_id).where(Job.job_code == job_code)).first()
     if not job:
-        raise HTTPException(status_code=404, detail="El Job no existe.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="El Job no existe.")
 
     # Obtener todos los Items relacionados al Job
     items = session.exec(select(Item).where(Item.job_id == job_id)).all()
     if not items:
-        raise HTTPException(status_code=404, detail="No se encontraron Items relacionados al Job.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No se encontraron Items relacionados al Job.")
 
     # Diccionario para almacenar el progreso por estación
     progress_data = {}
@@ -238,7 +238,7 @@ async def delete_job(job_code: str, session: SessionDep):
     # Verificar si el Job existe
     job = session.exec(select(Job).where(Job.job_code == job_code)).first()
     if not job:
-        raise HTTPException(status_code=404, detail="El Job no existe.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="El Job no existe.")
 
     # Obtener los Items relacionados al Job
     items = session.exec(select(Item).where(Item.job_id == job.job_id)).all()

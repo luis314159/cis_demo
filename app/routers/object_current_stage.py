@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, status
 from sqlmodel import select
 from db import SessionDep
 from models import Object, Item, Stage
@@ -76,12 +76,12 @@ def update_object_stage(
     #print(ocr_cleaned)
     item = session.exec(select(Item).where(Item.ocr == ocr_cleaned)).first()
     if not item:
-        raise HTTPException(status_code=404, detail=F"Item con el OCR proporcionado no encontrado, OCR {ocr_cleaned}.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=F"Item con el OCR proporcionado no encontrado, OCR {ocr_cleaned}.")
 
     # Verificar que el nuevo stage exista
     stage = session.exec(select(Stage).where(Stage.stage_name == new_stage_name)).first()
     if not stage:
-        raise HTTPException(status_code=404, detail="Stage proporcionado no existe.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stage proporcionado no existe.")
     
     # Obtener el Object asociado al Item
     #print(f"OCR: {ocr_cleaned}, Part: {part}")
@@ -94,7 +94,7 @@ def update_object_stage(
     ).first()
     #obj = session.exec(select(Object).where(Object.item_id == item.item_id)).first()
     if not obj:
-        raise HTTPException(status_code=404, detail="Object asociado al Item no encontrado.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Object asociado al Item no encontrado.")
     
     
     # Actualizar el current_stage del Object
@@ -177,12 +177,12 @@ def test_update_object_stage(
     #print(ocr_cleaned)
     item = session.exec(select(Item).where(Item.ocr == ocr_cleaned)).first()
     if not item:
-        raise HTTPException(status_code=404, detail=F"Item con el OCR proporcionado no encontrado, OCR {ocr_cleaned}.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=F"Item con el OCR proporcionado no encontrado, OCR {ocr_cleaned}.")
 
     # Verificar que el nuevo stage exista
     stage = session.exec(select(Stage).where(Stage.stage_name == new_stage_name)).first()
     if not stage:
-        raise HTTPException(status_code=404, detail="Stage proporcionado no existe.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stage proporcionado no existe.")
     
     # Obtener el Object asociado al Item
     #print(f"OCR: {ocr_cleaned}, Part: {part}")
@@ -195,7 +195,7 @@ def test_update_object_stage(
     ).first()
     #obj = session.exec(select(Object).where(Object.item_id == item.item_id)).first()
     if not obj:
-        raise HTTPException(status_code=404, detail="Object asociado al Item no encontrado.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Object asociado al Item no encontrado.")
     
     # Simulación de actualización
     return {
@@ -259,17 +259,17 @@ def delete_object(item_ocr: str, piece_number: int, session: SessionDep):
     # Buscar el Item asociado al OCR
     item = session.exec(select(Item).where(Item.ocr == item_ocr)).first()
     if not item:
-        raise HTTPException(status_code=404, detail=f"Item con OCR '{item_ocr}' no encontrado.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Item con OCR '{item_ocr}' no encontrado.")
 
     # Obtener los Objects relacionados al Item
     related_objects = session.exec(select(Object).where(Object.item_id == item.item_id)).all()
     
     if not related_objects:
-        raise HTTPException(status_code=404, detail=f"No hay Objects relacionados con el Item '{item_ocr}'.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No hay Objects relacionados con el Item '{item_ocr}'.")
 
     # Validar que el número de pieza esté dentro del rango
     if piece_number < 1 or piece_number > len(related_objects):
-        raise HTTPException(status_code=400, detail=f"Número de pieza '{piece_number}' fuera de rango. Hay {len(related_objects)} piezas disponibles.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Número de pieza '{piece_number}' fuera de rango. Hay {len(related_objects)} piezas disponibles.")
 
     # Seleccionar el Object correspondiente al número de pieza (1-indexado)
     object_to_delete = sorted(related_objects, key=lambda obj: obj.object_id)[piece_number - 1]
@@ -347,20 +347,20 @@ def list_objects(item_ocr: str, session: SessionDep):
     # Buscar el Item asociado al OCR
     item = session.exec(select(Item).where(Item.ocr == item_ocr)).first()
     if not item:
-        raise HTTPException(status_code=404, detail=f"Item con OCR '{item_ocr}' no encontrado.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Item con OCR '{item_ocr}' no encontrado.")
 
     # Obtener los Objects relacionados al Item
     related_objects = session.exec(select(Object).where(Object.item_id == item.item_id)).all()
     
     if not related_objects:
-        raise HTTPException(status_code=404, detail=f"No hay Objects relacionados con el Item '{item_ocr}'.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No hay Objects relacionados con el Item '{item_ocr}'.")
 
     # Reemplazar current_stage con el nombre del stage
     objects_with_stage_names = []
     for obj in related_objects:
         stage = session.exec(select(Stage).where(Stage.stage_id == obj.current_stage)).first()
         if not stage:
-            raise HTTPException(status_code=500, detail=f"Stage con ID '{obj.current_stage}' no encontrado.")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Stage con ID '{obj.current_stage}' no encontrado.")
         
         objects_with_stage_names.append({
             "object_id": obj.object_id,

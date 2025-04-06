@@ -169,3 +169,5 @@ cython_debug/
 static/documents/qr.pdf
 static/qr/generated_qr.png
 
+app/static/documents/
+app/static/qr/

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Response
+from fastapi import APIRouter, UploadFile, File, HTTPException, Response, status
 from services.ocr_service import ocr_service  # Importa el servicio
 import logging
 from fastapi.responses import PlainTextResponse
@@ -86,7 +86,7 @@ async def extract_text(image: UploadFile = File(...)):
     
     if not image.content_type.startswith("image/"):
         logging.warning("Archivo recibido no es una imagen.")
-        raise HTTPException(status_code=400, detail="El archivo debe ser una imagen.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El archivo debe ser una imagen.")
 
     try:
         logging.info(f"Procesando archivo: {image.filename}")
@@ -99,4 +99,4 @@ async def extract_text(image: UploadFile = File(...)):
         return {"message": "No se reconoció texto en la imagen."}
     except Exception as e:
         logging.error(f"Error procesando la imagen: {e}")
-        raise HTTPException(status_code=500, detail="Error interno del servidor al procesar la imagen.")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno del servidor al procesar la imagen.")

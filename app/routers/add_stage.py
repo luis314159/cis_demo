@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from db import SessionDep
 from models import Stage, StageCreate
@@ -69,7 +69,7 @@ def create_stage(stage: StageCreate, session: SessionDep):
     except IntegrityError:
         session.rollback()
         raise HTTPException(
-            status_code=400, detail="A stage with this name already exists."
+            status_code = status.HTTP_400_BAD_REQUEST , detail="A stage with this name already exists."
         )
 
     return new_stage

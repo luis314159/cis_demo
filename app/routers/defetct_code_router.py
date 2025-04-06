@@ -48,7 +48,7 @@ def create_defect_code(
     # Verificar si el código ya existe
     existing_code = session.exec(select(DefectCode).where(DefectCode.code == defect_code.code)).first()
     if existing_code:
-        raise HTTPException(status_code=400, detail="Defect code already exists")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Defect code already exists")
     
     # Crear el nuevo código de defecto
     new_defect_code = DefectCode(

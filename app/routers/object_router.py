@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, status
 from sqlmodel import select
 from db import SessionDep
 from models import Job, Object, Item, Stage, JobObjectsResponse, ObjectDetails
@@ -80,7 +80,7 @@ def get_objects_by_job(job_code: str, session: SessionDep):
     # Verificar si el Job existe
     job = session.exec(select(Job).where(Job.job_code == job_code)).first()
     if not job:
-        raise HTTPException(status_code=404, detail=f"El Job con código '{job_code}' no existe.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"El Job con código '{job_code}' no existe.")
 
     # Obtener todos los Items relacionados con el Job
     items = session.exec(select(Item).where(Item.job_id == job.job_id)).all()

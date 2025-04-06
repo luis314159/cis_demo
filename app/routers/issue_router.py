@@ -1,5 +1,5 @@
 from typing import List
-from fastapi import APIRouter
+from fastapi import APIRouter, status
 from sqlmodel import select
 from models import Issue, IssueCreate,IssueResponse, IssueUpdate, Process
 from db import SessionDep
@@ -11,7 +11,7 @@ router = APIRouter(
 )
 
 
-@router.get("/", response_model=List[IssueResponse])
+@router.get("/", response_model=List[IssueResponse], status_code=status.HTTP_200_OK)
 def read_issues(*, session : SessionDep):
     """
     ## Get all issues
@@ -40,7 +40,7 @@ def read_issues(*, session : SessionDep):
     issues = session.exec(select(Issue)).all()
     return issues
 
-@router.get("/{issue_id}", response_model=IssueResponse)
+@router.get("/{issue_id}", response_model=IssueResponse, status_code=status.HTTP_200_OK)
 def read_issue(*, issue_id: int, session : SessionDep):
     """
     ## Get issue by ID
@@ -68,7 +68,7 @@ def read_issue(*, issue_id: int, session : SessionDep):
         raise HTTPException(status_code=404, detail="Issue not found")
     return issue
 
-@router.post("/", response_model=IssueResponse, status_code=201)
+@router.post("/", response_model=IssueResponse, status_code=status.HTTP_201_CREATED)
 def create_issue(*, session: SessionDep, issue: IssueCreate):
     """
     ## Create issue
@@ -109,17 +109,17 @@ def create_issue(*, session: SessionDep, issue: IssueCreate):
     """
     # Validate issue_description if needed (e.g., not empty)
     if not issue.issue_description.strip():
-        raise HTTPException(status_code=400, detail="Issue description cannot be empty")
+        raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE, detail="Issue description cannot be empty")
     
     existing_issue = session.exec(select(Issue).where(Issue.issue_description == issue.issue_description)).first()
     if existing_issue :
-        raise HTTPException(status_code=409, detail="Issue description already exists")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Issue description already exists")
 
     
     # Verify that the process exists
     db_process = session.get(Process, issue.process_id)
     if not db_process:
-        raise HTTPException(status_code=404, detail="Process not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Process not found")
     
     db_issue = Issue(
         issue_description=issue.issue_description,
@@ -130,7 +130,7 @@ def create_issue(*, session: SessionDep, issue: IssueCreate):
     session.refresh(db_issue)
     return db_issue
 
-@router.put("/{issue_id}", response_model=IssueResponse)
+@router.put("/{issue_id}", response_model=IssueResponse, status_code=status.HTTP_200_OK)
 def update_issue(*, session: SessionDep, issue_id: int, issue: IssueUpdate):
     """
     ## Update issue
@@ -172,19 +172,19 @@ def update_issue(*, session: SessionDep, issue_id: int, issue: IssueUpdate):
     """
     db_issue = session.get(Issue, issue_id)
     if not db_issue:
-        raise HTTPException(status_code=404, detail="Issue not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Issue not found")
 
-    update_data = issue.dict(exclude_unset=True)
+    update_data = issue.model_dump(exclude_unset=True)
 
     # Validate issue_description if provided
     if "issue_description" in update_data and not update_data["issue_description"].strip():
-        raise HTTPException(status_code=400, detail="Issue description cannot be empty")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Issue description cannot be empty")
     
     # Verify that the process exists if process_id is provided
     if "process_id" in update_data:
         db_process = session.get(Process, update_data["process_id"])
         if not db_process:
-            raise HTTPException(status_code=404, detail="Process not found")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Process not found")
 
     for key, value in update_data.items():
         setattr(db_issue, key, value)
@@ -194,7 +194,7 @@ def update_issue(*, session: SessionDep, issue_id: int, issue: IssueUpdate):
     session.refresh(db_issue)
     return db_issue
 
-@router.delete("/{issue_id}", status_code=204)
+@router.delete("/{issue_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_issue(*, issue_id: int, session : SessionDep):
     """
     ## Delete issue
@@ -212,7 +212,7 @@ def delete_issue(*, issue_id: int, session : SessionDep):
     """
     db_issue = session .get(Issue, issue_id)
     if not db_issue:
-        raise HTTPException(status_code=404, detail="Issue not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Issue not found")
     
     session .delete(db_issue)
     session .commit()

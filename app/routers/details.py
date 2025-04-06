@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, status
 from sqlmodel import select
 from db import SessionDep
 from models import Item, Object
@@ -55,7 +55,7 @@ def get_item_by_id(ocr: str, session: SessionDep):
     # Buscar el Item por su ID
     item = session.exec(select(Item).where(Item.ocr == ocr)).first()
     if not item:
-        raise HTTPException(status_code=404, detail=f"El Item con ocr '{ocr}' no existe.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"El Item con ocr '{ocr}' no existe.")
     return item
 
 @router.get("/object/{object_id}", response_model=Object,
@@ -103,5 +103,5 @@ def get_object_by_id(object_id: int, session: SessionDep):
     # Buscar el Object por su ID
     obj = session.exec(select(Object).where(Object.object_id == object_id)).first()
     if not obj:
-        raise HTTPException(status_code=404, detail=f"El Object con ID '{object_id}' no existe.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"El Object con ID '{object_id}' no existe.")
     return obj
