@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
-from typing import List
+from typing import List, Optional
 from datetime import datetime
-from models import DefectRecord, DefectRecordCreate, DefectRecordRead, DefectRecordUpdate
+from models import DefectRecord, DefectRecordCreate, DefectRecordRead, DefectRecordUpdate, Job, Product
 from db import SessionDep
 
 router = APIRouter(prefix="/defect-records", tags=["Defect Records"])
@@ -43,6 +43,31 @@ def get_defect_record(
     if not defect_record:
         raise HTTPException(status_code=404, detail="Defect record not found")
     return defect_record
+
+@router.get("/search/{job_code}/{product_id}", response_model=list[DefectRecordRead])
+def search_defect_records(
+    job_code: str,
+    product_id: int,
+    session: SessionDep
+):
+    # Realizamos la consulta usando select y joins
+    query = (
+        select(DefectRecord)
+        .join(Job, DefectRecord.job_id == Job.job_id)
+        .join(Product, DefectRecord.product_id == Product.product_id)
+        .where(Job.job_code == job_code)
+        .where(Product.product_id == product_id)
+    )
+
+    # Ejecutamos la consulta
+    results = session.exec(query).all()
+
+    # Si no encontramos resultados, lanzamos una excepción 404
+    if not results:
+        raise HTTPException(status_code=404, detail="No defect records found")
+
+    return results
+
 
 @router.put("/{defect_record_id}", response_model=DefectRecordRead)
 def update_defect_record(
