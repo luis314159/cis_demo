@@ -22,7 +22,7 @@ router = APIRouter(
                 404: {"description": "Specified role not found"}
             }
     )
-def add_user(user_data: CreateUser, session: SessionDep):
+def add_user(user_data: CreateUser, session: SessionDep, status_code = status.HTTP_201_CREATED):
     """
     ## Create a new user account
 
@@ -54,7 +54,7 @@ def add_user(user_data: CreateUser, session: SessionDep):
         "first_surname": "Doe",
         "second_surname": "Smith",
         "role_name": "operator",
-        "employee_number": "EMP-001"
+        "employee_number": "1"
     }
     ```
 
@@ -70,7 +70,7 @@ def add_user(user_data: CreateUser, session: SessionDep):
         "second_surname": "Smith",
         "role_id": 2,
         "is_active": true,
-        "employee_number": "EMP-001",
+        "employee_number": "1",
         "created_at": "2023-08-20T15:30:00Z",
         "updated_at": null
     }
