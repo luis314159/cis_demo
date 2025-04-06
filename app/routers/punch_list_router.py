@@ -36,8 +36,8 @@ async def save_upload_file(upload_file: UploadFile, folder: str) -> str:
             summary="Create new punch list item",
             response_description="Returns the created punch list item",
             responses={
-                201: {"description": "Punch list item created successfully"},
-                404: {"description": "Job, object or defect code not found"}
+                status.HTTP_201_CREATED: {"description": "Punch list item created successfully"},
+                status.HTTP_404_NOT_FOUND: {"description": "Job, object or defect code not found"}
             }
 )
 async def create_punch_list(
@@ -75,17 +75,17 @@ async def create_punch_list(
     # Verificar si el job existe
     job = session.exec(select(Job).where(Job.job_id == job_id)).first()
     if not job:
-        raise HTTPException(status_code=404, detail="Job not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
     
     # Verificar si el object existe
     obj = session.exec(select(Object).where(Object.object_id == object_id)).first()
     if not obj:
-        raise HTTPException(status_code=404, detail="Object not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Object not found")
     
     # Verificar si el defect code existe
     defect_code = session.exec(select(DefectCode).where(DefectCode.defect_code_id == defect_code_id)).first()
     if not defect_code:
-        raise HTTPException(status_code=404, detail="Defect code not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Defect code not found")
     
     # Procesar la fecha
     try:
@@ -124,7 +124,8 @@ async def create_punch_list(
 
 @router.get("", response_model=List[PunchListResponse],
             summary="Get all punch list items",
-            response_description="Returns a list of all punch list items"
+            response_description="Returns a list of all punch list items",
+            status_code = status.HTTP_200_OK
 )
 def get_all_punch_lists(
     session: SessionDep,
@@ -160,7 +161,7 @@ def get_all_punch_lists(
             summary="Get punch list item by ID",
             response_description="Returns the requested punch list item",
             responses={
-                404: {"description": "Punch list item not found"}
+                status.HTTP_404_NOT_FOUND: {"description": "Punch list item not found"}
             }
 )
 def get_punch_list(
@@ -181,7 +182,7 @@ def get_punch_list(
     """
     punch_list = session.exec(select(PunchList).where(PunchList.punch_list_id == punch_list_id)).first()
     if not punch_list:
-        raise HTTPException(status_code=404, detail="Punch list item not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Punch list item not found")
     
     return punch_list
 
@@ -190,7 +191,7 @@ def get_punch_list(
             summary="Update punch list item",
             response_description="Returns the updated punch list item",
             responses={
-                404: {"description": "Punch list item not found"}
+                status.HTTP_404_NOT_FOUND: {"description": "Punch list item not found"}
             }
 )
 async def update_punch_list(
@@ -227,7 +228,7 @@ async def update_punch_list(
     """
     punch_list = session.exec(select(PunchList).where(PunchList.punch_list_id == punch_list_id)).first()
     if not punch_list:
-        raise HTTPException(status_code=404, detail="Punch list item not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Punch list item not found")
     
     # Actualizar los campos proporcionados
     if description:
@@ -275,7 +276,7 @@ async def update_punch_list(
             summary="Delete punch list item",
             response_description="No content, item successfully deleted",
             responses={
-                404: {"description": "Punch list item not found"}
+                status.HTTP_404_NOT_FOUND: {"description": "Punch list item not found"}
             }
 )
 def delete_punch_list(
@@ -296,7 +297,7 @@ def delete_punch_list(
     """
     punch_list = session.exec(select(PunchList).where(PunchList.punch_list_id == punch_list_id)).first()
     if not punch_list:
-        raise HTTPException(status_code=404, detail="Punch list item not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Punch list item not found")
     
     session.delete(punch_list)
     session.commit()

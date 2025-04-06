@@ -18,7 +18,7 @@ router = APIRouter(
             response_description="Returns the created user",
             responses={
                 201: {"description": "User created successfully"},
-                400: {"description": "Username already exists"},
+                409: {"description": "Username already exists"},
                 404: {"description": "Specified role not found"}
             }
     )
@@ -79,12 +79,12 @@ def add_user(user_data: CreateUser, session: SessionDep, status_code = status.HT
     # Verificar si el usuario ya existe
     existing_user = session.exec(select(User).where(User.username == user_data.username)).first()
     if existing_user:
-        raise HTTPException(status_code=400, detail="El usuario ya existe.")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="El usuario ya existe.")
 
     # Buscar el role_id basado en role_name
     role = session.exec(select(Role).where(Role.role_name == user_data.role_name)).first()
     if not role:
-        raise HTTPException(status_code=404, detail="El rol especificado no existe.")
+        raise HTTPException(status_code= status.HTTP_404_NOT_FOUND, detail="El rol especificado no existe.")
     
     # Crear una instancia de User con la contraseña hasheada
     hashed_password = get_password_hash(user_data.password)
@@ -110,10 +110,10 @@ def add_user(user_data: CreateUser, session: SessionDep, status_code = status.HT
             response_description="Returns the created role",
             responses={
                 201: {"description": "Role created successfully"},
-                400: {"description": "Role already exists"}
+                409: {"description": "Role already exists"}
             }
         )
-def add_role(role_data: CreateRole, session: SessionDep):
+def add_role(role_data: CreateRole, session: SessionDep, status_code = status.HTTP_201_CREATED):
     """
     ## Create a new system role
 
@@ -140,7 +140,7 @@ def add_role(role_data: CreateRole, session: SessionDep):
     """
     existing_role = session.exec(select(Role).where(Role.role_name == role_data.role_name)).first()
     if existing_role:
-        raise HTTPException(status_code=400, detail="El rol ya existe.")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="El rol ya existe.")
 
     role = Role(role_name=role_data.role_name)
     session.add(role)
@@ -151,7 +151,8 @@ def add_role(role_data: CreateRole, session: SessionDep):
 
 @router.get("/list_users", response_model=list[ResponseUser], response_model_exclude={"hashed_password"},
             summary="List all users",
-            response_description="Returns list of all users"
+            response_description="Returns list of all users",
+            status_code = status.HTTP_200_OK
         )
 def list_users(session: SessionDep):
     """
@@ -192,7 +193,8 @@ def list_users(session: SessionDep):
 
 @router.get("/list_roles", response_model=list[Role],
             summary="List all roles",
-            response_description="Returns list of all roles"
+            response_description="Returns list of all roles",
+            status_code = status.HTTP_200_OK
     )
 def list_roles(session: SessionDep):
     """

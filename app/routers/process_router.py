@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, status
 from sqlmodel import select
 from models import Process, ProcessResponse, ProcessCreate, ProcessUpdate
 from db import SessionDep
@@ -13,9 +13,7 @@ router = APIRouter(
 @router.get('', response_model=list[Process],
             summary="List all processes",
             response_description="Returns a list of all available processes",
-            responses={
-                200: {"description": "Successfully retrieved list of processes"}
-            }
+            status_code= status.HTTP_200_OK
     )
 def list_processes(session: SessionDep):
     """
@@ -53,9 +51,9 @@ from models import ProcessStage, Process, Stage
 @router.post('/{process_name}/order-stages',
             response_description="Confirmation of stage order update",
             responses={
-                200: {"description": "Stage order updated successfully"},
-                404: {"description": "Process not found"},
-                400: {"description": "Invalid stage names provided"}
+                status.HTTP_200_OK: {"description": "Stage order updated successfully"},
+                status.HTTP_404_NOT_FOUND: {"description": "Process not found"},
+                status.HTTP_400_BAD_REQUEST: {"description": "Invalid stage names provided"}
             }
     )
 def order_stages(process_name: str, stage_order: list[str], session: SessionDep):
@@ -107,14 +105,14 @@ def order_stages(process_name: str, stage_order: list[str], session: SessionDep)
     # Verificar que el Process exista
     process = session.exec(select(Process).where(Process.process_name == process_name)).first()
     if not process:
-        raise HTTPException(status_code=404, detail="El Process no existe.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="El Process no existe.")
 
     # Verificar que todos los nombres de Stage existan
     stages = session.exec(select(Stage).where(Stage.stage_name.in_(stage_order))).all()
     stage_map = {stage.stage_name: stage for stage in stages}
     if len(stages) != len(stage_order):
         missing_stages = set(stage_order) - set(stage_map.keys())
-        raise HTTPException(status_code=400, detail=f"Uno o más Stages no existen: {', '.join(missing_stages)}")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Uno o más Stages no existen: {', '.join(missing_stages)}")
 
     # Verificar si ya existía un orden previo
     existing_order = session.exec(select(ProcessStage).where(ProcessStage.process_id == process.process_id)).all()
@@ -137,7 +135,7 @@ def order_stages(process_name: str, stage_order: list[str], session: SessionDep)
             response_description="Ordered list of stages with details",
             tags=["Process"],
             responses={
-                200: {
+                status.HTTP_200_OK: {
                     "description": "Successfully retrieved stage order",
                     "content": {
                         "application/json": {
@@ -156,7 +154,7 @@ def order_stages(process_name: str, stage_order: list[str], session: SessionDep)
                         }
                     }
                 },
-                404: {
+                status.HTTP_404_NOT_FOUND: {
                     "description": "Process not found",
                     "content": {
                         "application/json": {
@@ -223,7 +221,7 @@ def get_stages_order(process_name: str, session: SessionDep):
     # Verificar que el Process exista
     process = session.exec(select(Process).where(Process.process_name == process_name)).first()
     if not process:
-        raise HTTPException(status_code=404, detail="El Process no existe.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="El Process no existe.")
 
     # Obtener el orden de los stages asociados al Process
     process_stages = session.exec(
@@ -251,9 +249,9 @@ def get_stages_order(process_name: str, session: SessionDep):
     "/create_process", 
     response_model=ProcessResponse,
     summary="Create a new process",
-    status_code=201,
+    status_code=status.HTTP_201_CREATED,
     responses={
-        201: {
+        status.HTTP_201_CREATED: {
             "description": "Process created successfully",
             "content": {
                 "application/json": {
@@ -265,7 +263,7 @@ def get_stages_order(process_name: str, session: SessionDep):
                 }
             }
         },
-        409: {
+        status.HTTP_409_CONFLICT: {
             "description": "Process already exists",
             "content": {
                 "application/json": {
@@ -308,7 +306,7 @@ def create_process(
     """
     existing_process = session.exec(select(Process).where(Process.process_name == process_data.process_name)).first()
     if existing_process:
-        raise HTTPException(status_code=409, detail="El proceso ya está registrado.")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="El proceso ya está registrado.")
     
     process = Process(
         process_name=process_data.process_name
@@ -325,9 +323,9 @@ def create_process(
     "/{process_id}",
     response_model=ProcessResponse,
     summary="Retrieve a process by ID",
-    status_code=200,
+    status_code=status.HTTP_200_OK,
     responses={
-        200: {
+        status.HTTP_200_OK: {
             "description": "Process details",
             "content": {
                 "application/json": {
@@ -339,7 +337,7 @@ def create_process(
                 }
             }
         },
-        404: {
+        status.HTTP_404_NOT_FOUND: {
             "description": "Process not found",
             "content": {
                 "application/json": {
@@ -359,20 +357,20 @@ def get_process_by_id(process_id: int, session: SessionDep):
     - **process_id** (int): ID of the process to retrieve
     
     ### Raises:
-    - 404: If process doesn't exist
+    - status.HTTP_404_NOT_FOUND: If process doesn't exist
     """
     process = session.get(Process, process_id)
     if not process:
-        raise HTTPException(status_code=404, detail="Proceso no encontrado")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Proceso no encontrado")
     return process
 
 @router.put(
     "/{process_id}",
     response_model=ProcessResponse,
     summary="Update a process",
-    status_code=200,
+    status_code=status.HTTP_200_OK,
     responses={
-        200: {
+        status.HTTP_200_OK: {
             "description": "Process updated successfully",
             "content": {"application/json": {"example": {
                 "process_id": 1,
@@ -380,8 +378,8 @@ def get_process_by_id(process_id: int, session: SessionDep):
                 "process_stages": []
             }}}
         },
-        404: {"description": "Process not found"},
-        409: {
+        status.HTTP_404_NOT_FOUND: {"description": "Process not found"},
+        status.HTTP_409_CONFLICT: {
             "description": "Process name already exists",
             "content": {
                 "application/json": {
@@ -406,12 +404,12 @@ def update_process(
     - **process_data** (ProcessUpdate): New process data
     
     ### Raises:
-    - 404: If process doesn't exist
-    - 409: If new process name already exists
+    - status.HTTP_404_NOT_FOUND: If process doesn't exist
+    - status.HTTP_409_CONFLICT: If new process name already exists
     """
     process = session.get(Process, process_id)
     if not process:
-        raise HTTPException(status_code=404, detail="Proceso no encontrado")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Proceso no encontrado")
     
     # Verificar colisión de nombres
     if process_data.process_name != process.process_name:
@@ -421,7 +419,7 @@ def update_process(
             .where(Process.process_id != process_id)
         ).first()
         if existing_process:
-            raise HTTPException(status_code=409, detail="El nombre del proceso ya está registrado")
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="El nombre del proceso ya está registrado")
     
     process.process_name = process_data.process_name
     session.add(process)
@@ -432,10 +430,10 @@ def update_process(
 @router.delete(
     "/{process_id}",
     summary="Delete a process",
-    status_code=204,
+    status_code=status.HTTP_204_NO_CONTENT,
     responses={
-        204: {"description": "Process deleted successfully"},
-        404: {"description": "Process not found"}
+        status.HTTP_204_NO_CONTENT: {"description": "Process deleted successfully"},
+        status.HTTP_404_NOT_FOUND: {"description": "Process not found"}
     }
 )
 def delete_process(process_id: int, session: SessionDep):
@@ -448,11 +446,11 @@ def delete_process(process_id: int, session: SessionDep):
     - **process_id** (int): ID of the process to delete
     
     ### Raises:
-    - 404: If process doesn't exist
+    - status.HTTP_404_NOT_FOUND: If process doesn't exist
     """
     process = session.get(Process, process_id)
     if not process:
-        raise HTTPException(status_code=404, detail="Proceso no encontrado")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Proceso no encontrado")
     
     session.delete(process)
     session.commit()

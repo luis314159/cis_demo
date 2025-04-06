@@ -21,7 +21,8 @@ router = APIRouter(
 @router.get('/products',
             response_description="List all products",
             tags=["Product"],
-            response_model=List[Product]
+            response_model=List[Product],
+            status_code= status.HTTP_200_OK
             )
 def list_products(
     session: SessionDep,

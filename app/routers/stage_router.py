@@ -1,4 +1,4 @@
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 from models import Stage, StageCreate
 from db import SessionDep
 from fastapi import APIRouter
@@ -15,8 +15,8 @@ router = APIRouter(
         response_description="Returns the newly created stage",
         tags=["Stages"],  # Agrupa en la sección "Stages"
         responses={
-            200: {"description": "Stage created successfully"},
-            400: {"description": "A stage with this name already exists"},
+            status.HTTP_201_CREATED: {"description": "Stage created successfully"},
+            status.HTTP_409_CONFLICT: {"description": "A stage with this name already exists"},
         },
     )
 def add_stage(stage_data: StageCreate, session: SessionDep):
@@ -34,7 +34,7 @@ def add_stage(stage_data: StageCreate, session: SessionDep):
 
     ### Raises:
     - `HTTPException`:
-        - `400`: If a stage with the same name already exists.
+        - `status.HTTP_409_CONFLICT`: If a stage with the same name already exists.
 
     ### Example Usage:
     ```http
@@ -61,7 +61,7 @@ def add_stage(stage_data: StageCreate, session: SessionDep):
     """
     existing_stage = session.exec(select(Stage).where(Stage.stage_name == stage_data.stage_name)).first()
     if existing_stage:
-        raise HTTPException(status_code=400, detail="El Stage ya existe.")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="El Stage ya existe.")
 
     stage = Stage.model_validate(stage_data)
     session.add(stage)
