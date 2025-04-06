@@ -387,20 +387,15 @@ class BaseUser(SQLModel):
     middle_name: Optional[str] = Field(max_length=50, default=None)
     first_surname: str = Field(max_length=50)
     second_surname: Optional[str] = Field(max_length=50, default=None)
-    hashed_password: str = Field(max_length=255, nullable=False)
-    is_active: bool = Field(default=True)
-    created_at: Optional[datetime] = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: Optional[datetime] = Field(default=None)
-    deleted_at: Optional[datetime] = Field(default=None)
 
 class CreateUser(BaseUser):
-    role_id: int = Field(foreign_key="role.role_id", nullable=False)
     password: str = Field(nullable=False)
+    role_name: str = Field(nullable=False)
 
 class User(BaseUser, table=True):
     __tablename__ = "user"
     user_id: Optional[int] = Field(default=None, primary_key=True)
-    hashed_password: str = Field(nullable=False)
+    hashed_password: str = Field(max_length=255, nullable=False)
     is_active: bool = Field(default=True)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: Optional[datetime] = Field(default=None)

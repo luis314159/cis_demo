@@ -34,10 +34,11 @@ def add_user(user_data: CreateUser, session: SessionDep):
         - password: Plain text password (will be hashed)
         - email: User's email address
         - first_name: User's first name
-        - last_name: User's last name
+        - middle_name: User's middle name (optional)
+        - first_surname: User's primary surname
+        - second_surname: User's secondary surname (optional)
         - role_name: Name of the assigned role
-        - employee_number: Optional employee number (for all users)
-        - supervisor_number: Optional supervisor number (only for supervisors)
+        - employee_number: Employee identification number (optional)
 
     ### Returns:
     - **ResponseUser**: Created user details (excluding password)
@@ -49,7 +50,9 @@ def add_user(user_data: CreateUser, session: SessionDep):
         "password": "securepassword123",
         "email": "jdoe@example.com",
         "first_name": "John",
-        "last_name": "Doe",
+        "middle_name": "Michael",
+        "first_surname": "Doe",
+        "second_surname": "Smith",
         "role_name": "operator",
         "employee_number": "EMP-001"
     }
@@ -62,11 +65,14 @@ def add_user(user_data: CreateUser, session: SessionDep):
         "username": "jdoe",
         "email": "jdoe@example.com",
         "first_name": "John",
-        "last_name": "Doe",
+        "middle_name": "Michael",
+        "first_surname": "Doe",
+        "second_surname": "Smith",
         "role_id": 2,
         "is_active": true,
         "employee_number": "EMP-001",
-        "supervisor_number": null
+        "created_at": "2023-08-20T15:30:00Z",
+        "updated_at": null
     }
     ```
     """
@@ -80,45 +86,18 @@ def add_user(user_data: CreateUser, session: SessionDep):
     if not role:
         raise HTTPException(status_code=404, detail="El rol especificado no existe.")
     
-    # Verificar si es un supervisor
-    is_supervisor = role.role_name.lower() == 'supervisor'
-    
-    # Verificar número de supervisor (solo si es supervisor y se proporciona un número)
-    if user_data.supervisor_number:
-        if not is_supervisor:
-            raise HTTPException(
-                status_code=400, 
-                detail="Solo los usuarios con rol de supervisor pueden tener número de supervisor"
-            )
-            
-        # Verificar si el número de supervisor ya está en uso
-        existing_supervisor = session.exec(
-            select(User).where(User.supervisor_number == user_data.supervisor_number)
-        ).first()
-        if existing_supervisor:
-            raise HTTPException(
-                status_code=400, 
-                detail="El número de supervisor ya está en uso"
-            )
-    
-    # Verificar que un supervisor tenga número de supervisor
-    if is_supervisor and not user_data.supervisor_number:
-        raise HTTPException(
-            status_code=400,
-            detail="Los usuarios con rol de supervisor deben tener un número de supervisor"
-        )
-
     # Crear una instancia de User con la contraseña hasheada
     hashed_password = get_password_hash(user_data.password)
     user = User(
         username=user_data.username,
         email=user_data.email,
         first_name=user_data.first_name,
-        last_name=user_data.last_name,
+        middle_name=user_data.middle_name,
+        first_surname=user_data.first_surname,
+        second_surname=user_data.second_surname,
         hashed_password=hashed_password,
         role_id=role.role_id,
-        employee_number=user_data.employee_number,  # Añadido el campo de número de empleado
-        supervisor_number=user_data.supervisor_number if is_supervisor else None  # Añadido el campo de número de supervisor
+        employee_number=user_data.employee_number  # Añadido el campo de número de empleado
     )
     session.add(user)
     session.commit()
