@@ -1,9 +1,3 @@
-# # Importar todas las clases de cis_models.py
-# from .cis_models import *
-
-# # Importar todas las clases de users.py
-# from .users import *
-
 from sqlmodel import SQLModel, Field, Relationship
 from typing import List, Optional
 from datetime import datetime, timezone
@@ -291,7 +285,7 @@ class DefectRecord(DefectRecordBase, table=True):
     Modelo de tabla para registros de defectos
     """
     __tablename__ = "defect_record"
-    defect_record_id: Optional[int] = Field(default=None, primary_key=True)
+    defect_record_id: int = Field(default=None, primary_key=True)
     
     # Relaciones
     product: "Product" = Relationship(back_populates="defect_records")
