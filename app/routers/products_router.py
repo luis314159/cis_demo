@@ -15,10 +15,10 @@ logger = logging.getLogger(__name__)
 # Definimos el router
 router = APIRouter(
     prefix="/products",
-    tags=["products"]
+    tags=["Product"]
 )
 
-@router.get('/products',
+@router.get('/',
             response_description="List all products",
             tags=["Product"],
             response_model=List[Product],
@@ -31,7 +31,7 @@ def list_products(
     products = session.exec(statement).all()
     return products
 
-@router.post('/products',
+@router.post('/',
             response_description="Create a new product",
             tags=["Product"],
             response_model=Product,
