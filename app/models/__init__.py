@@ -247,6 +247,13 @@ class CorrectionProcess(CorrectionProcessBase, table=True):
 class CorrectionProcessCreate(CorrectionProcessBase):
     pass
 
+class CorrectionProcessUpdate(CorrectionProcessBase):
+    pass
+
+class CorrectionProcessResponse(CorrectionProcessBase):
+    correction_process_id: int
+
+
 # --- Image Type ---
 class ImageTypeBase(SQLModel):
     type_name: str = Field(max_length=50, unique=True, nullable=False)
