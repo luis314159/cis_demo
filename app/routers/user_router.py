@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import select, Session
 from models import User, Role, UpdateUserRequest
 from db import SessionDep
@@ -189,6 +189,103 @@ def list_users(session: SessionDep):
     """
     users = session.exec(select(User)).all()
     return users
+
+@router.get(
+    "/users/by-role/",
+    response_model=list[ResponseUser],
+    response_model_exclude={"hashed_password"},
+    summary="List users filtered by role name",
+    response_description="Returns list of users filtered by role name",
+    status_code=status.HTTP_200_OK,
+    responses={
+        404: {"description": "Role not found"},
+        400: {"description": "Invalid role name format"}
+    }
+)
+def list_users_by_role_name(
+    session: SessionDep,
+    role_name: Annotated[
+        str | None, 
+        Query(
+            title="Role Name",
+            description="Filter users by role name (case-insensitive). Omit to get all users.",
+            examples=["admin", "user", "manager"],
+            min_length=2,
+            max_length=50,
+            pattern="^[a-zA-Z0-9_\- ]+$"  # Regex para validar nombres de roles
+        )
+    ] = None
+):
+    """
+    ## Get users filtered by role name
+
+    Retrieves a list of users optionally filtered by role name (case-insensitive search).
+
+    ### Parameters:
+    - **role_name** (optional): 
+        - String representing the role name to filter by (2-50 caracteres)
+        - Case-insensitive search
+        - Omit to get all users regardless of role
+
+    ### Returns:
+    - **List[ResponseUser]**: List of user objects excluding sensitive data
+
+    ### Examples:
+    1. Get all users:
+    ```bash
+    GET /users/by-role/
+    ```
+
+    2. Get users with role_name="admin":
+    ```bash
+    GET /users/by-role/?role_name=admin
+    ```
+
+    ### Example Response:
+    ```json
+    [
+        {
+            "user_id": 1,
+            "username": "admin",
+            "email": "admin@example.com",
+            "first_name": "System",
+            "last_name": "Admin",
+            "role_id": 1,
+            "is_active": true,
+            "role": {
+                "role_id": 1,
+                "name": "admin"
+            }
+        }
+    ]
+    ```
+    """
+    query = select(User).join(User.role)  # Asume relación User.role con tabla Role
+    
+    if role_name is not None:
+        # Búsqueda case-insensitive (ilike) y verificación que el rol exista
+        role_exists = session.exec(
+            select(Role).where(Role.role_name.ilike(f"%{role_name}%"))
+        ).first()
+        
+        if not role_exists:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"No users found with role containing: '{role_name}'"
+            )
+        
+        query = query.where(Role.role_name.ilike(f"%{role_name}%"))
+    
+    users = session.exec(query).all()
+    
+    if not users and role_name:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No users found for role: '{role_name}'"
+        )
+    
+    return users
+
 
 
 @router.get("/list_roles", response_model=list[Role],
