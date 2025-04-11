@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select
 from typing import List, Optional
 from datetime import datetime
-from models import DefectRecord, DefectRecordCreate, DefectRecordRead, DefectRecordUpdate, Job, Product
+from models import DefectRecord, DefectRecordCreate, DefectRecordRead, DefectRecordUpdate, Job, Product, Process, Issue
 from db import SessionDep
 
 router = APIRouter(prefix="/defect-records", tags=["Defect Records"])
@@ -109,6 +109,34 @@ def search_defect_records(
         .join(Product, DefectRecord.product_id == Product.product_id)
         .where(Job.job_code == job_code)
         .where(Product.product_name == product_name)
+    )
+
+    # Ejecutamos la consulta
+    results = session.exec(query).all()
+
+    # Si no encontramos resultados, lanzamos una excepción 404
+    if not results:
+        raise HTTPException(status_code=404, detail="No defect records found")
+
+    return results
+
+@router.get("/search/{job_code}/{product_name}/{process_name}", response_model=list[DefectRecordRead], status_code = status.HTTP_200_OK)
+def search_defect_records(
+    job_code: str,
+    product_name: str,
+    process_name: str,
+    session: SessionDep
+):
+    # Realizamos la consulta usando select y joins
+    query = (
+        select(DefectRecord)
+        .join(Job, DefectRecord.job_id == Job.job_id)
+        .join(Product, DefectRecord.product_id == Product.product_id)
+        .join(Issue, DefectRecord.issue_id == Issue.issue_id)
+        .join(Process, Issue.process_id == Process.process_id)
+        .where(Job.job_code == job_code)
+        .where(Product.product_name == product_name)
+        .where(Process.process_name == process_name)
     )
 
     # Ejecutamos la consulta

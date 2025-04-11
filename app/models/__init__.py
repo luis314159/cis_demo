@@ -277,7 +277,6 @@ class DefectRecordBase(SQLModel):
     """
     product_id: int = Field(foreign_key="product.product_id")
     job_id: int = Field(foreign_key="job.job_id")
-    process_id: int = Field(foreign_key="process.process_id")
     inspector_user_id: int = Field(foreign_key="user.user_id")
     issue_by_user_id: int = Field(foreign_key="user.user_id")
     issue_id: int = Field(foreign_key="issue.issue_id")
