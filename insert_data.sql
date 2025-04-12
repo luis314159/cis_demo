@@ -98,6 +98,7 @@ INSERT INTO job (job_code, status, created_at, product_id) VALUES
 
 -- Tabla user (usuarios con roles)
 -- Se corrige el nombre de la columna 'password' a 'hashed_pwd' según la definición de la tabla.
+
 INSERT INTO "user" (
     employee_number, 
     username, 
