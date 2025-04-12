@@ -106,18 +106,17 @@ INSERT INTO "user" (
     middle_name, 
     first_surname, 
     second_surname, 
-    hashed_pwd, 
-    active, 
+    hashed_password, 
+    is_active, 
     created_at, 
-    modified_at, 
-    last_login, 
+    updated_at, 
     role_id
 ) VALUES 
-    (10001, 'inspector1', 'inspector1@example.com', 'John', NULL, 'Smith', NULL, 'hashed_pwd_1', 1, datetime('now', '-60 days'), NULL, NULL, 1),
-    (10002, 'inspector2', 'inspector2@example.com', 'Mary', 'Jane', 'Johnson', NULL, 'hashed_pwd_2', 1, datetime('now', '-58 days'), NULL, NULL, 1),
-    (10003, 'operator1', 'operator1@example.com', 'Robert', NULL, 'Brown', 'Jr', 'hashed_pwd_3', 1, datetime('now', '-55 days'), NULL, NULL, 2),
-    (10004, 'operator2', 'operator2@example.com', 'Susan', NULL, 'Miller', NULL, 'hashed_pwd_4', 1, datetime('now', '-50 days'), NULL, NULL, 2),
-    (10005, 'operator3', 'operator3@example.com', 'James', 'T', 'Wilson', NULL, 'hashed_pwd_5', 1, datetime('now', '-45 days'), NULL, NULL, 2);
+    (10001, 'inspector1', 'inspector1@example.com', 'John', NULL, 'Smith', NULL, 'hashed_pwd_1', 1, datetime('now', '-60 days'), NULL, 1),
+    (10002, 'inspector2', 'inspector2@example.com', 'Mary', 'Jane', 'Johnson', NULL, 'hashed_pwd_2', 1, datetime('now', '-58 days'), NULL, 1),
+    (10003, 'operator1', 'operator1@example.com', 'Robert', NULL, 'Brown', 'Jr', 'hashed_pwd_3', 1, datetime('now', '-55 days'), NULL, 2),
+    (10004, 'operator2', 'operator2@example.com', 'Susan', NULL, 'Miller', NULL, 'hashed_pwd_4', 1, datetime('now', '-50 days'), NULL, 2),
+    (10005, 'operator3', 'operator3@example.com', 'James', 'T', 'Wilson', NULL, 'hashed_pwd_5', 1, datetime('now', '-45 days'), NULL, 2);
 
 -- Tablas con dependencias nivel 2
 
