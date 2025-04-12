@@ -26,8 +26,8 @@ INSERT INTO process (process_name) VALUES
 INSERT INTO product (product_id, product_name) VALUES 
     (1, 'TANKS'),
     (2, 'ENCLOSURES'),
-    (3, 'ATC/COMPARTMENT'),
-    (4, 'CLAMP/HEAD IRON'),
+    (3, 'ATC-COMPARTMENT'),
+    (4, 'CLAMP-HEAD IRON'),
     (5, 'JUNCTION BOX');
 
 -- Tabla status
@@ -50,7 +50,8 @@ INSERT INTO image_type (type_name) VALUES
 
 -- Tabla role
 INSERT INTO role (role_name) VALUES 
-    ('Inspector'),
+    ('Engineer'),
+    ('Admin'),
     ('Operator');
 
 -- Tablas con dependencias nivel 1
