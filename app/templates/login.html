@@ -11,7 +11,7 @@
 <div class="container d-flex flex-column align-items-center justify-content-center mt-5">
     <!-- Div para mensajes de error -->
     <div id="error-message" class="alert alert-danger mt-3" style="display: none;">
-        <!-- Aquí se mostrará el mensaje de error -->
+        Credenciales incorrectas. Por favor, verifique su usuario y contraseña.
     </div>
 
     <!-- Logo de la empresa -->
@@ -39,7 +39,7 @@
     </div>
 </div>
 {% endblock content %}
+
 {% block extra_scripts %}
 <script src="{{ url_for('static', path='js/login.js') }}"></script>
-
 {% endblock %}

@@ -1,0 +1,1108 @@
+<!-- templates/defect_management.html -->
+{% extends 'base.html' %}
+
+{% block title %}Gestión de Defectos{% endblock %}
+
+{% block extra_head %}
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.tailwindcss.com"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Pestañas de navegación -->
+    <div class="mb-8 border-b border-gray-200">
+        <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" id="tabs">
+            <li class="mr-2" role="presentation">
+                <button class="inline-block p-4 border-b-2 border-blue-500 rounded-t-lg active" 
+                    id="defect-records-tab" onclick="changeTab('defect-records')">
+                    Registros de Defectos
+                </button>
+            </li>
+            <li class="mr-2" role="presentation">
+                <button class="inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:border-gray-300" 
+                    id="defect-codes-tab" onclick="changeTab('defect-codes')">
+                    Códigos de Defectos
+                </button>
+            </li>
+            <li class="mr-2" role="presentation">
+                <button class="inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:border-gray-300" 
+                    id="issues-tab" onclick="changeTab('issues')">
+                    Problemas (Issues)
+                </button>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Tab content -->
+    <div id="tab-content">
+        <!-- Registros de Defectos -->
+        <div id="defect-records-content" class="tab-content">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-2xl font-bold">Registros de Defectos</h1>
+                <button onclick="openDefectRecordModal()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                    </svg>
+                    Nuevo Registro
+                </button>
+            </div>
+
+            <!-- Filtros para Registros de Defectos -->
+            <div class="flex gap-4 mb-6">
+                <div class="flex-1 relative">
+                    <input 
+                        type="text" 
+                        id="defectRecordSearchInput"
+                        placeholder="Buscar por código de trabajo o producto" 
+                        class="pl-10 pr-4 py-2 border rounded-lg w-full"
+                        oninput="filterDefectRecords()"
+                    >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 absolute left-3 top-2.5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <select id="statusFilter" class="border rounded-lg px-4 py-2 w-48" onchange="filterDefectRecords()">
+                    <option value="">Todos los estados</option>
+                </select>
+            </div>
+
+            <!-- Tabla de Registros de Defectos -->
+            <div class="bg-white rounded-lg shadow overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Producto</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trabajo</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Proceso</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Problema</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="defectRecordsTableBody" class="divide-y divide-gray-200">
+                        <!-- Los registros se cargarán aquí dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Códigos de Defectos -->
+        <div id="defect-codes-content" class="tab-content hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-2xl font-bold">Códigos de Defectos</h1>
+                <button onclick="openDefectCodeModal()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                    </svg>
+                    Nuevo Código
+                </button>
+            </div>
+
+            <!-- Filtros para Códigos de Defectos -->
+            <div class="flex gap-4 mb-6">
+                <div class="flex-1 relative">
+                    <input 
+                        type="text" 
+                        id="defectCodeSearchInput"
+                        placeholder="Buscar por código o descripción" 
+                        class="pl-10 pr-4 py-2 border rounded-lg w-full"
+                        oninput="filterDefectCodes()"
+                    >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 absolute left-3 top-2.5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Tabla de Códigos de Defectos -->
+            <div class="bg-white rounded-lg shadow overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="defectCodesTableBody" class="divide-y divide-gray-200">
+                        <!-- Los códigos se cargarán aquí dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Problemas (Issues) -->
+        <div id="issues-content" class="tab-content hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-2xl font-bold">Problemas (Issues)</h1>
+                <button onclick="openIssueModal()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                    </svg>
+                    Nuevo Problema
+                </button>
+            </div>
+
+            <!-- Filtros para Problemas -->
+            <div class="flex gap-4 mb-6">
+                <div class="flex-1 relative">
+                    <input 
+                        type="text" 
+                        id="issueSearchInput"
+                        placeholder="Buscar por descripción" 
+                        class="pl-10 pr-4 py-2 border rounded-lg w-full"
+                        oninput="filterIssues()"
+                    >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 absolute left-3 top-2.5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <select id="processFilter" class="border rounded-lg px-4 py-2 w-48" onchange="filterIssues()">
+                    <option value="">Todos los procesos</option>
+                </select>
+            </div>
+
+            <!-- Tabla de Problemas -->
+            <div class="bg-white rounded-lg shadow overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Proceso</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="issuesTableBody" class="divide-y divide-gray-200">
+                        <!-- Los problemas se cargarán aquí dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Crear/Editar Registro de Defecto -->
+<div id="defectRecordModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
+    <div class="bg-white rounded-lg p-6 w-full max-w-md">
+        <h2 id="defectRecordModalTitle" class="text-xl font-bold mb-4">Nuevo Registro de Defecto</h2>
+        <form id="defectRecordForm" onsubmit="handleDefectRecordSubmit(event)">
+            <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Producto</label>
+                        <select id="product_id" name="product_id" required 
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <option value="">Seleccionar producto</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Trabajo</label>
+                        <select id="job_id" name="job_id" required 
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <option value="">Seleccionar trabajo</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Proceso</label>
+                        <select id="process_id" name="process_id" required 
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <option value="">Seleccionar proceso</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Inspector</label>
+                        <select id="inspector_user_id" name="inspector_user_id" required 
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <option value="">Seleccionar inspector</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Responsable</label>
+                        <select id="issue_by_user_id" name="issue_by_user_id" required 
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <option value="">Seleccionar responsable</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Problema</label>
+                        <select id="issue_id" name="issue_id" required 
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <option value="">Seleccionar problema</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Proceso de corrección</label>
+                        <select id="correction_process_id" name="correction_process_id" 
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <option value="">Seleccionar proceso</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Estado</label>
+                        <select id="status_id" name="status_id" required 
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <option value="">Seleccionar estado</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Fecha apertura</label>
+                        <input type="datetime-local" id="date_opened" name="date_opened" required 
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Fecha cierre</label>
+                        <input type="datetime-local" id="date_closed" name="date_closed" 
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-4">
+                <button type="button" onclick="closeDefectRecordModal()" 
+                    class="px-4 py-2 border rounded-md text-gray-600 hover:bg-gray-50">
+                    Cancelar
+                </button>
+                <button type="submit" 
+                    class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+                    Guardar
+                </button>
+            </div>
+            <input type="hidden" id="editingDefectRecordId">
+        </form>
+    </div>
+</div>
+
+<!-- Modal para Crear/Editar Código de Defecto -->
+<div id="defectCodeModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
+    <div class="bg-white rounded-lg p-6 w-full max-w-md">
+        <h2 id="defectCodeModalTitle" class="text-xl font-bold mb-4">Nuevo Código de Defecto</h2>
+        <form id="defectCodeForm" onsubmit="handleDefectCodeSubmit(event)">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Código</label>
+                    <input type="number" id="code" name="code" required 
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Descripción</label>
+                    <textarea id="description" name="description" required 
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        rows="3"></textarea>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-4">
+                <button type="button" onclick="closeDefectCodeModal()" 
+                    class="px-4 py-2 border rounded-md text-gray-600 hover:bg-gray-50">
+                    Cancelar
+                </button>
+                <button type="submit" 
+                    class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+                    Guardar
+                </button>
+            </div>
+            <input type="hidden" id="editingDefectCodeId">
+        </form>
+    </div>
+</div>
+
+<!-- Modal para Crear/Editar Problema (Issue) -->
+<div id="issueModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
+    <div class="bg-white rounded-lg p-6 w-full max-w-md">
+        <h2 id="issueModalTitle" class="text-xl font-bold mb-4">Nuevo Problema</h2>
+        <form id="issueForm" onsubmit="handleIssueSubmit(event)">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Descripción</label>
+                    <textarea id="issue_description" name="issue_description" required 
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        rows="3"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Proceso</label>
+                    <select id="issue_process_id" name="process_id" required 
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        <option value="">Seleccionar proceso</option>
+                    </select>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-4">
+                <button type="button" onclick="closeIssueModal()" 
+                    class="px-4 py-2 border rounded-md text-gray-600 hover:bg-gray-50">
+                    Cancelar
+                </button>
+                <button type="submit" 
+                    class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+                    Guardar
+                </button>
+            </div>
+            <input type="hidden" id="editingIssueId">
+        </form>
+    </div>
+</div>
+    
+{% endblock %}
+    
+<script>
+    // Variables globales para almacenar datos
+    let defectRecords = [];
+    let defectCodes = [];
+    let issues = [];
+    let products = [];
+    let jobs = [];
+    let processes = [];
+    let users = [];
+    let statuses = [];
+
+    // Función para cambiar de pestaña
+    function changeTab(tabId) {
+        const tabs = document.querySelectorAll('.tab-content');
+        tabs.forEach(tab => tab.classList.add('hidden'));
+        document.getElementById(`${tabId}-content`).classList.remove('hidden');
+
+        // Actualizar clases de las pestañas
+        document.querySelectorAll('#tabs button').forEach(btn => {
+            btn.classList.remove('border-blue-500');
+            btn.classList.add('border-transparent');
+        });
+        document.getElementById(`${tabId}-tab`).classList.remove('border-transparent');
+        document.getElementById(`${tabId}-tab`).classList.add('border-blue-500');
+
+        // Cargar datos específicos de la pestaña si es necesario
+        if (tabId === 'defect-records' && defectRecords.length === 0) {
+            loadDefectRecords();
+        } else if (tabId === 'defect-codes' && defectCodes.length === 0) {
+            loadDefectCodes();
+        } else if (tabId === 'issues' && issues.length === 0) {
+            loadIssues();
+        }
+    }
+
+    // Cargar datos iniciales al cargar la página
+    document.addEventListener('DOMContentLoaded', async function() {
+        await Promise.all([
+            loadCommonData(),
+            loadDefectRecords()
+        ]);
+    });
+
+    // Cargar datos comunes necesarios para todas las pestañas
+    async function loadCommonData() {
+        try {
+            const [
+                productsResponse,
+                jobsResponse,
+                processesResponse,
+                usersResponse,
+                statusesResponse
+            ] = await Promise.all([
+                fetch('/products'),
+                fetch('/jobs'),
+                fetch('/processes'),
+                fetch('/users/list_users'),
+                fetch('/statuses')
+            ]);
+
+            products = await productsResponse.json();
+            jobs = await jobsResponse.json();
+            processes = await processesResponse.json();
+            users = await usersResponse.json();
+            statuses = await statusesResponse.json();
+
+            // Actualizar filtros
+            updateStatusFilter();
+            updateProcessFilter();
+        } catch (error) {
+            console.error('Error al cargar datos comunes:', error);
+        }
+    }
+
+    // Actualizar filtro de estados
+    function updateStatusFilter() {
+        const statusFilter = document.getElementById('statusFilter');
+        statusFilter.innerHTML = '<option value="">Todos los estados</option>';
+        
+        statuses.forEach(status => {
+            statusFilter.add(new Option(status.status_name, status.status_id));
+        });
+    }
+
+    // Actualizar filtro de procesos
+    function updateProcessFilter() {
+        const processFilter = document.getElementById('processFilter');
+        processFilter.innerHTML = '<option value="">Todos los procesos</option>';
+        
+        processes.forEach(process => {
+            processFilter.add(new Option(process.process_name, process.process_id));
+        });
+    }
+
+    // Actualizar selects en los modales
+    function updateFormSelects() {
+        // Selects para el formulario de Defect Record
+        const productSelect = document.getElementById('product_id');
+        const jobSelect = document.getElementById('job_id');
+        const processSelect = document.getElementById('process_id');
+        const correctionProcessSelect = document.getElementById('correction_process_id');
+        const inspectorSelect = document.getElementById('inspector_user_id');
+        const issueBySelect = document.getElementById('issue_by_user_id');
+        const issueSelect = document.getElementById('issue_id');
+        const statusSelect = document.getElementById('status_id');
+        
+        // Limpiar y actualizar selects
+        productSelect.innerHTML = '<option value="">Seleccionar producto</option>';
+        jobSelect.innerHTML = '<option value="">Seleccionar trabajo</option>';
+        processSelect.innerHTML = '<option value="">Seleccionar proceso</option>';
+        correctionProcessSelect.innerHTML = '<option value="">Seleccionar proceso</option>';
+        inspectorSelect.innerHTML = '<option value="">Seleccionar inspector</option>';
+        issueBySelect.innerHTML = '<option value="">Seleccionar responsable</option>';
+        issueSelect.innerHTML = '<option value="">Seleccionar problema</option>';
+        statusSelect.innerHTML = '<option value="">Seleccionar estado</option>';
+        
+        // Llenar selects con datos
+        products.forEach(product => {
+            productSelect.add(new Option(product.product_name, product.product_id));
+        });
+        
+        jobs.forEach(job => {
+            jobSelect.add(new Option(job.job_code, job.job_id));
+        });
+        
+        processes.forEach(process => {
+            processSelect.add(new Option(process.process_name, process.process_id));
+            correctionProcessSelect.add(new Option(process.process_name, process.process_id));
+        });
+        
+        users.forEach(user => {
+            inspectorSelect.add(new Option(`${user.first_name} ${user.last_name}`, user.user_id));
+            issueBySelect.add(new Option(`${user.first_name} ${user.last_name}`, user.user_id));
+        });
+        
+        issues.forEach(issue => {
+            issueSelect.add(new Option(issue.issue_description, issue.issue_id));
+        });
+        
+        statuses.forEach(status => {
+            statusSelect.add(new Option(status.status_name, status.status_id));
+        });
+        
+        // Select para el formulario de Issue
+        const issueProcessSelect = document.getElementById('issue_process_id');
+        issueProcessSelect.innerHTML = '<option value="">Seleccionar proceso</option>';
+        
+        processes.forEach(process => {
+            issueProcessSelect.add(new Option(process.process_name, process.process_id));
+        });
+    }
+
+    /***************************
+     * DEFECT RECORDS FUNCTIONS
+     ***************************/
+    
+    // Cargar registros de defectos
+    async function loadDefectRecords() {
+        try {
+            const response = await fetch('/defect-records/');
+            defectRecords = await response.json();
+            renderDefectRecords(defectRecords);
+        } catch (error) {
+            console.error('Error al cargar registros de defectos:', error);
+        }
+    }
+
+    // Filtrar registros de defectos
+    function filterDefectRecords() {
+        const searchTerm = document.getElementById('defectRecordSearchInput').value.toLowerCase();
+        const selectedStatus = document.getElementById('statusFilter').value;
+        
+        let filtered = defectRecords;
+        
+        if (searchTerm) {
+            filtered = filtered.filter(record => {
+                const job = jobs.find(j => j.job_id === record.job_id);
+                const product = products.find(p => p.product_id === record.product_id);
+                
+                return (job && job.job_code.toLowerCase().includes(searchTerm)) || 
+                       (product && product.product_name.toLowerCase().includes(searchTerm));
+            });
+        }
+        
+        if (selectedStatus) {
+            filtered = filtered.filter(record => record.status_id.toString() === selectedStatus);
+        }
+        
+        renderDefectRecords(filtered);
+    }
+    
+    // Renderizar registros de defectos en la tabla
+    function renderDefectRecords(records) {
+        const tbody = document.getElementById('defectRecordsTableBody');
+        tbody.innerHTML = '';
+        
+        if (records.length === 0) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td colspan="8" class="px-6 py-4 text-center text-gray-500">No se encontraron registros</td>
+            `;
+            tbody.appendChild(tr);
+            return;
+        }
+        
+        records.forEach(record => {
+            const product = products.find(p => p.product_id === record.product_id) || { product_name: 'N/A' };
+            const job = jobs.find(j => j.job_id === record.job_id) || { job_code: 'N/A' };
+            const process = processes.find(p => p.process_id === record.process_id) || { process_name: 'N/A' };
+            const issue = issues.find(i => i.issue_id === record.issue_id) || { issue_description: 'N/A' };
+            const status = statuses.find(s => s.status_id === record.status_id) || { status_name: 'N/A' };
+            
+            const dateOpened = new Date(record.date_opened).toLocaleString();
+            
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="px-6 py-4 text-sm font-medium text-gray-900">${record.defect_record_id}</td>
+                <td class="px-6 py-4 text-sm text-gray-500">${product.product_name}</td>
+                <td class="px-6 py-4 text-sm text-gray-500">${job.job_code}</td>
+                <td class="px-6 py-4 text-sm text-gray-500">${process.process_name}</td>
+                <td class="px-6 py-4 text-sm text-gray-500">${issue.issue_description}</td>
+                <td class="px-6 py-4 text-sm text-gray-500">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                    ${status.status_name === 'Abierto' ? 'bg-red-100 text-red-800' : 
+                      status.status_name === 'Cerrado' ? 'bg-green-100 text-green-800' : 
+                      'bg-yellow-100 text-yellow-800'}">
+                        ${status.status_name}
+                    </span>
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-500">${dateOpened}</td>
+                <td class="px-6 py-4 text-sm font-medium">
+                    <button onclick="editDefectRecord(${record.defect_record_id})" class="text-indigo-600 hover:text-indigo-900 mr-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                        </svg>
+                    </button>
+                    <button onclick="deleteDefectRecord(${record.defect_record_id})" class="text-red-600 hover:text-red-900">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+    
+    // Abrir modal para nuevo registro de defecto
+    function openDefectRecordModal() {
+        document.getElementById('defectRecordModalTitle').textContent = 'Nuevo Registro de Defecto';
+        document.getElementById('defectRecordForm').reset();
+        document.getElementById('editingDefectRecordId').value = '';
+        document.getElementById('date_opened').value = new Date().toISOString().slice(0, 16);
+        
+        updateFormSelects();
+        document.getElementById('defectRecordModal').classList.remove('hidden');
+    }
+    
+    // Cerrar modal de registro de defecto
+    function closeDefectRecordModal() {
+        document.getElementById('defectRecordModal').classList.add('hidden');
+    }
+    
+    // Manejar envío del formulario de registro de defecto
+    async function handleDefectRecordSubmit(event) {
+        event.preventDefault();
+        
+        const formData = new FormData(document.getElementById('defectRecordForm'));
+        const data = Object.fromEntries(formData.entries());
+        
+        // Convertir IDs a números
+        Object.keys(data).forEach(key => {
+            if (key !== 'date_opened' && key !== 'date_closed' && data[key] !== '') {
+                data[key] = parseInt(data[key]);
+            }
+        });
+        
+        // Si date_closed está vacío, eliminar la propiedad
+        if (data.date_closed === '') {
+            delete data.date_closed;
+        }
+        
+        const editingId = document.getElementById('editingDefectRecordId').value;
+        
+        try {
+            let response;
+            
+            if (editingId) {
+                // Actualizar registro existente
+                response = await fetch(`/defect-records/${editingId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+            } else {
+                // Crear nuevo registro
+                response = await fetch('/defect-records/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+            }
+            
+            if (response.ok) {
+                closeDefectRecordModal();
+                await loadDefectRecords();
+            } else {
+                const error = await response.json();
+                alert(`Error: ${error.detail}`);
+            }
+        } catch (error) {
+            console.error('Error al guardar registro de defecto:', error);
+            alert('Ocurrió un error al guardar el registro');
+        }
+    }
+    
+    // Editar registro de defecto
+    async function editDefectRecord(id) {
+        try {
+            const response = await fetch(`/defect-records/${id}`);
+            const record = await response.json();
+            
+            document.getElementById('defectRecordModalTitle').textContent = 'Editar Registro de Defecto';
+            
+            // Actualizar selects antes de establecer valores
+            await updateFormSelects();
+            
+            // Establecer valores en el formulario
+            document.getElementById('product_id').value = record.product_id;
+            document.getElementById('job_id').value = record.job_id;
+            document.getElementById('process_id').value = record.process_id;
+            document.getElementById('inspector_user_id').value = record.inspector_user_id;
+            document.getElementById('issue_by_user_id').value = record.issue_by_user_id;
+            document.getElementById('issue_id').value = record.issue_id;
+            document.getElementById('correction_process_id').value = record.correction_process_id || '';
+            document.getElementById('status_id').value = record.status_id;
+            document.getElementById('date_opened').value = new Date(record.date_opened).toISOString().slice(0, 16);
+            
+            if (record.date_closed) {
+                document.getElementById('date_closed').value = new Date(record.date_closed).toISOString().slice(0, 16);
+            } else {
+                document.getElementById('date_closed').value = '';
+            }
+            
+            document.getElementById('editingDefectRecordId').value = id;
+            
+            // Abrir modal
+            document.getElementById('defectRecordModal').classList.remove('hidden');
+        } catch (error) {
+            console.error('Error al cargar registro para editar:', error);
+            alert('Error al cargar datos del registro');
+        }
+    }
+    
+    // Eliminar registro de defecto
+    async function deleteDefectRecord(id) {
+        if (!confirm('¿Está seguro de eliminar este registro?')) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/defect-records/${id}`, {
+                method: 'DELETE'
+            });
+            
+            if (response.ok) {
+                await loadDefectRecords();
+            } else {
+                const error = await response.json();
+                alert(`Error: ${error.detail}`);
+            }
+        } catch (error) {
+            console.error('Error al eliminar registro:', error);
+            alert('Ocurrió un error al eliminar el registro');
+        }
+    }
+    
+    /***************************
+     * DEFECT CODES FUNCTIONS
+     ***************************/
+    
+    // Cargar códigos de defectos
+    async function loadDefectCodes() {
+        try {
+            const response = await fetch('/defect-codes/');
+            defectCodes = await response.json();
+            renderDefectCodes(defectCodes);
+        } catch (error) {
+            console.error('Error al cargar códigos de defectos:', error);
+        }
+    }
+    
+    // Filtrar códigos de defectos
+    function filterDefectCodes() {
+        const searchTerm = document.getElementById('defectCodeSearchInput').value.toLowerCase();
+        
+        let filtered = defectCodes;
+        
+        if (searchTerm) {
+            filtered = filtered.filter(code => 
+                code.code.toString().includes(searchTerm) || 
+                code.description.toLowerCase().includes(searchTerm)
+            );
+        }
+        
+        renderDefectCodes(filtered);
+    }
+    
+    // Renderizar códigos de defectos en la tabla
+    function renderDefectCodes(codes) {
+        const tbody = document.getElementById('defectCodesTableBody');
+        tbody.innerHTML = '';
+        
+        if (codes.length === 0) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td colspan="4" class="px-6 py-4 text-center text-gray-500">No se encontraron códigos</td>
+            `;
+            tbody.appendChild(tr);
+            return;
+        }
+        
+        codes.forEach(code => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="px-6 py-4 text-sm font-medium text-gray-900">${code.defect_code_id}</td>
+                <td class="px-6 py-4 text-sm text-gray-500">${code.code}</td>
+                <td class="px-6 py-4 text-sm text-gray-500">${code.description}</td>
+                <td class="px-6 py-4 text-sm font-medium">
+                    <button onclick="editDefectCode(${code.defect_code_id})" class="text-indigo-600 hover:text-indigo-900 mr-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                        </svg>
+                    </button>
+                    <button onclick="deleteDefectCode(${code.defect_code_id})" class="text-red-600 hover:text-red-900">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+    
+    // Abrir modal para nuevo código de defecto
+    function openDefectCodeModal() {
+        document.getElementById('defectCodeModalTitle').textContent = 'Nuevo Código de Defecto';
+        document.getElementById('defectCodeForm').reset();
+        document.getElementById('editingDefectCodeId').value = '';
+        
+        document.getElementById('defectCodeModal').classList.remove('hidden');
+    }
+    
+    // Cerrar modal de código de defecto
+    function closeDefectCodeModal() {
+        document.getElementById('defectCodeModal').classList.add('hidden');
+    }
+    
+    // Manejar envío del formulario de código de defecto
+    async function handleDefectCodeSubmit(event) {
+        event.preventDefault();
+        
+        const formData = new FormData(document.getElementById('defectCodeForm'));
+        const data = Object.fromEntries(formData.entries());
+        
+        // Convertir código a número
+        data.code = parseInt(data.code);
+        
+        const editingId = document.getElementById('editingDefectCodeId').value;
+        
+        try {
+            let response;
+            
+            if (editingId) {
+                // Actualizar código existente
+                response = await fetch(`/defect-codes/${editingId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+            } else {
+                // Crear nuevo código
+                response = await fetch('/defect-codes/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+            }
+            
+            if (response.ok) {
+                closeDefectCodeModal();
+                await loadDefectCodes();
+            } else {
+                const error = await response.json();
+                alert(`Error: ${error.detail}`);
+            }
+        } catch (error) {
+            console.error('Error al guardar código de defecto:', error);
+            alert('Ocurrió un error al guardar el código');
+        }
+    }
+    
+    // Editar código de defecto
+    async function editDefectCode(id) {
+        try {
+            const response = await fetch(`/defect-codes/${id}`);
+            const code = await response.json();
+            
+            document.getElementById('defectCodeModalTitle').textContent = 'Editar Código de Defecto';
+            
+            // Establecer valores en el formulario
+            document.getElementById('code').value = code.code;
+            document.getElementById('description').value = code.description;
+            document.getElementById('editingDefectCodeId').value = id;
+            
+            // Abrir modal
+            document.getElementById('defectCodeModal').classList.remove('hidden');
+        } catch (error) {
+            console.error('Error al cargar código para editar:', error);
+            alert('Error al cargar datos del código');
+        }
+    }
+    
+    // Eliminar código de defecto
+    async function deleteDefectCode(id) {
+        if (!confirm('¿Está seguro de eliminar este código?')) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/defect-codes/${id}`, {
+                method: 'DELETE'
+            });
+            
+            if (response.ok) {
+                await loadDefectCodes();
+            } else {
+                const error = await response.json();
+                alert(`Error: ${error.detail}`);
+            }
+        } catch (error) {
+            console.error('Error al eliminar código:', error);
+            alert('Ocurrió un error al eliminar el código');
+        }
+    }
+    
+    /***************************
+     * ISSUES FUNCTIONS
+     ***************************/
+    
+    // Cargar problemas (issues)
+    async function loadIssues() {
+        try {
+            const response = await fetch('/issues/');
+            issues = await response.json();
+            renderIssues(issues);
+        } catch (error) {
+            console.error('Error al cargar problemas:', error);
+        }
+    }
+    
+    // Filtrar problemas
+    function filterIssues() {
+        const searchTerm = document.getElementById('issueSearchInput').value.toLowerCase();
+        const selectedProcess = document.getElementById('processFilter').value;
+        
+        let filtered = issues;
+        
+        if (searchTerm) {
+            filtered = filtered.filter(issue => 
+                issue.issue_description.toLowerCase().includes(searchTerm)
+            );
+        }
+        
+        if (selectedProcess) {
+            filtered = filtered.filter(issue => issue.process_id.toString() === selectedProcess);
+        }
+        
+        renderIssues(filtered);
+    }
+    
+    // Renderizar problemas en la tabla
+    function renderIssues(issueList) {
+        const tbody = document.getElementById('issuesTableBody');
+        tbody.innerHTML = '';
+        
+        if (issueList.length === 0) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td colspan="4" class="px-6 py-4 text-center text-gray-500">No se encontraron problemas</td>
+            `;
+            tbody.appendChild(tr);
+            return;
+        }
+        
+        issueList.forEach(issue => {
+            const process = processes.find(p => p.process_id === issue.process_id) || { process_name: 'N/A' };
+            
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="px-6 py-4 text-sm font-medium text-gray-900">${issue.issue_id}</td>
+                <td class="px-6 py-4 text-sm text-gray-500">${issue.issue_description}</td>
+                <td class="px-6 py-4 text-sm text-gray-500">${process.process_name}</td>
+                <td class="px-6 py-4 text-sm font-medium">
+                    <button onclick="editIssue(${issue.issue_id})" class="text-indigo-600 hover:text-indigo-900 mr-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                        </svg>
+                    </button>
+                    <button onclick="deleteIssue(${issue.issue_id})" class="text-red-600 hover:text-red-900">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+    
+    // Abrir modal para nuevo problema
+    function openIssueModal() {
+        document.getElementById('issueModalTitle').textContent = 'Nuevo Problema';
+        document.getElementById('issueForm').reset();
+        document.getElementById('editingIssueId').value = '';
+        
+        // Actualizar select de procesos
+        const issueProcessSelect = document.getElementById('issue_process_id');
+        issueProcessSelect.innerHTML = '<option value="">Seleccionar proceso</option>';
+        
+        processes.forEach(process => {
+            issueProcessSelect.add(new Option(process.process_name, process.process_id));
+        });
+        
+        document.getElementById('issueModal').classList.remove('hidden');
+    }
+    
+    // Cerrar modal de problema
+    function closeIssueModal() {
+        document.getElementById('issueModal').classList.add('hidden');
+    }
+    
+    // Manejar envío del formulario de problema
+    async function handleIssueSubmit(event) {
+        event.preventDefault();
+        
+        const formData = new FormData(document.getElementById('issueForm'));
+        const data = Object.fromEntries(formData.entries());
+        
+        // Convertir process_id a número
+        data.process_id = parseInt(data.process_id);
+        
+        const editingId = document.getElementById('editingIssueId').value;
+        
+        try {
+            let response;
+            
+            if (editingId) {
+                // Actualizar problema existente
+                response = await fetch(`/issues/${editingId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+            } else {
+                // Crear nuevo problema
+                response = await fetch('/issues/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+            }
+            
+            if (response.ok) {
+                closeIssueModal();
+                await loadIssues();
+                // Recargar también los registros para actualizar los selects de problemas
+                await loadDefectRecords();
+            } else {
+                const error = await response.json();
+                alert(`Error: ${error.detail}`);
+            }
+        } catch (error) {
+            console.error('Error al guardar problema:', error);
+            alert('Ocurrió un error al guardar el problema');
+        }
+    }
+    
+    // Editar problema
+    async function editIssue(id) {
+        try {
+            const response = await fetch(`/issues/${id}`);
+            const issue = await response.json();
+            
+            document.getElementById('issueModalTitle').textContent = 'Editar Problema';
+            
+            // Actualizar select de procesos
+            const issueProcessSelect = document.getElementById('issue_process_id');
+            issueProcessSelect.innerHTML = '<option value="">Seleccionar proceso</option>';
+            
+            processes.forEach(process => {
+                issueProcessSelect.add(new Option(process.process_name, process.process_id));
+            });
+            
+            // Establecer valores en el formulario
+            document.getElementById('issue_description').value = issue.issue_description;
+            document.getElementById('issue_process_id').value = issue.process_id;
+            document.getElementById('editingIssueId').value = id;
+            
+            // Abrir modal
+            document.getElementById('issueModal').classList.remove('hidden');
+        } catch (error) {
+            console.error('Error al cargar problema para editar:', error);
+            alert('Error al cargar datos del problema');
+        }
+    }
+    
+    // Eliminar problema
+    async function deleteIssue(id) {
+        if (!confirm('¿Está seguro de eliminar este problema?')) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/issues/${id}`, {
+                method: 'DELETE'
+            });
+            
+            if (response.ok) {
+                await loadIssues();
+            } else {
+                const error = await response.json();
+                alert(`Error: ${error.detail}`);
+            }
+        } catch (error) {
+            console.error('Error al eliminar problema:', error);
+            alert('Ocurrió un error al eliminar el problema');
+        }
+    }

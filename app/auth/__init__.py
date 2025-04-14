@@ -100,33 +100,33 @@ def get_current_active_user(
 ) -> User:
     
 
-    fake_role = Role(
-        role_id=1,
-        role_name="Admin"  # O "Supervisor" dependiendo de lo que necesites
-    )
+    # fake_role = Role(
+    #     role_id=1,
+    #     role_name="Admin"  # O "Supervisor" dependiendo de lo que necesites
+    # )
     
     # Creamos un usuario ficticio con todos los campos necesarios
-    fake_user = User(
-        user_id=1,
-        username="admin_temp",  # Asumiendo que username existe en BaseUser
-        email="admin@example.com",  # Asumiendo que email existe en BaseUser
-        hashed_password="fake_hashed_password",
-        is_active=True,
-        created_at=datetime.now(timezone.utc),
-        role_id=1,
-        role=fake_role,
-        # Si necesitas acceso como supervisor, descomenta la siguiente línea
-        # supervisor_number=12345
-    )
+    # fake_user = User(
+    #     user_id=1,
+    #     username="admin_temp",  # Asumiendo que username existe en BaseUser
+    #     email="admin@example.com",  # Asumiendo que email existe en BaseUser
+    #     hashed_password="fake_hashed_password",
+    #     is_active=True,
+    #     created_at=datetime.now(timezone.utc),
+    #     role_id=1,
+    #     role=fake_role,
+    #     # Si necesitas acceso como supervisor, descomenta la siguiente línea
+    #     # supervisor_number=12345
+    # )
     
-    return fake_user
+    # return fake_user
 
-    # if not current_user.is_active:
-    #     raise HTTPException(
-    #         status_code=status.HTTP_400_BAD_REQUEST,
-    #         detail="Usuario inactivo"
-    #     )
-    # return current_user
+    if not current_user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Usuario inactivo"
+        )
+    return current_user
 
 def require_role(required_role: str):
     def role_checker(

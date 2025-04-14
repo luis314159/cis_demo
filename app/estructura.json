@@ -1,0 +1,834 @@
+{
+  "tables": {
+    "stage": {
+      "columns": [
+        {
+          "name": "stage_name",
+          "type": "VARCHAR(50)",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "stage_id",
+          "type": "INTEGER",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": true
+        }
+      ],
+      "indexes": [
+        {
+          "name": "sqlite_autoindex_stage_1",
+          "unique": true,
+          "columns": [
+            "stage_name"
+          ]
+        }
+      ]
+    },
+    "process": {
+      "columns": [
+        {
+          "name": "process_name",
+          "type": "VARCHAR(50)",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "process_id",
+          "type": "INTEGER",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": true
+        }
+      ],
+      "indexes": [
+        {
+          "name": "sqlite_autoindex_process_1",
+          "unique": true,
+          "columns": [
+            "process_name"
+          ]
+        }
+      ]
+    },
+    "product": {
+      "columns": [
+        {
+          "name": "product_name",
+          "type": "VARCHAR(255)",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "product_id",
+          "type": "INTEGER",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": true
+        }
+      ]
+    },
+    "status": {
+      "columns": [
+        {
+          "name": "status_name",
+          "type": "VARCHAR(50)",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "status_id",
+          "type": "INTEGER",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": true
+        }
+      ],
+      "indexes": [
+        {
+          "name": "sqlite_autoindex_status_1",
+          "unique": true,
+          "columns": [
+            "status_name"
+          ]
+        }
+      ]
+    },
+    "correction_process": {
+      "columns": [
+        {
+          "name": "correction_process_description",
+          "type": "VARCHAR(255)",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "correction_process_id",
+          "type": "INTEGER",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": true
+        }
+      ]
+    },
+    "image_type": {
+      "columns": [
+        {
+          "name": "type_name",
+          "type": "VARCHAR(50)",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "image_type_id",
+          "type": "INTEGER",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": true
+        }
+      ],
+      "indexes": [
+        {
+          "name": "sqlite_autoindex_image_type_1",
+          "unique": true,
+          "columns": [
+            "type_name"
+          ]
+        }
+      ]
+    },
+    "role": {
+      "columns": [
+        {
+          "name": "role_name",
+          "type": "VARCHAR",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "role_id",
+          "type": "INTEGER",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": true
+        }
+      ],
+      "indexes": [
+        {
+          "name": "sqlite_autoindex_role_1",
+          "unique": true,
+          "columns": [
+            "role_name"
+          ]
+        }
+      ]
+    },
+    "job": {
+      "columns": [
+        {
+          "name": "job_code",
+          "type": "VARCHAR(50)",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "status",
+          "type": "BOOLEAN",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "not_null": false,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "job_id",
+          "type": "INTEGER",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": true
+        },
+        {
+          "name": "product_id",
+          "type": "INTEGER",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        }
+      ],
+      "foreign_keys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "table": "product",
+          "from": "product_id",
+          "to": "product_id",
+          "on_update": "NO ACTION",
+          "on_delete": "NO ACTION",
+          "match": "NONE"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "sqlite_autoindex_job_1",
+          "unique": true,
+          "columns": [
+            "job_code"
+          ]
+        }
+      ]
+    },
+    "process_stage": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "INTEGER",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": true
+        },
+        {
+          "name": "process_id",
+          "type": "INTEGER",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "stage_id",
+          "type": "INTEGER",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "order",
+          "type": "INTEGER",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        }
+      ],
+      "foreign_keys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "table": "stage",
+          "from": "stage_id",
+          "to": "stage_id",
+          "on_update": "NO ACTION",
+          "on_delete": "NO ACTION",
+          "match": "NONE"
+        },
+        {
+          "id": 1,
+          "seq": 0,
+          "table": "process",
+          "from": "process_id",
+          "to": "process_id",
+          "on_update": "NO ACTION",
+          "on_delete": "NO ACTION",
+          "match": "NONE"
+        }
+      ]
+    },
+    "issue": {
+      "columns": [
+        {
+          "name": "issue_description",
+          "type": "VARCHAR(255)",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "issue_id",
+          "type": "INTEGER",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": true
+        },
+        {
+          "name": "process_id",
+          "type": "INTEGER",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        }
+      ],
+      "foreign_keys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "table": "process",
+          "from": "process_id",
+          "to": "process_id",
+          "on_update": "NO ACTION",
+          "on_delete": "NO ACTION",
+          "match": "NONE"
+        }
+      ]
+    },
+    "user": {
+      "columns": [
+        {
+          "name": "employee_number",
+          "type": "INTEGER",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "username",
+          "type": "VARCHAR(50)",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "email",
+          "type": "VARCHAR(255)",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "first_name",
+          "type": "VARCHAR(50)",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "middle_name",
+          "type": "VARCHAR(50)",
+          "not_null": false,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "first_surname",
+          "type": "VARCHAR(50)",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "second_surname",
+          "type": "VARCHAR(50)",
+          "not_null": false,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "user_id",
+          "type": "INTEGER",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": true
+        },
+        {
+          "name": "hashed_password",
+          "type": "VARCHAR(255)",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "is_active",
+          "type": "BOOLEAN",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "updated_at",
+          "type": "DATETIME",
+          "not_null": false,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "deleted_at",
+          "type": "DATETIME",
+          "not_null": false,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "role_id",
+          "type": "INTEGER",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        }
+      ],
+      "foreign_keys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "table": "role",
+          "from": "role_id",
+          "to": "role_id",
+          "on_update": "NO ACTION",
+          "on_delete": "NO ACTION",
+          "match": "NONE"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "sqlite_autoindex_user_2",
+          "unique": true,
+          "columns": [
+            "username"
+          ]
+        },
+        {
+          "name": "sqlite_autoindex_user_1",
+          "unique": true,
+          "columns": [
+            "employee_number"
+          ]
+        }
+      ]
+    },
+    "item": {
+      "columns": [
+        {
+          "name": "item_name",
+          "type": "VARCHAR(255)",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "espesor",
+          "type": "FLOAT",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "longitud",
+          "type": "FLOAT",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "ancho",
+          "type": "FLOAT",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "alto",
+          "type": "FLOAT",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "volumen",
+          "type": "FLOAT",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "area_superficial",
+          "type": "FLOAT",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "cantidad",
+          "type": "INTEGER",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "material",
+          "type": "VARCHAR",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "ocr",
+          "type": "VARCHAR(255)",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "item_id",
+          "type": "INTEGER",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": true
+        },
+        {
+          "name": "job_id",
+          "type": "INTEGER",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "process_id",
+          "type": "INTEGER",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        }
+      ],
+      "foreign_keys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "table": "process",
+          "from": "process_id",
+          "to": "process_id",
+          "on_update": "NO ACTION",
+          "on_delete": "NO ACTION",
+          "match": "NONE"
+        },
+        {
+          "id": 1,
+          "seq": 0,
+          "table": "job",
+          "from": "job_id",
+          "to": "job_id",
+          "on_update": "NO ACTION",
+          "on_delete": "NO ACTION",
+          "match": "NONE"
+        }
+      ]
+    },
+    "defect_record": {
+      "columns": [
+        {
+          "name": "product_id",
+          "type": "INTEGER",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "job_id",
+          "type": "INTEGER",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "inspector_user_id",
+          "type": "INTEGER",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "issue_by_user_id",
+          "type": "INTEGER",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "issue_id",
+          "type": "INTEGER",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "correction_process_id",
+          "type": "INTEGER",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "status_id",
+          "type": "INTEGER",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "date_closed",
+          "type": "DATETIME",
+          "not_null": false,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "date_opened",
+          "type": "DATETIME",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "defect_record_id",
+          "type": "INTEGER",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": true
+        }
+      ],
+      "foreign_keys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "table": "status",
+          "from": "status_id",
+          "to": "status_id",
+          "on_update": "NO ACTION",
+          "on_delete": "NO ACTION",
+          "match": "NONE"
+        },
+        {
+          "id": 1,
+          "seq": 0,
+          "table": "correction_process",
+          "from": "correction_process_id",
+          "to": "correction_process_id",
+          "on_update": "NO ACTION",
+          "on_delete": "NO ACTION",
+          "match": "NONE"
+        },
+        {
+          "id": 2,
+          "seq": 0,
+          "table": "issue",
+          "from": "issue_id",
+          "to": "issue_id",
+          "on_update": "NO ACTION",
+          "on_delete": "NO ACTION",
+          "match": "NONE"
+        },
+        {
+          "id": 3,
+          "seq": 0,
+          "table": "user",
+          "from": "issue_by_user_id",
+          "to": "user_id",
+          "on_update": "NO ACTION",
+          "on_delete": "NO ACTION",
+          "match": "NONE"
+        },
+        {
+          "id": 4,
+          "seq": 0,
+          "table": "user",
+          "from": "inspector_user_id",
+          "to": "user_id",
+          "on_update": "NO ACTION",
+          "on_delete": "NO ACTION",
+          "match": "NONE"
+        },
+        {
+          "id": 5,
+          "seq": 0,
+          "table": "job",
+          "from": "job_id",
+          "to": "job_id",
+          "on_update": "NO ACTION",
+          "on_delete": "NO ACTION",
+          "match": "NONE"
+        },
+        {
+          "id": 6,
+          "seq": 0,
+          "table": "product",
+          "from": "product_id",
+          "to": "product_id",
+          "on_update": "NO ACTION",
+          "on_delete": "NO ACTION",
+          "match": "NONE"
+        }
+      ]
+    },
+    "object": {
+      "columns": [
+        {
+          "name": "current_stage",
+          "type": "INTEGER",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "rework",
+          "type": "INTEGER",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "scrap",
+          "type": "INTEGER",
+          "not_null": false,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "object_id",
+          "type": "INTEGER",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": true
+        },
+        {
+          "name": "item_id",
+          "type": "INTEGER",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        }
+      ],
+      "foreign_keys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "table": "item",
+          "from": "item_id",
+          "to": "item_id",
+          "on_update": "NO ACTION",
+          "on_delete": "NO ACTION",
+          "match": "NONE"
+        },
+        {
+          "id": 1,
+          "seq": 0,
+          "table": "stage",
+          "from": "current_stage",
+          "to": "stage_id",
+          "on_update": "NO ACTION",
+          "on_delete": "NO ACTION",
+          "match": "NONE"
+        }
+      ]
+    },
+    "defect_image": {
+      "columns": [
+        {
+          "name": "image_url",
+          "type": "VARCHAR(255)",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "defect_image_id",
+          "type": "INTEGER",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": true
+        },
+        {
+          "name": "defect_record_id",
+          "type": "INTEGER",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        },
+        {
+          "name": "image_type_id",
+          "type": "INTEGER",
+          "not_null": true,
+          "default_value": null,
+          "primary_key": false
+        }
+      ],
+      "foreign_keys": [
+        {
+          "id": 0,
+          "seq": 0,
+          "table": "image_type",
+          "from": "image_type_id",
+          "to": "image_type_id",
+          "on_update": "NO ACTION",
+          "on_delete": "NO ACTION",
+          "match": "NONE"
+        },
+        {
+          "id": 1,
+          "seq": 0,
+          "table": "defect_record",
+          "from": "defect_record_id",
+          "to": "defect_record_id",
+          "on_update": "NO ACTION",
+          "on_delete": "NO ACTION",
+          "match": "NONE"
+        }
+      ]
+    }
+  }
+}

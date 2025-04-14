@@ -17,9 +17,8 @@
     <thead>
         <tr>
             <th>Item Name</th>
-            <th>OCR</th>
-            <th>Ratio</th>
-            <th>Status</th>
+            <th>Stage</th>
+            <th>Count</th>
             <th>Acciones</th>
         </tr>
     </thead>
@@ -30,17 +29,22 @@
 
 <script>
     async function loadJobsForFilter() {
-        const response = await fetch('/jobs/list');
-        const jobs = await response.json();
-        const jobFilter = document.getElementById('job-filter');
+        try {
+            const response = await fetch('/jobs/list');
+            const jobs = await response.json();
+            const jobFilter = document.getElementById('job-filter');
 
-        jobFilter.innerHTML = '<option value="">Selecciona un Job</option>';
-        jobs.forEach(job => {
-            const option = document.createElement('option');
-            option.value = job.job_code;
-            option.textContent = job.job_code;
-            jobFilter.appendChild(option);
-        });
+            jobFilter.innerHTML = '<option value="">Selecciona un Job</option>';
+            jobs.forEach(job => {
+                const option = document.createElement('option');
+                option.value = job.job_code;
+                option.textContent = job.job_code;
+                jobFilter.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error cargando jobs:', error);
+            alert('Error al cargar los jobs. Por favor, intenta de nuevo más tarde.');
+        }
     }
 
     async function loadItems(jobCode) {
@@ -49,37 +53,57 @@
             return;
         }
 
-        const response = await fetch(`/jobs/${jobCode}/status`);
-        const data = await response.json();
-        const itemsTable = document.getElementById('items-table');
+        try {
+            const response = await fetch(`/jobs/${jobCode}/status`);
+            const data = await response.json();
+            const itemsTable = document.getElementById('items-table');
 
-        itemsTable.innerHTML = '';
-        data.stages.forEach(stage => {
-            stage.items.forEach(item => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${item.item_name}</td>
-                    <td>${item.item_ocr}</td>
-                    <td>${item.ratio}</td>
-                    <td>${item.status ? 'Completado' : 'Pendiente'}</td>
-                    <td>
-                        <button class="btn btn-danger" onclick="deleteItem('${item.item_ocr}')">Eliminar</button>
-                    </td>
-                `;
-                itemsTable.appendChild(row);
-            });
-        });
+            itemsTable.innerHTML = '';
+            
+            // Comprobamos si hay objetos para iterar
+            if (data.objects && Array.isArray(data.objects)) {
+                data.objects.forEach(item => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${item.item_name}</td>
+                        <td>${item.stage_name}</td>
+                        <td>${item.count}</td>
+                        <td>
+                            <button class="btn btn-danger" onclick="deleteItem('${item.item_name}')">Eliminar</button>
+                        </td>
+                    `;
+                    itemsTable.appendChild(row);
+                });
+            } else {
+                itemsTable.innerHTML = '<tr><td colspan="4" class="text-center">No hay items disponibles para este job</td></tr>';
+            }
+        } catch (error) {
+            console.error('Error cargando items:', error);
+            document.getElementById('items-table').innerHTML = 
+                '<tr><td colspan="4" class="text-center">Error al cargar los items. Por favor, intenta de nuevo más tarde.</td></tr>';
+        }
     }
 
-    async function deleteItem(itemOCR) {
-        if (confirm(`¿Estás seguro de que quieres eliminar el Item '${itemOCR}'?`)) {
-            const response = await fetch(`/items/${itemOCR}`, { method: 'DELETE' });
-            if (response.ok) {
-                alert('Item eliminado correctamente');
-                const jobCode = document.getElementById('job-filter').value;
-                loadItems(jobCode);
-            } else {
-                alert('Error al eliminar el Item');
+    async function deleteItem(itemName) {
+        if (confirm(`¿Estás seguro de que quieres eliminar el Item '${itemName}'?`)) {
+            try {
+                // Aquí asumo que el endpoint para eliminar es por el nombre del item,
+                // ajusta según tu API real
+                const response = await fetch(`/items/${encodeURIComponent(itemName)}`, { 
+                    method: 'DELETE' 
+                });
+                
+                if (response.ok) {
+                    alert('Item eliminado correctamente');
+                    const jobCode = document.getElementById('job-filter').value;
+                    loadItems(jobCode);
+                } else {
+                    const errorData = await response.json().catch(() => null);
+                    alert(`Error al eliminar el Item: ${errorData?.message || response.statusText}`);
+                }
+            } catch (error) {
+                console.error('Error eliminando item:', error);
+                alert('Error al eliminar el Item. Por favor, intenta de nuevo más tarde.');
             }
         }
     }
@@ -88,6 +112,9 @@
         loadItems(e.target.value);
     });
 
-    loadJobsForFilter();
+    // Cargar los jobs al iniciar la página
+    document.addEventListener('DOMContentLoaded', () => {
+        loadJobsForFilter();
+    });
 </script>
 {% endblock %}

@@ -15,6 +15,13 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+map_dict: Dict[str, str] = {
+    "Almacén": "Warehouse",
+    "Corte": "Cutting", 
+    "Doblado": "Bending", 
+    "Maquinado": "Machining"  # Fixed typo: "Macnining" → "Machining"
+}
+
 # Definimos el router
 router = APIRouter(
     prefix="/object",
@@ -296,7 +303,7 @@ def validate_and_insert(
             })
 
         # Database operations
-        job_code = unique_jobs[0]
+        job_code = str(unique_jobs[0])
         logger.info(f"Processing job_code: {job_code}")
         
         existing_job = session.exec(select(Job).where(Job.job_code == job_code)).first()
@@ -308,16 +315,19 @@ def validate_and_insert(
         logger.info(f"Processing {len(unique_processes)} unique processes")
         
         for process_name in unique_processes:
-            existing_process = session.exec(select(Process).where(Process.process_name == process_name)).first()
+            # Apply mapping for both new and existing jobs
+            process_name_mapped = map_dict[process_name] if process_name in map_dict else process_name
+            logger.info(f"Processing process: {process_name} (mapped to: {process_name_mapped})")
+            existing_process = session.exec(select(Process).where(Process.process_name == process_name_mapped)).first()
             if not existing_process:
-                logger.info(f"Creating new process: {process_name}")
-                new_process = Process(process_name=process_name)
+                logger.info(f"Creating new process: {process_name_mapped}")
+                new_process = Process(process_name=process_name_mapped)
                 session.add(new_process)
                 session.commit()
                 session.refresh(new_process)
                 process_map[process_name] = new_process
             else:
-                logger.info(f"Using existing process: {process_name}")
+                logger.info(f"Using existing process: {process_name_mapped}")
                 process_map[process_name] = existing_process
 
         if existing_job:
@@ -342,6 +352,7 @@ def validate_and_insert(
             for _, row in df.iterrows():
                 if row["Item"] not in existing_item_names:
                     logger.info(f"Creating new item: {row['Item']}")
+                    # Get process name and apply mapping if needed
                     process_name = row["Clase"]
                     
                     # Handle NaN values with default 0

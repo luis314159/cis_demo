@@ -9,15 +9,15 @@ const productSelect = document.getElementById("productSelect");
 document.addEventListener("DOMContentLoaded", async () => {
     try {
         showSpinner();
-        // Usar el endpoint correcto para obtener productos
-        const response = await fetch("/products/");
-
+        // Corregido: URL del endpoint debe ser "/object/products" según el router definido
+        const response = await fetch("/products/products");
+        
         if (response.ok) {
             const products = await response.json();
-
+            
             // Limpiar opciones anteriores
             productSelect.innerHTML = '<option value="" selected disabled>-- Seleccione un producto --</option>';
-
+            
             // Agregar productos al selector
             products.forEach(product => {
                 const option = document.createElement("option");
@@ -53,7 +53,7 @@ uploadForm.addEventListener("submit", async (e) => {
     // Validar selección de producto
     const selectedProduct = productSelect.value;
     const selectedProductText = productSelect.options[productSelect.selectedIndex].text;
-
+    
     if (!selectedProduct) {
         showNotification("Por favor, selecciona un producto.", "error");
         return;
@@ -70,29 +70,25 @@ uploadForm.addEventListener("submit", async (e) => {
     const file = fileInput.files[0];
     const formData = new FormData();
     formData.append("file", file);
+    // Ya no agregamos product_name al FormData porque lo enviaremos como query parameter
 
     try {
         console.log("Enviando datos: ", {
             file: fileInput.files[0].name,
             product_name: selectedProductText
         });
-
-        // Enviamos product_name como query parameter 
+        
+        // Agregamos el product_name como query parameter en la URL en lugar de en el FormData
         const response = await fetch(`/object/validate-and-insert?product_name=${encodeURIComponent(selectedProductText)}`, {
             method: "POST",
             body: formData,
         });
 
         if (!response.ok) {
-            // Intentar obtener detalles del error
+            // Si hay un error, vamos a intentar obtener más detalles
             try {
                 const errorData = await response.json();
-                const errorMessage = typeof errorData === 'object' ? 
-                    (errorData.detail && typeof errorData.detail === 'object' ? 
-                        errorData.detail.error || JSON.stringify(errorData.detail) : 
-                        errorData.detail || JSON.stringify(errorData)) : 
-                    errorData;
-                showNotification(`Error: ${errorMessage}`, "error");
+                showNotification(`Error: ${JSON.stringify(errorData)}`, "error");
                 console.error("Error detallado:", errorData);
             } catch (jsonError) {
                 showNotification(`Error ${response.status}: ${response.statusText}`, "error");
@@ -102,13 +98,16 @@ uploadForm.addEventListener("submit", async (e) => {
         }
 
         const result = await response.json();
-        showNotification(result.message || "¡Archivo procesado con éxito!", "success");
 
-        // Reiniciar el formulario después de un envío exitoso
-        uploadForm.reset();
-        fileName.textContent = "Ningún archivo seleccionado";
-        fileName.classList.add("hidden");
-
+        if (response.ok) {
+            showNotification(`¡Archivo procesado con éxito! ${result.detail}`, "success");
+            // Opcional: reiniciar el formulario después de un envío exitoso
+            uploadForm.reset();
+            fileName.textContent = "Ningún archivo seleccionado";
+            fileName.classList.add("hidden");
+        } else {
+            showNotification(`Error: ${result.detail}`, "error");
+        }
     } catch (error) {
         showNotification("Ocurrió un error al subir el archivo.", "error");
         console.error("Upload error:", error);
