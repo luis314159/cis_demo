@@ -117,6 +117,7 @@ def search_defect_records(
             Status.status_name.label("status"),  # Campo status
             Inspector.username.label("inspectBy"),  # Campo inspectBy
             Issuer.username.label("issueBy"),  # Campo issueBy
+            Issue.issue_description.label("issue"),
             CorrectionProcess.correction_process_description.label("todo")  # Campo todo (según tu aclaración)
         )
         .join(Job, DefectRecord.job_id == Job.job_id)
