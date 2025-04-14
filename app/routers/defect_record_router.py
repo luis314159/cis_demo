@@ -2,8 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select
 from typing import List, Optional
 from datetime import datetime
-from models import DefectRecord, DefectRecordCreate, DefectRecordRead, DefectRecordUpdate, Job, Product, Process, Issue
+from models import DefectRecord, DefectRecordCreate, DefectRecordRead, DefectRecordUpdate, DefectRecordResponse, Job, Product, Process, Issue, User, Status, CorrectionProcess
 from db import SessionDep
+from sqlalchemy.orm import aliased
 
 router = APIRouter(prefix="/defect-records", tags=["Defect Records"])
 
@@ -96,25 +97,41 @@ def get_defect_record(
         raise HTTPException(status_code=404, detail="Defect record not found")
     return defect_record
 
-@router.get("/search/{job_code}/{product_name}", response_model=list[DefectRecordRead], status_code = status.HTTP_200_OK)
+@router.get("/search/{job_code}/{product_name}", 
+          response_model=list[DefectRecordResponse], 
+          status_code=status.HTTP_200_OK)
 def search_defect_records(
     job_code: str,
     product_name: str,
     session: SessionDep
 ):
-    # Realizamos la consulta usando select y joins
+    Inspector = aliased(User)
+    Issuer = aliased(User)
+    
     query = (
-        select(DefectRecord)
+        select(
+            DefectRecord.defect_record_id,
+            Process.process_name.label("process"),  # Campo process
+            DefectRecord.date_opened,  # Campo date_opened
+            DefectRecord.date_closed,  # Campo date_closed
+            Status.status_name.label("status"),  # Campo status
+            Inspector.username.label("inspectBy"),  # Campo inspectBy
+            Issuer.username.label("issueBy"),  # Campo issueBy
+            CorrectionProcess.correction_process_description.label("todo")  # Campo todo (según tu aclaración)
+        )
         .join(Job, DefectRecord.job_id == Job.job_id)
         .join(Product, DefectRecord.product_id == Product.product_id)
+        .join(Inspector, DefectRecord.inspector_user_id == Inspector.user_id)
+        .join(Issuer, DefectRecord.issue_by_user_id == Issuer.user_id)
+        .join(Issue, DefectRecord.issue_id == Issue.issue_id)
+        .join(CorrectionProcess, DefectRecord.correction_process_id == CorrectionProcess.correction_process_id)
+        .join(Status, DefectRecord.status_id == Status.status_id)
         .where(Job.job_code == job_code)
         .where(Product.product_name == product_name)
     )
 
-    # Ejecutamos la consulta
     results = session.exec(query).all()
 
-    # Si no encontramos resultados, lanzamos una excepción 404
     if not results:
         raise HTTPException(status_code=404, detail="No defect records found")
 

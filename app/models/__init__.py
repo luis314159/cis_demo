@@ -2,6 +2,7 @@ from sqlmodel import SQLModel, Field, Relationship
 from typing import List, Optional
 from datetime import datetime, timezone
 # from models import User
+from enum import Enum
 
 # Modelo de Stage
 class StageBase(SQLModel):
@@ -330,6 +331,22 @@ class DefectRecordRead(DefectRecordBase):
     defect_record_id: int
     date_opened: datetime
     date_closed: Optional[datetime]
+
+class DefectRecordResponse(SQLModel):
+    defect_record_id: int
+    process: str
+    date_opened: datetime
+    date_closed: Optional[datetime]
+    status: str
+    inspectBy: str
+    issueBy: str
+    todo: str
+    #agregar imagenes después
+
+# class Status(str, Enum):
+#     OK = "ok"
+#     PENDING = "pending"
+#     ERROR = "error"
 
 #==================================#
 # --- Defect Image ---
