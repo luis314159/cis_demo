@@ -47,43 +47,33 @@
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
       </button>
-      {% block navbar_content %}
-      <ul class="navbar-nav me-auto">
-        <li class="nav-item">
-          <a class="nav-link {% if request.path == '/home' %}active{% endif %}" href="/home">Home</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link {% if request.path == '/info' %}active{% endif %}" href="/info">Info</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link {% if request.path == '/documentacion' %}active{% endif %}" href="/documentacion">Documentation</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link {% if request.path == '/QR' %}active{% endif %}" href="/QR">QR</a>
-        </li>
-        <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle {% if request.path.startswith('/defect') or request.path.startswith('/issues') %}active{% endif %}" 
-            href="#" id="defectDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-            Gestión de Defectos
-          </a>
-          <ul class="dropdown-menu" aria-labelledby="defectDropdown">
-            <li><a class="dropdown-item {% if request.path == '/defect-records' %}active{% endif %}" href="/defect-records">Registros de Defectos</a></li>
-            <li><a class="dropdown-item {% if request.path == '/defect-codes' %}active{% endif %}" href="/defect-codes">Códigos de Defectos</a></li>
-            <li><a class="dropdown-item {% if request.path == '/issues' %}active{% endif %}" href="/issues">Problemas (Issues)</a></li>
-          </ul>
-        </li>
-        {% if current_user.role.role_name in ["admin", "ingeniero", "supervisor"] %}
-        <li class="nav-item">
-          <a class="nav-link {% if request.path == '/new_job' %}active{% endif %}" href="/new_job">Add Job</a>
-        </li>
-        {% endif %}
-        {% if current_user.role.role_name in ["admin", "ingeniero", "supervisor"] %}
-        <li class="nav-item">
-          <a class="nav-link {% if request.path.startswith('/admin') %}active{% endif %}" href="/admin">Admin</a>
-        </li>
-        {% endif %}
-      </ul>
-      {% endblock %}
+      <div class="collapse navbar-collapse" id="navbarNav">
+        {% block navbar_content %}
+        <ul class="navbar-nav me-auto">
+          <li class="nav-item">
+            <a class="nav-link {% if request.path == '/home' %}active{% endif %}" href="/home">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.path == '/info' %}active{% endif %}" href="/info">Info</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.path == '/documentacion' %}active{% endif %}" href="/documentacion">Documentation</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.path == '/QR' %}active{% endif %}" href="/QR">QR</a>
+          </li>
+          {% if current_user.role.role_name in ["admin", "ingeniero", "supervisor"] %}
+          <li class="nav-item">
+            <a class="nav-link {% if request.path == '/new_job' %}active{% endif %}" href="/new_job">Add Job</a>
+          </li>
+          {% endif %}
+          {% if current_user.role.role_name in ["admin", "ingeniero", "supervisor"] %}
+          <li class="nav-item">
+            <a class="nav-link {% if request.path.startswith('/admin') %}active{% endif %}" href="/admin">Admin</a>
+          </li>
+          {% endif %}
+        </ul>
+        {% endblock %}
         
         <!-- User Info Section -->
         {% if current_user %}

@@ -1,8 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlmodel import Session, select
-from typing import List, Optional
+from fastapi import APIRouter, HTTPException, status
+from sqlmodel import select, and_
 from datetime import datetime
-from models import DefectRecord, DefectRecordCreate, DefectRecordRead, DefectRecordUpdate, DefectRecordResponse, Job, Product, Process, Issue, User, Status, CorrectionProcess
+from models import DefectRecord, DefectRecordCreate, DefectRecordRead, DefectRecordUpdate, DefectRecordResponse, Job, Product, Process, Issue, User, Status, CorrectionProcess, CompleteDefectRecordResponse
 from db import SessionDep
 from sqlalchemy.orm import aliased
 
@@ -72,7 +71,7 @@ def create_defect_record(defect_record: DefectRecordCreate, session: SessionDep,
     
     return db_defect_record
 
-@router.get("/", response_model=List[DefectRecordRead], status_code = status.HTTP_200_OK)
+@router.get("/", response_model=list[DefectRecordRead], status_code = status.HTTP_200_OK)
 def get_all_defect_records(
     session: SessionDep,
     skip: int = 0,
@@ -166,6 +165,48 @@ def search_defect_records(
     return results
 
 
+@router.get("/complete/{job_serial}/{product_name}", response_model=list[CompleteDefectRecordResponse], status_code = status.HTTP_200_OK)
+def get_defect_code(
+    *,
+    session: SessionDep,
+    job_serial: str,
+    product_name: str
+):
+    # Primero buscamos el producto por su nombre
+    product_query = select(Product).where(Product.product_name == product_name)
+    product = session.exec(product_query).first()
+    
+    if not product:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    
+    # Luego buscamos el job por su código y producto_id
+    job_query = select(Job).where(
+        and_(
+            Job.job_code == job_serial,
+            Job.product_id == product.product_id
+        )
+    )
+    job = session.exec(job_query).first()
+    
+    if not job:
+        raise HTTPException(status_code=404, detail="Job no encontrado")
+    
+    # Finalmente, buscamos el defect_record asociado a este job
+    defect_query = select(DefectRecord).where(
+        and_(
+            DefectRecord.job_id == job.job_id,
+            DefectRecord.product_id == product.product_id
+        )
+    )
+    defect_records = session.exec(defect_query).all()
+    
+    if not defect_records:
+        raise HTTPException(status_code=404, detail="No se encontraron registros de defectos")
+    
+    # Retornamos los defect_records
+    return defect_records
+
+    
 @router.put("/{defect_record_id}", response_model=DefectRecordRead, status_code = status.HTTP_202_ACCEPTED)
 def update_defect_record(
     defect_record_id: int,

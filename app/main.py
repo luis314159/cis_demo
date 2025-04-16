@@ -498,26 +498,7 @@ async def admin_objects(
     request: Request,
     current_user: Annotated[User, Depends(get_current_active_user)]
 ):
-    """
-    ## Endpoint to display the admin users panel
 
-    This endpoint renders the `admin_users.html` template, which is used for managing users by admin users.
-    It requires authentication and admin privileges.
-
-    ### Workflow:
-    1. Verifies the user's authentication token and admin role.
-    2. Renders the `admin_users.html` template with the current user's data.
-    3. Returns the rendered HTML as the response.
-
-    ### Example Usage:
-    ```http
-    GET /admin/users_panel
-    Headers:
-        Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
-
-    Response:
-    - Renders the `admin_users.html` template.
-    """
     return templates.TemplateResponse(
         "admin_users.html", 
         {"request": request, "current_user": current_user}
@@ -535,5 +516,49 @@ async def punch_list_admin(
 ):
     return templates.TemplateResponse(
         "punch_list_admin.html", 
+        {"request": request, "current_user": current_user}
+    )
+
+@app.get("/defect-records", response_class=HTMLResponse,
+        summary="Display the defect records management page",
+        response_description="Renders the defect records management page",
+        tags=["Defect Management"],
+    )
+async def defect_records(
+    request: Request,
+    current_user: Annotated[User, Depends(get_current_active_user)]
+):
+    return templates.TemplateResponse(
+        "defect_records.html", 
+        {"request": request, "current_user": current_user}
+    )
+
+
+@app.get("/defect-codes", response_class=HTMLResponse,
+        summary="Display the defect codes management page",
+        response_description="Renders the defect codes management page",
+        tags=["Defect Management"],
+    )
+async def defect_codes(
+    request: Request,
+    current_user: Annotated[User, Depends(get_current_active_user)]
+):
+    return templates.TemplateResponse(
+        "defect_codes.html", 
+        {"request": request, "current_user": current_user}
+    )
+
+
+@app.get("/issues", response_class=HTMLResponse,
+        summary="Display the issues management page",
+        response_description="Renders the issues management page",
+        tags=["Defect Management"],
+    )
+async def issues(
+    request: Request,
+    current_user: Annotated[User, Depends(get_current_active_user)]
+):
+    return templates.TemplateResponse(
+        "issues.html", 
         {"request": request, "current_user": current_user}
     )

@@ -1,8 +1,7 @@
+from pydantic import EmailStr
 from sqlmodel import SQLModel, Field, Relationship
 from typing import List, Optional
 from datetime import datetime, timezone
-# from models import User
-from enum import Enum
 
 # Modelo de Stage
 class StageBase(SQLModel):
@@ -11,7 +10,7 @@ class StageBase(SQLModel):
 
 class Stage(StageBase, table=True):
     stage_id: Optional[int] = Field(default=None, primary_key=True)
-    process_stages: List["ProcessStage"] = Relationship(back_populates="stage")
+    process_stages: list["ProcessStage"] = Relationship(back_populates="stage")
 
 
 class StageCreate(StageBase):
@@ -29,7 +28,7 @@ class Job(JobBase, table=True):
     items: list["Item"] = Relationship(back_populates="job")
     product_id: int = Field(foreign_key="product.product_id", nullable=False)
     product: "Product" = Relationship(back_populates="jobs")
-    defect_records: List["DefectRecord"] = Relationship(back_populates="job")
+    defect_records: list["DefectRecord"] = Relationship(back_populates="job")
 
 class JobCreate(JobBase):
     client_id: int
@@ -66,7 +65,7 @@ class Item(ItemBase, table=True):
 
 
     @property
-    def stage_ids(self) -> List[str]:
+    def stage_ids(self) -> list[str]:
         """
         Devuelve una lista ordenada de nombres de stages para el proceso asociado con este Item.
         
@@ -85,7 +84,7 @@ class Item(ItemBase, table=True):
         return ordered_stage_ids
 
     @property
-    def stage_names(self) -> List[str]:
+    def stage_names(self) -> list[str]:
         """
         Devuelve una lista ordenada de nombres de stages para el proceso asociado con este Item.
         
@@ -142,7 +141,7 @@ class ObjectDetails(SQLModel):
 
 class JobObjectsResponse(SQLModel):
     job_code: str
-    objects: List[ObjectDetails]
+    objects: list[ObjectDetails]
 
 
 # Tabla intermedia ProcessStage
@@ -164,8 +163,8 @@ class ProcessBase(SQLModel):
 
 class Process(ProcessBase, table=True):
     process_id: Optional[int] = Field(default=None, primary_key=True)
-    process_stages: List[ProcessStage] = Relationship(back_populates="process")
-    items: List["Item"] = Relationship(back_populates="process")  # Relación con Item
+    process_stages: list[ProcessStage] = Relationship(back_populates="process")
+    items: list["Item"] = Relationship(back_populates="process")  # Relación con Item
 
 
 class ProcessCreate(ProcessBase):
@@ -187,11 +186,11 @@ class ItemStageStatus(SQLModel):
 
 class StageStatus(SQLModel):
     stage_name: str
-    items: List[ItemStageStatus]
+    items: list[ItemStageStatus]
 
 class JobStatus(SQLModel):
     job_code: str
-    stages: List[StageStatus]
+    stages: list[StageStatus]
 
 # --- Product ---
 class ProductBase(SQLModel):
@@ -199,11 +198,14 @@ class ProductBase(SQLModel):
 
 class Product(ProductBase, table = True):
     product_id: Optional[int] = Field(default = None, primary_key = True)
-    defect_records: List["DefectRecord"] = Relationship(back_populates= "product")
-    jobs: List["Job"] = Relationship(back_populates="product")
+    defect_records: list["DefectRecord"] = Relationship(back_populates= "product")
+    jobs: list["Job"] = Relationship(back_populates="product")
 
 class ProductCreate(ProductBase):
     pass
+
+class PublicProduct(ProductBase):
+    product_id: int
 
 # --- Issue ---
 class IssueBase(SQLModel):
@@ -212,7 +214,7 @@ class IssueBase(SQLModel):
 class Issue(IssueBase, table=True):
     issue_id: Optional[int] = Field(default=None, primary_key=True)
     process_id: int = Field(foreign_key="process.process_id", nullable=False)
-    defect_records: List["DefectRecord"] = Relationship(back_populates="issue")
+    defect_records: list["DefectRecord"] = Relationship(back_populates="issue")
 
 class IssueCreate(IssueBase):
     process_id: int
@@ -231,10 +233,13 @@ class StatusBase(SQLModel):
 
 class Status(StatusBase, table=True):
     status_id: Optional[int] = Field(default=None, primary_key=True)
-    defect_records: List["DefectRecord"] = Relationship(back_populates="status")
+    defect_records: list["DefectRecord"] = Relationship(back_populates="status")
 
 class StatusCreate(StatusBase):
     pass
+
+class PublicStatus(SQLModel):
+    status_name: str 
 
 # --- Correction Process ---
 class CorrectionProcessBase(SQLModel):
@@ -243,7 +248,7 @@ class CorrectionProcessBase(SQLModel):
 class CorrectionProcess(CorrectionProcessBase, table=True):
     __tablename__ = "correction_process"
     correction_process_id: Optional[int] = Field(default=None, primary_key=True)
-    defect_records: List["DefectRecord"] = Relationship(back_populates="correction_process")
+    defect_records: list["DefectRecord"] = Relationship(back_populates="correction_process")
 
 class CorrectionProcessCreate(CorrectionProcessBase):
     pass
@@ -262,7 +267,7 @@ class ImageTypeBase(SQLModel):
 class ImageType(ImageTypeBase, table=True):
     __tablename__ = "image_type"
     image_type_id: Optional[int] = Field(default=None, primary_key=True)
-    defect_images: List["DefectImage"] = Relationship(back_populates="image_type")
+    defect_images: list["DefectImage"] = Relationship(back_populates="image_type")
 
 class ImageTypeCreate(ImageTypeBase):
     pass
@@ -273,9 +278,6 @@ class ImageTypeCreate(ImageTypeBase):
 #==================================#
 
 class DefectRecordBase(SQLModel):
-    """
-    Clase base para registros de defectos que contiene todos los campos comunes
-    """
     product_id: int = Field(foreign_key="product.product_id")
     job_id: int = Field(foreign_key="job.job_id")
     inspector_user_id: int = Field(foreign_key="user.user_id")
@@ -288,12 +290,8 @@ class DefectRecordBase(SQLModel):
 
 
 class DefectRecord(DefectRecordBase, table=True):
-    """
-    Modelo de tabla para registros de defectos
-    """
     __tablename__ = "defect_record"
     defect_record_id: int = Field(default=None, primary_key=True)
-    
     # Relaciones
     product: "Product" = Relationship(back_populates="defect_records")
     job: "Job" = Relationship(back_populates="defect_records")
@@ -302,20 +300,15 @@ class DefectRecord(DefectRecordBase, table=True):
     issue: "Issue" = Relationship(back_populates="defect_records")
     correction_process: "CorrectionProcess" = Relationship(back_populates="defect_records")
     status: "Status" = Relationship(back_populates="defect_records")
-    images: List["DefectImage"] = Relationship(back_populates="defect_record")
-
+    images: list["DefectImage"] = Relationship(back_populates="defect_record")
+    
+    
 class DefectRecordCreate(DefectRecordBase):
-    """
-    Esquema para la creación de registros de defectos
-    """
     pass
 
 
 
 class DefectRecordUpdate(SQLModel):
-    """
-    Esquema para actualización parcial de registros de defectos
-    """
     date_closed: Optional[datetime] = None
     product_id: Optional[int] = None
     job_id: Optional[int] = None
@@ -326,6 +319,8 @@ class DefectRecordUpdate(SQLModel):
     correction_process_id: Optional[int] = None
     status_id: Optional[int] = None
     description: Optional[str] = None
+    status: "Status" = Relationship(back_populates="defect_records")
+    images: list["DefectImage"] = Relationship(back_populates="defect_record") 
 
 class DefectRecordRead(DefectRecordBase):
     defect_record_id: int
@@ -341,6 +336,21 @@ class DefectRecordResponse(SQLModel):
     inspectBy: str
     issueBy: str
     todo: str
+
+
+
+
+# class DefectRecordBase(SQLModel):
+#     product_id: int = Field(foreign_key="product.product_id")
+#     job_id: int = Field(foreign_key="job.job_id")
+#     inspector_user_id: int = Field(foreign_key="user.user_id")
+#     issue_by_user_id: int = Field(foreign_key="user.user_id")
+#     issue_id: int = Field(foreign_key="issue.issue_id")
+#     correction_process_id: int = Field(foreign_key="correction_process.correction_process_id")
+#     status_id: int = Field(foreign_key="status.status_id")
+#     date_closed: Optional[datetime] = Field(default=None)
+#     date_opened: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
     #agregar imagenes después
 
 # class Status(str, Enum):
@@ -368,13 +378,22 @@ class DefectImageCreate(DefectImageBase):
     defect_record_id: int
     image_type_id: int
 
+class responseDefectImage(DefectImageBase):
+    type_name: str
+    
+    @classmethod
+    def from_orm(cls, defect_image: DefectImage):
+        return cls(
+            image_url=defect_image.image_url,
+            type_name=defect_image.image_type.type_name
+        )
+    
+class PublicDefectImage(DefectImageBase):
+    image_type: ImageType = Relationship(back_populates="defect_images")
 
-from sqlmodel import SQLModel, Field, Relationship
-from typing import Optional, List
-from datetime import datetime, timezone
-from pydantic import EmailStr, FieldValidationInfo, field_validator
-from sqlmodel import Field, Relationship, SQLModel, Session, select
-from models import DefectRecord
+#==================================#
+# --- Roles ---
+#==================================#
 
 class BaseRole(SQLModel):
     role_name: str = Field(unique=True)
@@ -386,6 +405,9 @@ class Role(BaseRole, table=True):
     role_id: Optional[int] = Field(default=None, primary_key=True)
     users: list["User"] = Relationship(back_populates="role")
 
+#==================================#
+# --- Tokens ---
+#==================================#
 
 class Token(SQLModel):
     access_token: str
@@ -394,6 +416,10 @@ class Token(SQLModel):
 
 class TokenData(SQLModel):
     username: Optional[str] = None
+
+#==================================#
+# --- Users ---
+#==================================#
 
 
 class BaseUser(SQLModel):
@@ -421,11 +447,11 @@ class User(BaseUser, table=True):
     role: Role = Relationship(back_populates="users")
 
     # Relaciones con DefectRecord
-    inspected_defects: List["DefectRecord"] = Relationship(
+    inspected_defects: list["DefectRecord"] = Relationship(
         back_populates="inspector",
         sa_relationship_kwargs={"foreign_keys": "DefectRecord.inspector_user_id"}
     )
-    user_defects: List["DefectRecord"] = Relationship(
+    user_defects: list["DefectRecord"] = Relationship(
         back_populates="issue_by_user",
         sa_relationship_kwargs={"foreign_keys": "DefectRecord.issue_by_user_id"}
     )
@@ -434,13 +460,15 @@ class User(BaseUser, table=True):
         self.updated_at = datetime.now(timezone.utc)
 
 
+
 class ResponseUser(SQLModel):
     user_id: int
     employee_number: int
     username: str
     email: EmailStr
-    first_name: str
-    first_surname: str
+    middle_name: Optional[str] = Field(max_length=50, default=None)
+    first_surname: str = Field(max_length=50)
+    second_surname: Optional[str] = Field(max_length=50, default=None)
     role: Role
     is_active: bool
     created_at: datetime
@@ -463,3 +491,12 @@ class ResetPasswordRequest(SQLModel):
     token: str = Field(nullable=False)
     new_password: str = Field(nullable=False)
     confirm_password: str = Field(nullable=False)
+
+
+class CompleteDefectRecordResponse(DefectRecordBase):
+
+    product: ProductBase | None = None
+    status: StatusBase | None = None
+    images: list[PublicDefectImage]  | None = None
+    inspector: ResponseUser | None = None
+    issue_by_user: ResponseUser | None = None

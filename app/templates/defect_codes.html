@@ -1,0 +1,347 @@
+<!-- templates/defect_codes.html -->
+{% extends 'base.html' %}
+
+{% block title %}Códigos de Defectos{% endblock %}
+
+{% block extra_head %}
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  /* Estilos adicionales para compatibilidad con Bootstrap */
+  .container {
+    max-width: 100%;
+    padding: 0 1rem;
+  }
+  .mt-5 {
+    margin-top: 1.25rem !important;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-4">
+    <!-- Menú de navegación -->
+    <div class="mb-4 border-b border-gray-200">
+        <ul class="nav nav-tabs">
+            <li class="nav-item">
+                <a href="/defect-records" class="nav-link">
+                    Registros de Defectos
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/defect-codes" class="nav-link active">
+                    Códigos de Defectos
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/issues" class="nav-link">
+                    Problemas (Issues)
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Contenido de Códigos de Defectos -->
+    <div>
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold">Códigos de Defectos</h1>
+            <button onclick="openDefectCodeModal()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                </svg>
+                Nuevo Código
+            </button>
+        </div>
+
+        <!-- Filtros para Códigos de Defectos -->
+        <div class="flex gap-4 mb-6">
+            <div class="flex-1 relative">
+                <input 
+                    type="text" 
+                    id="defectCodeSearchInput"
+                    placeholder="Buscar por código o descripción" 
+                    class="pl-10 pr-4 py-2 border rounded-lg w-full"
+                    oninput="filterDefectCodes()"
+                >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 absolute left-3 top-2.5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                </svg>
+            </div>
+        </div>
+
+        <!-- Tabla de Códigos de Defectos -->
+        <div class="bg-white rounded-lg shadow overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="defectCodesTableBody" class="divide-y divide-gray-200">
+                    <!-- Los códigos se cargarán aquí dinámicamente -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal para Crear/Editar Código de Defecto -->
+    <div id="defectCodeModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md">
+            <h2 id="defectCodeModalTitle" class="text-xl font-bold mb-4">Nuevo Código de Defecto</h2>
+            <form id="defectCodeForm" onsubmit="handleDefectCodeSubmit(event)">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Código</label>
+                        <input type="number" id="code" name="code" required 
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Descripción</label>
+                        <textarea id="description" name="description" required 
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end gap-4">
+                    <button type="button" onclick="closeDefectCodeModal()" 
+                        class="px-4 py-2 border rounded-md text-gray-600 hover:bg-gray-50">
+                        Cancelar
+                    </button>
+                    <button type="submit" 
+                        class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+                        Guardar
+                    </button>
+                </div>
+                <input type="hidden" id="editingDefectCodeId">
+            </form>
+        </div>
+    </div>
+
+    <!-- Mensaje de confirmación para eliminar -->
+    <div id="deleteConfirmModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md">
+            <h2 class="text-xl font-bold mb-4">Confirmar Eliminación</h2>
+            <p class="mb-6">¿Está seguro de que desea eliminar este código de defecto? Esta acción no se puede deshacer.</p>
+            <div class="flex justify-end gap-4">
+                <button type="button" onclick="closeDeleteConfirmModal()" 
+                    class="px-4 py-2 border rounded-md text-gray-600 hover:bg-gray-50">
+                    Cancelar
+                </button>
+                <button type="button" onclick="confirmDeleteDefectCode()" 
+                    class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600">
+                    Eliminar
+                </button>
+            </div>
+            <input type="hidden" id="deletingDefectCodeId">
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let defectCodes = [];
+        let defectCodeToDelete = null;
+        
+        // Cargar los códigos de defectos al iniciar la página
+        document.addEventListener('DOMContentLoaded', loadDefectCodes);
+        
+        // Función para cargar códigos de defectos desde la API
+        async function loadDefectCodes() {
+            try {
+                const response = await fetch('/defect-codes');
+                if (!response.ok) {
+                    throw new Error('Error al cargar los códigos de defectos');
+                }
+                defectCodes = await response.json();
+                renderDefectCodes(defectCodes);
+            } catch (error) {
+                console.error('Error:', error);
+                alert('No se pudieron cargar los códigos de defectos. Por favor, intente de nuevo más tarde.');
+            }
+        }
+        
+        // Función para renderizar los códigos de defectos en la tabla
+        function renderDefectCodes(codes) {
+            const tableBody = document.getElementById('defectCodesTableBody');
+            tableBody.innerHTML = '';
+            
+            if (codes.length === 0) {
+                const noDataRow = document.createElement('tr');
+                noDataRow.innerHTML = `
+                    <td colspan="4" class="px-6 py-4 text-center text-gray-500">
+                        No hay códigos de defectos registrados
+                    </td>
+                `;
+                tableBody.appendChild(noDataRow);
+                return;
+            }
+            
+            codes.forEach(code => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">${code.defect_code_id}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${code.code}</td>
+                    <td class="px-6 py-4">${code.description}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center space-x-2">
+                            <button onclick="editDefectCode(${code.defect_code_id})" class="text-blue-500 hover:text-blue-700">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                            </button>
+                            <button onclick="deleteDefectCode(${code.defect_code_id})" class="text-red-500 hover:text-red-700">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+        
+        // Filtrar códigos de defectos
+        function filterDefectCodes() {
+            const searchTerm = document.getElementById('defectCodeSearchInput').value.toLowerCase();
+            
+            const filteredCodes = defectCodes.filter(code => {
+                return (
+                    code.code.toString().includes(searchTerm) ||
+                    code.description.toLowerCase().includes(searchTerm)
+                );
+            });
+            
+            renderDefectCodes(filteredCodes);
+        }
+        
+        // Abrir modal para crear/editar código
+        function openDefectCodeModal() {
+            document.getElementById('defectCodeModalTitle').textContent = 'Nuevo Código de Defecto';
+            document.getElementById('defectCodeForm').reset();
+            document.getElementById('editingDefectCodeId').value = '';
+            
+            const modal = document.getElementById('defectCodeModal');
+            modal.classList.remove('hidden');
+        }
+        
+        // Cerrar modal de código
+        function closeDefectCodeModal() {
+            const modal = document.getElementById('defectCodeModal');
+            modal.classList.add('hidden');
+        }
+        
+        // Editar código de defecto
+        function editDefectCode(defectCodeId) {
+            const defectCode = defectCodes.find(code => code.defect_code_id === defectCodeId);
+            if (!defectCode) return;
+            
+            document.getElementById('defectCodeModalTitle').textContent = 'Editar Código de Defecto';
+            document.getElementById('code').value = defectCode.code;
+            document.getElementById('description').value = defectCode.description;
+            document.getElementById('editingDefectCodeId').value = defectCodeId;
+            
+            const modal = document.getElementById('defectCodeModal');
+            modal.classList.remove('hidden');
+        }
+        
+        // Manejar envío del formulario de código
+        async function handleDefectCodeSubmit(event) {
+            event.preventDefault();
+            
+            const codeValue = document.getElementById('code').value;
+            const descriptionValue = document.getElementById('description').value;
+            const editingId = document.getElementById('editingDefectCodeId').value;
+            
+            const defectCodeData = {
+                code: parseInt(codeValue),
+                description: descriptionValue
+            };
+            
+            try {
+                let response;
+                let successMessage;
+                
+                if (editingId) {
+                    // Actualizar código existente
+                    response = await fetch(`/defect-codes/${editingId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(defectCodeData)
+                    });
+                    successMessage = 'Código de defecto actualizado correctamente';
+                } else {
+                    // Crear nuevo código
+                    response = await fetch('/defect-codes', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(defectCodeData)
+                    });
+                    successMessage = 'Código de defecto creado correctamente';
+                }
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Error en la operación');
+                }
+                
+                closeDefectCodeModal();
+                await loadDefectCodes();
+                alert(successMessage);
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert(error.message);
+            }
+        }
+        
+        // Abrir modal de confirmación para eliminar
+        function deleteDefectCode(defectCodeId) {
+            document.getElementById('deletingDefectCodeId').value = defectCodeId;
+            const modal = document.getElementById('deleteConfirmModal');
+            modal.classList.remove('hidden');
+        }
+        
+        // Cerrar modal de confirmación
+        function closeDeleteConfirmModal() {
+            const modal = document.getElementById('deleteConfirmModal');
+            modal.classList.add('hidden');
+        }
+        
+        // Confirmar eliminación de código
+        async function confirmDeleteDefectCode() {
+            const defectCodeId = document.getElementById('deletingDefectCodeId').value;
+            
+            try {
+                const response = await fetch(`/defect-codes/${defectCodeId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (!response.ok) {
+                    if (response.status === 400) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.detail || 'No se puede eliminar este código porque está en uso');
+                    } else {
+                        throw new Error('Error al eliminar el código de defecto');
+                    }
+                }
+                
+                closeDeleteConfirmModal();
+                await loadDefectCodes();
+                alert('Código de defecto eliminado correctamente');
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert(error.message);
+                closeDeleteConfirmModal();
+            }
+        }
+    </script>
+</div>
+{% endblock %}
