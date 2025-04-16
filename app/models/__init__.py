@@ -335,6 +335,7 @@ class DefectRecordResponse(SQLModel):
     status: str
     inspectBy: str
     issueBy: str
+    issue: str
     todo: str
 
 
