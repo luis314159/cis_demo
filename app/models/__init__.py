@@ -238,6 +238,9 @@ class Status(StatusBase, table=True):
 class StatusCreate(StatusBase):
     pass
 
+class StatusResponse(StatusBase):
+    pass
+
 class PublicStatus(SQLModel):
     status_name: str 
 

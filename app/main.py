@@ -12,7 +12,9 @@ from routers import (
     object_router, process_router, stage_router, test_jobs, 
     ocr_routes, validate_csv, list_jobs, details, job_status, 
     object_current_stage, item_router, user_router, auth_router, 
-    rest_password_router, products_router, issue_router, defect_record_router, correction_process_router
+    rest_password_router, products_router, issue_router, defect_record_router,
+    correction_process_router, status_router
+
 )
 from generate_qr import generate_qr, generate_pdf
 from middleware import auth_middleware
@@ -174,6 +176,7 @@ app.include_router(products_router.router)
 app.include_router(issue_router.router)
 app.include_router(defect_record_router.router)
 app.include_router(correction_process_router.router)
+app.include_router(status_router.router)
 
 # Configuración de archivos estáticos
 app.mount("/static", StaticFiles(directory="./static"), name="static")
