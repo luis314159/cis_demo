@@ -272,6 +272,8 @@ class ImageType(ImageTypeBase, table=True):
 class ImageTypeCreate(ImageTypeBase):
     pass
 
+class ImageTypePublic(ImageTypeBase):
+    pass
 
 #==================================#
 # --- Defect Record ---
@@ -390,7 +392,8 @@ class responseDefectImage(DefectImageBase):
         )
     
 class PublicDefectImage(DefectImageBase):
-    image_type: ImageType = Relationship(back_populates="defect_images")
+    image_type: ImageTypePublic | None = None
+
 
 #==================================#
 # --- Roles ---
