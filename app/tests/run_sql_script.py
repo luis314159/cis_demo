@@ -67,15 +67,34 @@ def run_sql_script(db_path, sql_script_path):
         print(f"Error inesperado: {e}")
         return False
 
+
+# O bien de forma más inteligente (busca hacia arriba hasta encontrar un marcador)
+def find_project_root(current_path=None, marker='.git'):
+    """
+    Busca recursivamente hacia arriba hasta encontrar el directorio raíz del proyecto
+    (identificado por la presencia de un archivo/directorio marcador como .git)
+    """
+    current_path = Path(current_path or __file__).parent
+    while True:
+        if (current_path / marker).exists():
+            return current_path
+        if current_path.parent == current_path:  # Llegamos a la raíz del filesystem
+            return Path(__file__).parent.parent.parent  # Fallback a 3 niveles arriba
+        current_path = current_path.parent
+
+BASE_DIR = find_project_root()
+
 def main():
-    # Rutas definidas según los requisitos
-    base_dir = Path(r"C:\luis\aethersoft\arga\quality_system\cis_demo")
-    db_path = base_dir / "app" / "db.sqlite3"
-    sql_script_path = base_dir / "insert_data.sql"
+    # Usar rutas relativas desde el directorio base
+    db_path = BASE_DIR / "app" / "db.sqlite3"
+    sql_script_path = BASE_DIR / "insert_data.sql"
     
-    # Ejecutar el script SQL
+    print(f"Base dir: {BASE_DIR}")
+    print(f"DB path: {db_path}")
+    print(f"SQL path: {sql_script_path}")
+    
     success = run_sql_script(str(db_path), str(sql_script_path))
-    
+
     if success:
         print("Script SQL ejecutado correctamente.")
     else:

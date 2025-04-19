@@ -334,14 +334,16 @@ class DefectRecordRead(DefectRecordBase):
 
 class DefectRecordResponse(SQLModel):
     defect_record_id: int
-    process: str
-    date_opened: datetime
-    date_closed: Optional[datetime]
-    status: str
+    job_code: str
+    product: str
     inspectBy: str
     issueBy: str
     issue: str
     todo: str
+    status: str
+    process: str
+    date_opened: datetime
+    date_closed: Optional[datetime]
 
 
 

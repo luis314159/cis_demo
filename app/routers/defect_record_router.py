@@ -108,26 +108,33 @@ def search_defect_records(
     Issuer = aliased(User)
     
     query = (
-        select(
-            DefectRecord.defect_record_id,
-            Process.process_name.label("process"),  # Campo process
-            DefectRecord.date_opened,  # Campo date_opened
-            DefectRecord.date_closed,  # Campo date_closed
-            Status.status_name.label("status"),  # Campo status
-            Inspector.username.label("inspectBy"),  # Campo inspectBy
-            Issuer.username.label("issueBy"),  # Campo issueBy
-            Issue.issue_description.label("issue"),
-            CorrectionProcess.correction_process_description.label("todo")  # Campo todo (según tu aclaración)
+    select(
+        DefectRecord.defect_record_id,
+        Job.job_code.label("job_code"),
+        Product.product_name.label("product"),
+        Inspector.username.label("inspectBy"),
+        Issuer.username.label("issueBy"),
+        Issue.issue_description.label("issue"),
+        CorrectionProcess.correction_process_description.label("todo"),
+        Status.status_name.label("status"),
+        Process.process_name.label("process"),
+        DefectRecord.date_opened,
+        DefectRecord.date_closed
         )
         .join(Job, DefectRecord.job_id == Job.job_id)
         .join(Product, DefectRecord.product_id == Product.product_id)
         .join(Inspector, DefectRecord.inspector_user_id == Inspector.user_id)
         .join(Issuer, DefectRecord.issue_by_user_id == Issuer.user_id)
         .join(Issue, DefectRecord.issue_id == Issue.issue_id)
+        .join(Process, Issue.process_id == Process.process_id) 
         .join(CorrectionProcess, DefectRecord.correction_process_id == CorrectionProcess.correction_process_id)
         .join(Status, DefectRecord.status_id == Status.status_id)
-        .where(Job.job_code == job_code)
-        .where(Product.product_name == product_name)
+        .where( 
+            and_(
+                Job.job_code == job_code,
+                Product.product_name == product_name
+            )
+        )
     )
 
     results = session.exec(query).all()
