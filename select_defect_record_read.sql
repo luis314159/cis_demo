@@ -1,3 +1,6 @@
+------------------------------------------------
+-- GET INFORMATION ABOUT A CERTAIN DEFECT RECORD BASED ON JOB_CODE AND PRODUCT_NAME
+------------------------------------------------
 SELECT   dr.defect_record_id,
          j.job_code, p.product_name,
          userinspector.first_name,
