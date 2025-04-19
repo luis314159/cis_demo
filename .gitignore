@@ -171,3 +171,5 @@ static/qr/generated_qr.png
 
 app/static/documents/
 app/static/qr/
+
+.python-version
