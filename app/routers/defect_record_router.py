@@ -1,7 +1,9 @@
-from fastapi import APIRouter, HTTPException, status
-from sqlmodel import select, and_
-from datetime import datetime
-from models import DefectRecord, DefectRecordCreate, DefectRecordRead, DefectRecordUpdate, DefectRecordResponse, Job, Product, Process, Issue, User, Status, CorrectionProcess, CompleteDefectRecordResponse
+import os
+import shutil
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
+from sqlmodel import SQLModel, select, and_
+from datetime import datetime, time
+from models import DefectImage, DefectImageCreate, DefectRecord, DefectRecordCreate, DefectRecordRead, DefectRecordUpdate, DefectRecordResponse, Job, Product, Process, Issue, User, Status, CorrectionProcess, CompleteDefectRecordResponse
 from db import SessionDep
 from sqlalchemy.orm import aliased
 
@@ -254,3 +256,120 @@ def delete_defect_record(
     session.commit()
     
     return {"message": "Defect record deleted successfully"}
+
+# Definición del modelo de respuesta
+class DefectRecordCreationResponse(SQLModel):
+    defect_record_id: int
+    product_name: str
+    job_code: str
+    defect_images: list[str]
+    location_images: list[str]
+
+
+@router.post("/create-defect-record", response_model=DefectRecordCreationResponse, status_code=status.HTTP_201_CREATED)
+async def create_defect_record(
+    *,
+    session: SessionDep,
+    product_id: int = Form(...),
+    job_id: int = Form(...),
+    inspector_user_id: int = Form(...),
+    issue_by_user_id: int = Form(...),
+    issue_id: int = Form(...),
+    correction_process_id: int = Form(...),
+    status_id: int = Form(...),
+    defect_images: list[UploadFile] = File(...),  
+    location_images: list[UploadFile] = File(...)):
+    
+    """
+    Crea un nuevo registro de defecto con sus imágenes asociadas.
+    Permite subir múltiples imágenes de defecto y ubicación.
+    """
+    # 1. Crear el registro de defecto
+    defect_record_data = DefectRecordCreate(
+        product_id=product_id,
+        job_id=job_id,
+        inspector_user_id=inspector_user_id,
+        issue_by_user_id=issue_by_user_id,
+        issue_id=issue_id,
+        correction_process_id=correction_process_id,
+        status_id=status_id
+    )
+    
+    defect_record = DefectRecord.model_validate(defect_record_data)
+    session.add(defect_record)
+    session.commit()
+    session.refresh(defect_record)
+    
+    # 2. Obtener información adicional para construir la ruta
+    product_query = select(Product).where(Product.product_id == product_id)
+    product = session.exec(product_query).first()
+    
+    if not product:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    
+    job_query = select(Job).where(Job.job_id == job_id)
+    job = session.exec(job_query).first()
+    
+    if not job:
+        raise HTTPException(status_code=404, detail="Job no encontrado")
+    
+    # 3. Construir la ruta base para guardar las imágenes
+    base_path = f"/static/punch_list/{product.product_name}/{job.job_code}/{product.product_name}_{job.job_code}_{defect_record.defect_record_id}"
+    
+    # Asegurarse de que existen todos los directorios
+    os.makedirs(f"{base_path}/defect_image", exist_ok=True)
+    os.makedirs(f"{base_path}/location_image", exist_ok=True)
+    
+    # 4. Guardar las imágenes
+    defect_image_urls = []
+    location_image_urls = []
+    
+    # 4.1 Guardar las imágenes de defecto (DEFECT IMAGE, id=3)
+    for i, defect_image in enumerate(defect_images):
+        timestamp = int(time.time() * 1000) + i  # Añadir índice para garantizar unicidad
+        defect_image_path = f"{base_path}/defect_image/defect_{timestamp}.{defect_image.filename.split('.')[-1]}"
+        
+        with open(defect_image_path, "wb") as f:
+            shutil.copyfileobj(defect_image.file, f)
+        
+        # Crear registro en la base de datos para la imagen de defecto
+        defect_image_data = DefectImageCreate(
+            defect_record_id=defect_record.defect_record_id,
+            image_type_id=3,  # DEFECT IMAGE
+            image_url=defect_image_path
+        )
+        defect_image_db = DefectImage.model_validate(defect_image_data)
+        session.add(defect_image_db)
+        defect_image_urls.append(defect_image_path)
+    
+    # 4.2 Guardar las imágenes de ubicación (LOCATION IMAGE, id=2)
+    for i, location_image in enumerate(location_images):
+        timestamp = int(time.time() * 1000) + i  # Añadir índice para garantizar unicidad
+        location_image_path = f"{base_path}/location_image/location_{timestamp}.{location_image.filename.split('.')[-1]}"
+        
+        with open(location_image_path, "wb") as f:
+            shutil.copyfileobj(location_image.file, f)
+        
+        # Crear registro en la base de datos para la imagen de ubicación
+        location_image_data = DefectImageCreate(
+            defect_record_id=defect_record.defect_record_id,
+            image_type_id=2,  # LOCATION IMAGE
+            image_url=location_image_path
+        )
+        location_image_db = DefectImage.model_validate(location_image_data)
+        session.add(location_image_db)
+        location_image_urls.append(location_image_path)
+    
+    # Confirmar cambios en la base de datos
+    session.commit()
+    
+    # 5. Preparar respuesta
+    response = DefectRecordCreationResponse(
+        defect_record_id=defect_record.defect_record_id,
+        product_name=product.product_name,
+        job_code=job.job_code,
+        defect_images=defect_image_urls,
+        location_images=location_image_urls
+    )
+    
+    return response

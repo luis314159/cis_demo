@@ -1,0 +1,311 @@
+<!-- templates/test_create_defect_record.html -->
+{% extends 'base.html' %}
+
+{% block title %}Crear Registro de Defecto{% endblock %}
+
+{% block extra_head %}
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  /* Estilos adicionales para compatibilidad con Bootstrap */
+  .container {
+    max-width: 100%;
+    padding: 0 1rem;
+  }
+  .mt-5 {
+    margin-top: 1.25rem !important;
+  }
+  
+  /* Estilos para la vista previa de imágenes */
+  .image-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  
+  .image-preview-item {
+    position: relative;
+    width: 100px;
+    height: 100px;
+  }
+  
+  .image-preview-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 0.5rem;
+  }
+  
+  .image-preview-item .remove-image {
+    position: absolute;
+    top: -0.5rem;
+    right: -0.5rem;
+    background: red;
+    color: white;
+    border-radius: 50%;
+    width: 1.5rem;
+    height: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-4">
+    <!-- Menú de navegación -->
+    <div class="mb-4 border-b border-gray-200">
+        <ul class="nav nav-tabs">
+            <li class="nav-item">
+                <a href="/defect-records" class="nav-link active">
+                    Registros de Defectos
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/defect-codes" class="nav-link">
+                    Códigos de Defectos
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/issues" class="nav-link">
+                    Problemas (Issues)
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Formulario para crear Defect Record -->
+    <div>
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold">Crear Registro de Defecto</h1>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <form id="createDefectRecordForm" onsubmit="handleCreateDefectRecord(event)" enctype="multipart/form-data">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Campos del formulario -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">ID del Producto</label>
+                        <input type="number" id="product_id" name="product_id" required 
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">ID del Trabajo</label>
+                        <input type="number" id="job_id" name="job_id" required 
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">ID del Inspector</label>
+                        <input type="number" id="inspector_user_id" name="inspector_user_id" required 
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">ID del Usuario que Reporta</label>
+                        <input type="number" id="issue_by_user_id" name="issue_by_user_id" required 
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">ID del Problema (Issue)</label>
+                        <input type="number" id="issue_id" name="issue_id" required 
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">ID del Proceso de Corrección</label>
+                        <input type="number" id="correction_process_id" name="correction_process_id" required 
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">ID del Estado</label>
+                        <input type="number" id="status_id" name="status_id" required 
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                </div>
+                
+                <!-- Sección de imágenes -->
+                <div class="mt-8">
+                    <h2 class="text-lg font-medium text-gray-900 mb-4">Imágenes del Defecto</h2>
+                    
+                    <!-- Imágenes de defecto -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700">Imágenes del Defecto</label>
+                        <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                            <div class="space-y-1 text-center">
+                                <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                                <div class="flex text-sm text-gray-600">
+                                    <label for="defect_images" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                                        <span>Subir imágenes de defecto</span>
+                                        <input id="defect_images" name="defect_images" type="file" class="sr-only" multiple accept="image/*" onchange="previewImages(event, 'defect_images_preview')">
+                                    </label>
+                                </div>
+                                <p class="text-xs text-gray-500">PNG, JPG, GIF hasta 10MB</p>
+                            </div>
+                        </div>
+                        <div id="defect_images_preview" class="image-preview"></div>
+                    </div>
+                    
+                    <!-- Imágenes de ubicación -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Imágenes de Ubicación</label>
+                        <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                            <div class="space-y-1 text-center">
+                                <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                                <div class="flex text-sm text-gray-600">
+                                    <label for="location_images" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                                        <span>Subir imágenes de ubicación</span>
+                                        <input id="location_images" name="location_images" type="file" class="sr-only" multiple accept="image/*" onchange="previewImages(event, 'location_images_preview')">
+                                    </label>
+                                </div>
+                                <p class="text-xs text-gray-500">PNG, JPG, GIF hasta 10MB</p>
+                            </div>
+                        </div>
+                        <div id="location_images_preview" class="image-preview"></div>
+                    </div>
+                </div>
+                
+                <!-- Botones de acción -->
+                <div class="mt-8 flex justify-end gap-4">
+                    <button type="button" onclick="window.location.href='/defect-records'" 
+                        class="px-4 py-2 border rounded-md text-gray-600 hover:bg-gray-50">
+                        Cancelar
+                    </button>
+                    <button type="submit" 
+                        class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+                        Crear Registro de Defecto
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de respuesta exitosa -->
+    <div id="successModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
+        <div class="bg-white rounded-lg p-6 w-full max-w-lg">
+            <h2 class="text-xl font-bold mb-4">Registro de Defecto Creado</h2>
+            <div id="responseContent" class="mb-6">
+                <!-- El contenido de la respuesta se insertará aquí -->
+            </div>
+            <div class="flex justify-end">
+                <button type="button" onclick="closeSuccessModal()" 
+                    class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Función para previsualizar imágenes
+        function previewImages(event, previewContainerId) {
+            const previewContainer = document.getElementById(previewContainerId);
+            previewContainer.innerHTML = '';
+            
+            const files = event.target.files;
+            
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    const div = document.createElement('div');
+                    div.className = 'image-preview-item';
+                    div.innerHTML = `
+                        <img src="${e.target.result}" alt="Preview">
+                        <span class="remove-image" onclick="removeImage(this, '${event.target.id}', ${i})">×</span>
+                    `;
+                    previewContainer.appendChild(div);
+                }
+                
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        // Función para eliminar una imagen de la vista previa
+        function removeImage(element, inputId, index) {
+            const input = document.getElementById(inputId);
+            const dt = new DataTransfer();
+            const files = input.files;
+            
+            for (let i = 0; i < files.length; i++) {
+                if (i !== index) {
+                    dt.items.add(files[i]);
+                }
+            }
+            
+            input.files = dt.files;
+            element.parentElement.remove();
+        }
+        
+        // Función para manejar el envío del formulario
+        async function handleCreateDefectRecord(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            
+            try {
+                const response = await fetch('/defect-records/create-defect-record', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Error al crear el registro de defecto');
+                }
+                
+                const result = await response.json();
+                
+                // Mostrar el modal de éxito con la respuesta
+                const responseContent = document.getElementById('responseContent');
+                responseContent.innerHTML = `
+                    <div class="space-y-4">
+                        <p><strong>ID del Registro:</strong> ${result.defect_record_id}</p>
+                        <p><strong>Producto:</strong> ${result.product_name}</p>
+                        <p><strong>Código de Trabajo:</strong> ${result.job_code}</p>
+                        
+                        <div>
+                            <strong>Imágenes de Defecto:</strong>
+                            <ul class="list-disc pl-5 mt-2">
+                                ${result.defect_images.map(img => `<li class="text-sm break-all">${img}</li>`).join('')}
+                            </ul>
+                        </div>
+                        
+                        <div>
+                            <strong>Imágenes de Ubicación:</strong>
+                            <ul class="list-disc pl-5 mt-2">
+                                ${result.location_images.map(img => `<li class="text-sm break-all">${img}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+                
+                const modal = document.getElementById('successModal');
+                modal.classList.remove('hidden');
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert(error.message);
+            }
+        }
+        
+        // Cerrar modal de éxito
+        function closeSuccessModal() {
+            const modal = document.getElementById('successModal');
+            modal.classList.add('hidden');
+            window.location.href = '/defect-records';
+        }
+    </script>
+</div>
+{% endblock %}

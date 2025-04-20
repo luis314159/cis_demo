@@ -565,3 +565,18 @@ async def issues(
         "issues.html", 
         {"request": request, "current_user": current_user}
     )
+
+
+@app.get("/create-defect-record", response_class=HTMLResponse,
+        summary="Display the issues management page",
+        response_description="Renders the issues management page",
+        tags=["Defect Management"],
+    )
+async def issues(
+    request: Request,
+    current_user: Annotated[User, Depends(get_current_active_user)]
+):
+    return templates.TemplateResponse(
+        "creat_defect.html", 
+        {"request": request, "current_user": current_user}
+    )
