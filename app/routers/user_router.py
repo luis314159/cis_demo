@@ -168,6 +168,7 @@ def list_users(session: SessionDep):
     [
         {
             "user_id": 1,
+            "employee_number": 123,
             "username": "admin",
             "email": "admin@example.com",
             "first_name": "System",
@@ -177,6 +178,7 @@ def list_users(session: SessionDep):
         },
         {
             "user_id": 2,
+            "employee_number": 123,
             "username": "jdoe",
             "email": "jdoe@example.com",
             "first_name": "John",

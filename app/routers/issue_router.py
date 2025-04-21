@@ -40,6 +40,39 @@ def read_issues(*, session : SessionDep):
     issues = session.exec(select(Issue)).all()
     return issues
 
+@router.get("/process/{process_id}", response_model=list[IssueResponse], status_code=status.HTTP_200_OK)
+def read_issues_by_process(*, session: SessionDep, process_id: int):
+    """
+    ## Get issues by process ID
+    
+    Retrieves a list of issues filtered by a specific process ID.
+    
+    ### Path Parameters:
+    - **process_id**: ID of the process to filter issues
+    
+    ### Returns:
+    - **List[IssueResponse]**: List of issue objects belonging to the specified process:
+        - issue_id: Unique identifier of the issue
+        - issue_description: Description of the issue
+    
+    ### Example Response:
+    ```json
+    [
+        {
+            "issue_id": 1,
+            "issue_description": "Issue description for process X"
+        },
+        {
+            "issue_id": 2,
+            "issue_description": "Another issue for process X"
+        }
+    ]
+    ```
+    """
+    statement = select(Issue).where(Issue.process_id == process_id)
+    issues = session.exec(statement).all()
+    return issues
+
 @router.get("/{issue_id}", response_model=IssueResponse, status_code=status.HTTP_200_OK)
 def read_issue(*, issue_id: int, session : SessionDep):
     """

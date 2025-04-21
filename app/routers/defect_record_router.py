@@ -2,10 +2,12 @@ import os
 import shutil
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
 from sqlmodel import SQLModel, select, and_
-from datetime import datetime, time
+import time
+from datetime import datetime
 from models import DefectImage, DefectImageCreate, DefectRecord, DefectRecordCreate, DefectRecordRead, DefectRecordUpdate, DefectRecordResponse, Job, Product, Process, Issue, User, Status, CorrectionProcess, CompleteDefectRecordResponse
 from db import SessionDep
 from sqlalchemy.orm import aliased
+from pathlib import Path
 
 router = APIRouter(prefix="/defect-records", tags=["Defect Records"])
 
@@ -277,9 +279,9 @@ async def create_defect_record(
     issue_id: int = Form(...),
     correction_process_id: int = Form(...),
     status_id: int = Form(...),
-    defect_images: list[UploadFile] = File(...),  
-    location_images: list[UploadFile] = File(...)):
-    
+    defect_images: list[UploadFile] = File(...),
+    location_images: list[UploadFile] = File(...)
+):
     """
     Crea un nuevo registro de defecto con sus imágenes asociadas.
     Permite subir múltiples imágenes de defecto y ubicación.
@@ -314,11 +316,13 @@ async def create_defect_record(
         raise HTTPException(status_code=404, detail="Job no encontrado")
     
     # 3. Construir la ruta base para guardar las imágenes
-    base_path = f"/static/punch_list/{product.product_name}/{job.job_code}/{product.product_name}_{job.job_code}_{defect_record.defect_record_id}"
+    # IMPORTANTE: Usar una ruta relativa desde la raíz del proyecto
+    defect_folder_name = f"{product.product_name}_{job.job_code}_{defect_record.defect_record_id}"
+    base_path = Path.cwd() / "static" / "punch_list" / product.product_name / job.job_code / defect_folder_name
     
     # Asegurarse de que existen todos los directorios
-    os.makedirs(f"{base_path}/defect_image", exist_ok=True)
-    os.makedirs(f"{base_path}/location_image", exist_ok=True)
+    (base_path / "defect_image").mkdir(parents=True, exist_ok=True)
+    (base_path / "location_image").mkdir(parents=True, exist_ok=True)
     
     # 4. Guardar las imágenes
     defect_image_urls = []
@@ -327,38 +331,54 @@ async def create_defect_record(
     # 4.1 Guardar las imágenes de defecto (DEFECT IMAGE, id=3)
     for i, defect_image in enumerate(defect_images):
         timestamp = int(time.time() * 1000) + i  # Añadir índice para garantizar unicidad
-        defect_image_path = f"{base_path}/defect_image/defect_{timestamp}.{defect_image.filename.split('.')[-1]}"
+        file_extension = Path(defect_image.filename).suffix if defect_image.filename else ".jpg"
+        defect_image_filename = f"defect_{timestamp}{file_extension}"
+        defect_image_path = base_path / "defect_image" / defect_image_filename
         
+        # Guardar el archivo
         with open(defect_image_path, "wb") as f:
-            shutil.copyfileobj(defect_image.file, f)
+            content = await defect_image.read()
+            f.write(content)
+        await defect_image.seek(0)  # Reset file pointer
+        
+        # URL para guardar en la base de datos (ruta relativa desde el directorio static)
+        relative_url = f"/static/punch_list/{product.product_name}/{job.job_code}/{defect_folder_name}/defect_image/{defect_image_filename}"
         
         # Crear registro en la base de datos para la imagen de defecto
         defect_image_data = DefectImageCreate(
             defect_record_id=defect_record.defect_record_id,
             image_type_id=3,  # DEFECT IMAGE
-            image_url=defect_image_path
+            image_url=relative_url
         )
         defect_image_db = DefectImage.model_validate(defect_image_data)
         session.add(defect_image_db)
-        defect_image_urls.append(defect_image_path)
+        defect_image_urls.append(relative_url)
     
     # 4.2 Guardar las imágenes de ubicación (LOCATION IMAGE, id=2)
     for i, location_image in enumerate(location_images):
         timestamp = int(time.time() * 1000) + i  # Añadir índice para garantizar unicidad
-        location_image_path = f"{base_path}/location_image/location_{timestamp}.{location_image.filename.split('.')[-1]}"
+        file_extension = Path(location_image.filename).suffix if location_image.filename else ".jpg"
+        location_image_filename = f"location_{timestamp}{file_extension}"
+        location_image_path = base_path / "location_image" / location_image_filename
         
+        # Guardar el archivo
         with open(location_image_path, "wb") as f:
-            shutil.copyfileobj(location_image.file, f)
+            content = await location_image.read()
+            f.write(content)
+        await location_image.seek(0)  # Reset file pointer
+        
+        # URL para guardar en la base de datos (ruta relativa desde el directorio static)
+        relative_url = f"/static/punch_list/{product.product_name}/{job.job_code}/{defect_folder_name}/location_image/{location_image_filename}"
         
         # Crear registro en la base de datos para la imagen de ubicación
         location_image_data = DefectImageCreate(
             defect_record_id=defect_record.defect_record_id,
             image_type_id=2,  # LOCATION IMAGE
-            image_url=location_image_path
+            image_url=relative_url
         )
         location_image_db = DefectImage.model_validate(location_image_data)
         session.add(location_image_db)
-        location_image_urls.append(location_image_path)
+        location_image_urls.append(relative_url)
     
     # Confirmar cambios en la base de datos
     session.commit()

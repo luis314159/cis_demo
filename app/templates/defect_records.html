@@ -288,9 +288,9 @@
                     <td class="px-6 py-4 whitespace-nowrap">
                         <div class="flex space-x-2">
                             ${defect.images.map((image, imgIndex) => `
-                                <img src="static${image.image_url}" alt="Defecto ${imgIndex + 1}" 
+                                <img src="${image.image_url}" alt="Defecto ${imgIndex + 1}" 
                                     class="h-16 w-16 object-cover rounded defect-image" 
-                                    onclick="showFullImage('static${image.image_url}')">
+                                    onclick="showFullImage('${image.image_url}')">
                             `).join('')}
                         </div>
                     </td>
@@ -404,9 +404,9 @@
                         <div class="grid grid-cols-1 gap-4">
                             ${defect.images.map((image, imgIndex) => `
                                 <div class="border rounded-lg overflow-hidden">
-                                    <img src="static${image.image_url}" alt="Defecto ${imgIndex + 1}" 
+                                    <img src="${image.image_url}" alt="Defecto ${imgIndex + 1}" 
                                         class="w-full h-auto object-contain cursor-pointer" 
-                                        onclick="showFullImage('static${image.image_url}')">
+                                        onclick="showFullImage('${image.image_url}')">
                                     <div class="p-2 bg-gray-50">
                                         <p class="text-sm text-gray-500">${image.image_url.includes('before') ? 'Antes de la corrección' : 'Después de la corrección'}</p>
                                     </div>

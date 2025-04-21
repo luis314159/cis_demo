@@ -121,9 +121,9 @@
                     
                     <div>
                         <label for="issueSelector" class="block text-sm font-medium text-gray-700 mb-1">Tipo de Problema*</label>
-                        <select id="issueSelector" name="issue_description" required disabled
+                        <select id="issueSelector" name="issue_description" required
                             class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                            <option value="">Primero seleccione un proceso</option>
+                            <option value="">Seleccione un problema</option>
                         </select>
                     </div>
                     
@@ -213,6 +213,7 @@
         await loadProducts();
         await loadUsers();
         await loadProcesses();
+        await loadIssues();
         await loadCorrectionProcesses();
         
         // Configurar event listeners
@@ -256,14 +257,9 @@
         }
     }
     
-    async function loadIssuesByProcess(processId) {
-        if (!processId) {
-            issues = [];
-            return;
-        }
-        
+    async function loadIssues() {
         try {
-            const response = await fetch(`/issue/process/${processId}`);
+            const response = await fetch('/issue/');
             if (!response.ok) throw new Error('Error al cargar problemas');
             issues = await response.json();
             renderIssueSelector(issues);
@@ -325,15 +321,6 @@
     function renderIssueSelector(issues) {
         const selector = document.getElementById('issueSelector');
         selector.innerHTML = '<option value="">Seleccione un problema</option>';
-        
-        if (issues.length === 0) {
-            const option = document.createElement('option');
-            option.value = "";
-            option.textContent = "No hay problemas para este proceso";
-            selector.appendChild(option);
-            return;
-        }
-        
         issues.forEach(issue => {
             const option = document.createElement('option');
             option.value = issue.issue_description;
@@ -388,21 +375,6 @@
             }
         });
         
-        // Cambio de proceso
-        document.getElementById('processSelector').addEventListener('change', async (event) => {
-            const processId = event.target.selectedOptions[0]?.dataset.processId;
-            const issueSelector = document.getElementById('issueSelector');
-            
-            if (!processId) {
-                issueSelector.disabled = true;
-                issueSelector.innerHTML = '<option value="">Primero seleccione un proceso</option>';
-                return;
-            }
-            
-            issueSelector.disabled = false;
-            await loadIssuesByProcess(processId);
-        });
-        
         // Preview de imágenes
         document.getElementById('defectImages').addEventListener('change', handleImagePreview);
         document.getElementById('locationImages').addEventListener('change', handleImagePreview);
@@ -434,8 +406,6 @@
     }
     
     // Manejar envío del formulario
-    // Manejar envío del formulario
-    // Manejar envío del formulario
     async function handleFormSubmit(event) {
         event.preventDefault();
         
@@ -454,43 +424,8 @@
         const selectedCorrectionOption = correctionProcessSelector.options[correctionProcessSelector.selectedIndex];
         
         // Primero necesitamos obtener el job_id basado en el job_code
-        let jobData;
-        try {
-            const jobQuery = await fetch(`/jobs/${jobSelector.value}`);
-            jobData = await jobQuery.json();
-        } catch (error) {
-            console.error('Error al obtener job:', error);
-            alert('Error al obtener información del job');
-            return;
-        }
-        
-        // Valores para debuggear
-        console.log('Product ID:', selectedProductOption?.dataset?.productId);
-        console.log('Job ID:', jobData?.job_id);
-        console.log('Inspector User ID:', selectedInspectorOption?.dataset?.userId);
-        console.log('Issue ID:', selectedIssueOption?.dataset?.issueId);
-        console.log('Correction Process ID:', selectedCorrectionOption?.dataset?.processId);
-        console.log('Status ID:', '1');
-        console.log('Issue By User ID:', document.getElementById('supervisorId').value);
-        
-        // Verificar que todos los campos requeridos están completos
-        const requiredFields = {
-            'Product ID': selectedProductOption?.dataset?.productId,
-            'Job ID': jobData?.job_id,
-            'Inspector User ID': selectedInspectorOption?.dataset?.userId,
-            'Issue ID': selectedIssueOption?.dataset?.issueId,
-            'Correction Process ID': selectedCorrectionOption?.dataset?.processId,
-            'Issue By User ID': document.getElementById('supervisorId').value
-        };
-        
-        const missingFields = Object.entries(requiredFields)
-            .filter(([key, value]) => !value)
-            .map(([key]) => key);
-        
-        if (missingFields.length > 0) {
-            alert(`Por favor complete los siguientes campos: ${missingFields.join(', ')}`);
-            return;
-        }
+        const jobQuery = await fetch(`/jobs/${jobSelector.value}`);
+        const jobData = await jobQuery.json();
         
         const formData = new FormData();
         formData.append('product_id', selectedProductOption.dataset.productId);
@@ -503,24 +438,13 @@
         
         // Agregar imágenes
         const defectFiles = document.getElementById('defectImages').files;
-        const locationFiles = document.getElementById('locationImages').files;
-        
-        if (defectFiles.length === 0 || locationFiles.length === 0) {
-            alert('Por favor agregue al menos una imagen de defecto y una de ubicación');
-            return;
-        }
-        
         for (let i = 0; i < defectFiles.length; i++) {
             formData.append('defect_images', defectFiles[i]);
         }
         
+        const locationFiles = document.getElementById('locationImages').files;
         for (let i = 0; i < locationFiles.length; i++) {
             formData.append('location_images', locationFiles[i]);
-        }
-        
-        // Imprimir los datos del formData para debuguear
-        for (let pair of formData.entries()) {
-            console.log(pair[0] + ': ' + pair[1]);
         }
         
         try {
@@ -534,7 +458,6 @@
                 throw new Error(errorData.detail || 'Error al crear el registro');
             }
             
-            const result = await response.json();
             alert('Registro de defecto creado exitosamente');
             window.location.href = '/defect-records'; // Redirigir a la lista de defectos
         } catch (error) {
