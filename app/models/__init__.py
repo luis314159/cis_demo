@@ -34,9 +34,11 @@ class JobCreate(JobBase):
     client_id: int
 
 
-class JobUpdate(JobBase):
+class JobUpdate(SQLModel):
     pass
 
+class JobResponse(JobBase):
+    job_id: Optional[int] | None = None
 
 # Modelos para la tabla Items
 class ItemBase(SQLModel):
@@ -191,6 +193,7 @@ class StageStatus(SQLModel):
 class JobStatus(SQLModel):
     job_code: str
     stages: list[StageStatus]
+
 
 # --- Product ---
 class ProductBase(SQLModel):
