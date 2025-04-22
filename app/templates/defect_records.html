@@ -1,4 +1,3 @@
-<!-- templates/punch_list.html -->
 {% extends 'base.html' %}
 
 {% block title %}Punch List{% endblock %}
@@ -23,6 +22,7 @@
     transform: scale(1.05);
   }
 </style>
+<script src="/static/js/punch_list.js" defer></script>
 {% endblock %}
 
 {% block content %}
@@ -89,6 +89,7 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reportado Por</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Imágenes</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="defectsTableBody" class="divide-y divide-gray-200">
@@ -120,12 +121,99 @@
                 <!-- El contenido se cargará dinámicamente -->
             </div>
             
-            <div class="mt-6 flex justify-center">
-                <button onclick="closeDefectDetailModal()" 
+            <div class="mt-6 flex justify-center space-x-4">
+                <button onclick="openEditModal()" 
                     class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+                    Editar
+                </button>
+                <button onclick="closeDefectDetailModal()" 
+                    class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
                     Cerrar
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal para editar defecto -->
+    <div id="editDefectModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-4xl max-h-screen overflow-y-auto">
+            <div class="flex justify-between items-start mb-4">
+                <h2 class="text-xl font-bold">Editar Defecto</h2>
+                <button onclick="closeEditModal()" class="text-gray-500 hover:text-gray-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            
+            <form id="editDefectForm" class="space-y-6">
+                <input type="hidden" id="editDefectId" name="defect_record_id">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Sección izquierda: Información general y descripciones -->
+                    <div class="space-y-4">
+                        <div>
+                            <label for="editDescription" class="block text-sm font-medium text-gray-700 mb-1">Descripción:</label>
+                            <textarea id="editDescription" name="description" rows="4" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></textarea>
+                        </div>
+                        
+                        <div>
+                            <label for="editStatus" class="block text-sm font-medium text-gray-700 mb-1">Estado:</label>
+                            <select id="editStatus" name="status_id" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                <!-- Los estados se cargarán dinámicamente -->
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label for="editCorrectionProcess" class="block text-sm font-medium text-gray-700 mb-1">Proceso de Corrección:</label>
+                            <select id="editCorrectionProcess" name="correction_process_id" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                <!-- Los procesos de corrección se cargarán dinámicamente -->
+                            </select>
+                        </div>
+                        
+                        <div class="flex items-center">
+                            <input type="checkbox" id="closeRecord" name="close_record" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            <label for="closeRecord" class="ml-2 block text-sm text-gray-900">Cerrar registro de defecto</label>
+                        </div>
+                    </div>
+                    
+                    <!-- Sección derecha: Imágenes -->
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Imágenes del Defecto:</label>
+                            <div id="currentDefectImages" class="grid grid-cols-2 gap-2 mb-2">
+                                <!-- Las imágenes existentes se mostrarán aquí -->
+                            </div>
+                            <input type="file" id="defectImages" name="defect_images" multiple accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Imágenes de Ubicación:</label>
+                            <div id="currentLocationImages" class="grid grid-cols-2 gap-2 mb-2">
+                                <!-- Las imágenes existentes se mostrarán aquí -->
+                            </div>
+                            <input type="file" id="locationImages" name="location_images" multiple accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Imágenes de Solución:</label>
+                            <div id="currentSolvedImages" class="grid grid-cols-2 gap-2 mb-2">
+                                <!-- Las imágenes existentes se mostrarán aquí -->
+                            </div>
+                            <input type="file" id="solvedImages" name="solved_images" multiple accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="closeEditModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+                        Guardar Cambios
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -140,312 +228,5 @@
             <img id="enlargedImage" src="" alt="Imagen ampliada" class="max-h-screen max-w-screen-lg">
         </div>
     </div>
-
-    <script>
-        // Variables globales
-        let products = [];
-        let jobCodes = [];
-        let defectData = [];
-        let selectedProduct = '';
-        let selectedJobCode = '';
-        
-        // Cargar los productos al iniciar la página
-        document.addEventListener('DOMContentLoaded', loadProducts);
-        
-        // Configurar event listeners
-        document.getElementById('productSelector').addEventListener('change', handleProductChange);
-        document.getElementById('jobCodeSelector').addEventListener('change', handleJobCodeChange);
-        
-        // Función para cargar productos desde la API
-        async function loadProducts() {
-            try {
-                const response = await fetch('/products');
-                if (!response.ok) {
-                    throw new Error('Error al cargar los productos');
-                }
-                products = await response.json();
-                renderProducts(products);
-            } catch (error) {
-                console.error('Error:', error);
-                alert('No se pudieron cargar los productos. Por favor, intente de nuevo más tarde.');
-            }
-        }
-        
-        // Función para renderizar los productos en el selector
-        function renderProducts(products) {
-            const productSelector = document.getElementById('productSelector');
-            const defaultOption = productSelector.querySelector('option');
-            
-            productSelector.innerHTML = '';
-            productSelector.appendChild(defaultOption);
-            
-            products.forEach(product => {
-                const option = document.createElement('option');
-                option.value = product.product_name;
-                option.textContent = product.product_name;
-                productSelector.appendChild(option);
-            });
-        }
-        
-        // Función para manejar el cambio de producto
-        async function handleProductChange(event) {
-            selectedProduct = event.target.value;
-            
-            if (!selectedProduct) {
-                document.getElementById('jobCodeContainer').classList.add('hidden');
-                document.getElementById('defectsContainer').classList.add('hidden');
-                document.getElementById('noDataMessage').classList.add('hidden');
-                return;
-            }
-            
-            try {
-                const response = await fetch(`/jobs/list-by-product/${selectedProduct}`);
-                if (!response.ok) {
-                    throw new Error('Error al cargar los job codes');
-                }
-                jobCodes = await response.json();
-                renderJobCodes(jobCodes);
-                
-                document.getElementById('jobCodeContainer').classList.remove('hidden');
-                document.getElementById('defectsContainer').classList.add('hidden');
-                document.getElementById('noDataMessage').classList.add('hidden');
-            } catch (error) {
-                console.error('Error:', error);
-                alert('No se pudieron cargar los job codes. Por favor, intente de nuevo más tarde.');
-            }
-        }
-        
-        // Función para renderizar los job codes en el selector
-        function renderJobCodes(jobCodes) {
-            const jobCodeSelector = document.getElementById('jobCodeSelector');
-            const defaultOption = jobCodeSelector.querySelector('option');
-            
-            jobCodeSelector.innerHTML = '';
-            jobCodeSelector.appendChild(defaultOption);
-            
-            jobCodes.forEach(job => {
-                const option = document.createElement('option');
-                option.value = job.job_code;
-                option.textContent = job.job_code;
-                jobCodeSelector.appendChild(option);
-            });
-        }
-        
-        // Función para manejar el cambio de job code
-        async function handleJobCodeChange(event) {
-            selectedJobCode = event.target.value;
-            
-            if (!selectedJobCode || !selectedProduct) {
-                document.getElementById('defectsContainer').classList.add('hidden');
-                document.getElementById('noDataMessage').classList.add('hidden');
-                return;
-            }
-            
-            try {
-                const response = await fetch(`/defect-records/complete/${selectedJobCode}/${selectedProduct}`);
-                if (!response.ok) {
-                    throw new Error('Error al cargar los datos de defectos');
-                }
-                defectData = await response.json();
-                
-                if (defectData.length === 0) {
-                    document.getElementById('defectsContainer').classList.add('hidden');
-                    document.getElementById('noDataMessage').classList.remove('hidden');
-                } else {
-                    renderDefects(defectData);
-                    document.getElementById('defectsContainer').classList.remove('hidden');
-                    document.getElementById('noDataMessage').classList.add('hidden');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('No se pudieron cargar los datos de defectos. Por favor, intente de nuevo más tarde.');
-            }
-        }
-        
-        // Función para renderizar los defectos en la tabla
-        function renderDefects(defects) {
-            const tableBody = document.getElementById('defectsTableBody');
-            tableBody.innerHTML = '';
-            
-            defects.forEach((defect, index) => {
-                const row = document.createElement('tr');
-                
-                // Formatear fechas
-                const dateOpened = new Date(defect.date_opened).toLocaleDateString();
-                const dateClosed = defect.date_closed ? new Date(defect.date_closed).toLocaleDateString() : '-';
-                
-                row.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap">${dateOpened}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${dateClosed}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${defect.inspector.employee_number}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${defect.issue_by_user.employee_number}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                            ${defect.status.status_name === 'Ok' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
-                            ${defect.status.status_name}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="flex space-x-2">
-                            ${defect.images.map((image, imgIndex) => `
-                                <img src="${image.image_url}" alt="Defecto ${imgIndex + 1}" 
-                                    class="h-16 w-16 object-cover rounded defect-image" 
-                                    onclick="showFullImage('${image.image_url}')">
-                            `).join('')}
-                        </div>
-                    </td>
-                `;
-                
-                // Añadir evento de clic a la fila para mostrar detalles
-                row.addEventListener('click', () => showDefectDetails(index));
-                row.classList.add('hover:bg-gray-50', 'cursor-pointer');
-                
-                tableBody.appendChild(row);
-            });
-        }
-        
-        // Función para mostrar imagen ampliada
-        function showFullImage(imageSrc) {
-            event.stopPropagation(); // Evitar que se active el evento de la fila
-            
-            document.getElementById('enlargedImage').src = imageSrc;
-            document.getElementById('imageModal').classList.remove('hidden');
-        }
-        
-        // Función para cerrar el modal de imagen
-        function closeImageModal() {
-            document.getElementById('imageModal').classList.add('hidden');
-        }
-        
-        // Función para mostrar detalles del defecto
-        function showDefectDetails(index) {
-            const defect = defectData[index];
-            const detailContent = document.getElementById('defectDetailContent');
-            
-            // Formatear fechas
-            const dateOpened = new Date(defect.date_opened).toLocaleDateString();
-            const dateClosed = defect.date_closed ? new Date(defect.date_closed).toLocaleDateString() : '-';
-            
-            detailContent.innerHTML = `
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="space-y-4">
-                        <div>
-                            <h3 class="text-lg font-medium text-gray-900">Información General</h3>
-                            <div class="mt-2 border-t border-gray-200 pt-2">
-                                <dl class="divide-y divide-gray-200">
-                                    <div class="py-2 grid grid-cols-3 gap-4">
-                                        <dt class="text-sm font-medium text-gray-500">Producto:</dt>
-                                        <dd class="text-sm text-gray-900 col-span-2">${defect.product.product_name}</dd>
-                                    </div>
-                                    <div class="py-2 grid grid-cols-3 gap-4">
-                                        <dt class="text-sm font-medium text-gray-500">Estado:</dt>
-                                        <dd class="text-sm text-gray-900 col-span-2">
-                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                                ${defect.status.status_name === 'Ok' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
-                                                ${defect.status.status_name}
-                                            </span>
-                                        </dd>
-                                    </div>
-                                    <div class="py-2 grid grid-cols-3 gap-4">
-                                        <dt class="text-sm font-medium text-gray-500">Fecha Apertura:</dt>
-                                        <dd class="text-sm text-gray-900 col-span-2">${dateOpened}</dd>
-                                    </div>
-                                    <div class="py-2 grid grid-cols-3 gap-4">
-                                        <dt class="text-sm font-medium text-gray-500">Fecha Cierre:</dt>
-                                        <dd class="text-sm text-gray-900 col-span-2">${dateClosed}</dd>
-                                    </div>
-                                </dl>
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <h3 class="text-lg font-medium text-gray-900">Inspector</h3>
-                            <div class="mt-2 border-t border-gray-200 pt-2">
-                                <dl class="divide-y divide-gray-200">
-                                    <div class="py-2 grid grid-cols-3 gap-4">
-                                        <dt class="text-sm font-medium text-gray-500">Número de Empleado:</dt>
-                                        <dd class="text-sm text-gray-900 col-span-2">${defect.inspector.employee_number}</dd>
-                                    </div>
-                                    <div class="py-2 grid grid-cols-3 gap-4">
-                                        <dt class="text-sm font-medium text-gray-500">Nombre Completo:</dt>
-                                        <dd class="text-sm text-gray-900 col-span-2">${defect.inspector.first_name} ${defect.inspector.first_surname}</dd>
-                                    </div>
-                                    <div class="py-2 grid grid-cols-3 gap-4">
-                                        <dt class="text-sm font-medium text-gray-500">Rol:</dt>
-                                        <dd class="text-sm text-gray-900 col-span-2">${defect.inspector.role.role_name}</dd>
-                                    </div>
-                                </dl>
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <h3 class="text-lg font-medium text-gray-900">Error del usuario</h3>
-                            <div class="mt-2 border-t border-gray-200 pt-2">
-                                <dl class="divide-y divide-gray-200">
-                                    <div class="py-2 grid grid-cols-3 gap-4">
-                                        <dt class="text-sm font-medium text-gray-500">Número de Empleado:</dt>
-                                        <dd class="text-sm text-gray-900 col-span-2">${defect.issue_by_user.employee_number}</dd>
-                                    </div>
-                                    <div class="py-2 grid grid-cols-3 gap-4">
-                                        <dt class="text-sm font-medium text-gray-500">Nombre Completo:</dt>
-                                        <dd class="text-sm text-gray-900 col-span-2">${defect.issue_by_user.first_name} ${defect.issue_by_user.first_surname}</dd>
-                                    </div>
-                                    <div class="py-2 grid grid-cols-3 gap-4">
-                                        <dt class="text-sm font-medium text-gray-500">Rol:</dt>
-                                        <dd class="text-sm text-gray-900 col-span-2">${defect.issue_by_user.role.role_name}</dd>
-                                    </div>
-                                </dl>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div>
-                        <h3 class="text-lg font-medium text-gray-900 mb-3">Imágenes</h3>
-                        <div class="grid grid-cols-1 gap-4">
-                            ${defect.images.map((image, imgIndex) => `
-                                <div class="border rounded-lg overflow-hidden">
-                                    <img src="${image.image_url}" alt="Defecto ${imgIndex + 1}" 
-                                        class="w-full h-auto object-contain cursor-pointer" 
-                                        onclick="showFullImage('${image.image_url}')">
-                                    <div class="p-2 bg-gray-50">
-                                        <p class="text-sm text-gray-500">${image.image_url.includes('before') ? 'Antes de la corrección' : 'Después de la corrección'}</p>
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            document.getElementById('defectDetailModal').classList.remove('hidden');
-        }
-        
-        // Función para cerrar el modal de detalles
-        function closeDefectDetailModal() {
-            document.getElementById('defectDetailModal').classList.add('hidden');
-        }
-        
-        // Cerrar modales si se hace clic fuera de ellos
-        window.addEventListener('click', (event) => {
-            const imageModal = document.getElementById('imageModal');
-            const defectDetailModal = document.getElementById('defectDetailModal');
-            
-            if (event.target === imageModal) {
-                closeImageModal();
-            }
-            
-            if (event.target === defectDetailModal) {
-                closeDefectDetailModal();
-            }
-        });
-        
-        // Manejar tecla ESC para cerrar modales
-        document.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape') {
-                closeImageModal();
-                closeDefectDetailModal();
-            }
-        });
-    </script>
 </div>
 {% endblock %}
