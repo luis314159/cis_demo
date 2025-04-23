@@ -487,6 +487,7 @@ class ResponseUser(SQLModel):
 
 class UpdateUserRequest(SQLModel):
     username: Optional[str] = None
+    employee_number: Optional[str] = None
     email: Optional[EmailStr] = None
     first_name: Optional[str] = None
     first_surname: Optional[str] = None

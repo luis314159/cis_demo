@@ -436,8 +436,8 @@ def update_user(
         db_user.first_name = user_update.first_name
         changes_made = True
 
-    if user_update.last_name is not None and user_update.last_name != db_user.last_name:
-        db_user.last_name = user_update.last_name
+    if user_update.first_surname is not None and user_update.first_surname != db_user.first_surname:
+        db_user.first_surname = user_update.first_surname
         changes_made = True
 
     if user_update.password is not None:
@@ -449,11 +449,6 @@ def update_user(
         db_user.role_id = new_role.role_id
         changes_made = True
         
-        # Si cambia de supervisor a otro rol, eliminar el número de supervisor
-        if not is_supervisor and db_user.supervisor_number:
-            db_user.supervisor_number = None
-            changes_made = True
-
     if user_update.is_active is not None and user_update.is_active != db_user.is_active:
         db_user.is_active = user_update.is_active
         changes_made = True
@@ -462,32 +457,6 @@ def update_user(
     if user_update.employee_number is not None and user_update.employee_number != db_user.employee_number:
         db_user.employee_number = user_update.employee_number
         changes_made = True
-    
-    # Manejar el número de supervisor
-    if user_update.supervisor_number is not None:
-        # Verificar si el rol es de supervisor
-        if not is_supervisor:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Solo los usuarios con rol de supervisor pueden tener número de supervisor"
-            )
-        
-        # Verificar si el número de supervisor ya está en uso por otro usuario
-        if user_update.supervisor_number != db_user.supervisor_number:
-            existing_supervisor = session.exec(
-                select(User)
-                .where(User.supervisor_number == user_update.supervisor_number)
-                .where(User.username != username)
-            ).first()
-            
-            if existing_supervisor:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="El número de supervisor ya está en uso"
-                )
-                
-            db_user.supervisor_number = user_update.supervisor_number
-            changes_made = True
     
     # Verificar que un usuario con rol de supervisor tenga número de supervisor
     if is_supervisor and not (db_user.supervisor_number or user_update.supervisor_number):
