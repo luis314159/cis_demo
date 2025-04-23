@@ -491,7 +491,7 @@ class UpdateUserRequest(SQLModel):
     first_name: Optional[str] = None
     first_surname: Optional[str] = None
     password: Optional[str] = None
-    role_id: Optional[int] = None
+    role_name: Optional[str] = None
     is_active: Optional[bool] = None
     
 
