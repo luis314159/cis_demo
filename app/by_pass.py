@@ -1,7 +1,9 @@
-from fastapi import FastAPI, Request
+from typing import Annotated
+from fastapi import Depends, FastAPI, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from auth import get_current_active_user
 from db import SessionDep, create_all_tables
 from sqlmodel import select
 from models import Item, User
@@ -294,4 +296,18 @@ async def admin_users_panel(request: Request):
     return templates.TemplateResponse(
         "admin_users.html", 
         {"request": request, "current_user": fake_user}
+    )
+
+@app.get("/create-defect-record", response_class=HTMLResponse,
+        summary="Display the issues management page",
+        response_description="Renders the issues management page",
+        tags=["Defect Management"],
+    )
+async def issues(
+    request: Request,
+    current_user: Annotated[User, Depends(get_current_active_user)]
+):
+    return templates.TemplateResponse(
+        "creat_defect.html", 
+        {"request": request, "current_user": current_user}
     )
