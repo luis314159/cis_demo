@@ -193,7 +193,7 @@ def list_users(session: SessionDep):
     return users
 
 @router.get(
-    "/users/by-role/",
+    "/by-role/",
     response_model=list[ResponseUser],
     response_model_exclude={"hashed_password"},
     summary="List users filtered by role name",
@@ -211,7 +211,7 @@ def list_users_by_role_name(
         Query(
             title="Role Name",
             description="Filter users by role name (case-insensitive). Omit to get all users.",
-            examples=["admin", "user", "manager"],
+            examples=["Operator", "Admin", "Inspector"],
             min_length=2,
             max_length=50,
             pattern="^[a-zA-Z0-9_\- ]+$"  # Regex para validar nombres de roles
