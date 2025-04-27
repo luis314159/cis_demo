@@ -506,7 +506,7 @@ class ResetPasswordRequest(SQLModel):
 
 
 class CompleteDefectRecordResponse(DefectRecordBase):
-
+    defect_record_id: int
     product: ProductBase | None = None
     status: StatusBase | None = None
     images: list[PublicDefectImage]  | None = None

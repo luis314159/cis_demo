@@ -21,6 +21,12 @@
   .defect-image:hover {
     transform: scale(1.05);
   }
+  /* Estilos para mensajes de alerta */
+  .status-help-text {
+    color: #0d6efd;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+  }
 </style>
 <script src="/static/js/punch_list.js" defer></script>
 {% endblock %}
@@ -31,23 +37,18 @@
     <div class="mb-4 border-b border-gray-200">
         <ul class="nav nav-tabs">
             <li class="nav-item">
-                <a href="/defect-records" class="nav-link">
+                <a href="/defect-records" class="nav-link active">
                     Registros de Defectos
                 </a>
             </li>
             <li class="nav-item">
-                <a href="/defect-codes" class="nav-link">
-                    Códigos de Defectos
+                <a href="/create-defect-record" class="nav-link">
+                    Crear Defecto
                 </a>
             </li>
             <li class="nav-item">
                 <a href="/issues" class="nav-link">
                     Problemas (Issues)
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/punch-list" class="nav-link active">
-                    Punch List
                 </a>
             </li>
         </ul>
@@ -146,22 +147,24 @@
                 </button>
             </div>
             
-            <form id="editDefectForm" class="space-y-6">
+            <form id="editDefectForm" class="space-y-6" enctype="multipart/form-data">
                 <input type="hidden" id="editDefectId" name="defect_record_id">
+                <!-- Los siguientes campos son necesarios para el endpoint pero no se muestran al usuario -->
+                <input type="hidden" id="editProductId" name="product_id">
+                <input type="hidden" id="editJobId" name="job_id">
+                <input type="hidden" id="editInspectorUserId" name="inspector_user_id">
+                <input type="hidden" id="editIssueByUserId" name="issue_by_user_id">
+                <input type="hidden" id="editIssueId" name="issue_id">
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Sección izquierda: Información general y descripciones -->
+                    <!-- Sección izquierda: Información general -->
                     <div class="space-y-4">
-                        <div>
-                            <label for="editDescription" class="block text-sm font-medium text-gray-700 mb-1">Descripción:</label>
-                            <textarea id="editDescription" name="description" rows="4" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></textarea>
-                        </div>
-                        
                         <div>
                             <label for="editStatus" class="block text-sm font-medium text-gray-700 mb-1">Estado:</label>
                             <select id="editStatus" name="status_id" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                                 <!-- Los estados se cargarán dinámicamente -->
                             </select>
+                            <p id="statusHelpText" class="status-help-text hidden">Cuando se marca como corregido, debes añadir una imagen de la solución.</p>
                         </div>
                         
                         <div>
@@ -171,10 +174,7 @@
                             </select>
                         </div>
                         
-                        <div class="flex items-center">
-                            <input type="checkbox" id="closeRecord" name="close_record" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                            <label for="closeRecord" class="ml-2 block text-sm text-gray-900">Cerrar registro de defecto</label>
-                        </div>
+                        <!-- ELIMINADO: Checkbox de "Cerrar registro de defecto" -->
                     </div>
                     
                     <!-- Sección derecha: Imágenes -->

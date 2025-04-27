@@ -268,7 +268,142 @@ class DefectRecordCreationResponse(SQLModel):
     defect_images: list[str]
     location_images: list[str]
 
-@router.patch("/defect-record/{defect_record_id}", status_code=status.HTTP_200_OK)
+
+@router.post("/create-defect-record", response_model=DefectRecordCreationResponse, status_code=status.HTTP_201_CREATED)
+async def create_defect_record(
+    *,
+    session: SessionDep,
+    product_id: int = Form(...),
+    job_id: int = Form(...),
+    inspector_user_id: int = Form(...),
+    issue_by_user_id: int = Form(...),
+    issue_id: int = Form(...),
+    correction_process_id: int = Form(...),
+    status_id: int = Form(...),
+    defect_images: list[UploadFile] = File(...),
+    location_images: list[UploadFile] = File(...)
+):
+    """
+    Crea un nuevo registro de defecto con sus imágenes asociadas.
+    Permite subir múltiples imágenes de defecto y ubicación.
+    """
+    # 1. Crear el registro de defecto
+    defect_record_data = DefectRecordCreate(
+        product_id=product_id,
+        job_id=job_id,
+        inspector_user_id=inspector_user_id,
+        issue_by_user_id=issue_by_user_id,
+        issue_id=issue_id,
+        correction_process_id=correction_process_id,
+        status_id=status_id
+    )
+    
+    defect_record = DefectRecord.model_validate(defect_record_data)
+    session.add(defect_record)
+    session.commit()
+    session.refresh(defect_record)
+    
+    # 2. Obtener información adicional para construir la ruta
+    product_query = select(Product).where(Product.product_id == product_id)
+    product = session.exec(product_query).first()
+    
+    if not product:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    
+    job_query = select(Job).where(Job.job_id == job_id)
+    job = session.exec(job_query).first()
+    
+    if not job:
+        raise HTTPException(status_code=404, detail="Job no encontrado")
+    
+    # 3. Construir la ruta base para guardar las imágenes
+    # IMPORTANTE: Usar una ruta relativa desde la raíz del proyecto
+    defect_folder_name = f"{product.product_name}_{job.job_code}_{defect_record.defect_record_id}"
+    base_path = Path.cwd() / "static" / "punch_list" / product.product_name / job.job_code / defect_folder_name
+    
+    # Asegurarse de que existen todos los directorios
+    (base_path / "defect_image").mkdir(parents=True, exist_ok=True)
+    (base_path / "location_image").mkdir(parents=True, exist_ok=True)
+    
+    # 4. Guardar las imágenes
+    defect_image_urls = []
+    location_image_urls = []
+    
+    # 4.1 Guardar las imágenes de defecto (DEFECT IMAGE, id=3)
+    for i, defect_image in enumerate(defect_images):
+        timestamp = int(time.time() * 1000) + i  # Añadir índice para garantizar unicidad
+        file_extension = Path(defect_image.filename).suffix if defect_image.filename else ".jpg"
+        defect_image_filename = f"defect_{timestamp}{file_extension}"
+        defect_image_path = base_path / "defect_image" / defect_image_filename
+        
+        # Guardar el archivo
+        with open(defect_image_path, "wb") as f:
+            content = await defect_image.read()
+            f.write(content)
+        await defect_image.seek(0)  # Reset file pointer
+        
+        # URL para guardar en la base de datos (ruta relativa desde el directorio static)
+        relative_url = f"/static/punch_list/{product.product_name}/{job.job_code}/{defect_folder_name}/defect_image/{defect_image_filename}"
+        
+        # Crear registro en la base de datos para la imagen de defecto
+        defect_image_data = DefectImageCreate(
+            defect_record_id=defect_record.defect_record_id,
+            image_type_id=3,  # DEFECT IMAGE
+            image_url=relative_url
+        )
+        defect_image_db = DefectImage.model_validate(defect_image_data)
+        session.add(defect_image_db)
+        defect_image_urls.append(relative_url)
+    
+    # 4.2 Guardar las imágenes de ubicación (LOCATION IMAGE, id=2)
+    for i, location_image in enumerate(location_images):
+        timestamp = int(time.time() * 1000) + i  # Añadir índice para garantizar unicidad
+        file_extension = Path(location_image.filename).suffix if location_image.filename else ".jpg"
+        location_image_filename = f"location_{timestamp}{file_extension}"
+        location_image_path = base_path / "location_image" / location_image_filename
+        
+        # Guardar el archivo
+        with open(location_image_path, "wb") as f:
+            content = await location_image.read()
+            f.write(content)
+        await location_image.seek(0)  # Reset file pointer
+        
+        # URL para guardar en la base de datos (ruta relativa desde el directorio static)
+        relative_url = f"/static/punch_list/{product.product_name}/{job.job_code}/{defect_folder_name}/location_image/{location_image_filename}"
+        
+        # Crear registro en la base de datos para la imagen de ubicación
+        location_image_data = DefectImageCreate(
+            defect_record_id=defect_record.defect_record_id,
+            image_type_id=2,  # LOCATION IMAGE
+            image_url=relative_url
+        )
+        location_image_db = DefectImage.model_validate(location_image_data)
+        session.add(location_image_db)
+        location_image_urls.append(relative_url)
+    
+    # Confirmar cambios en la base de datos
+    session.commit()
+    
+    # 5. Preparar respuesta
+    response = DefectRecordCreationResponse(
+        defect_record_id=defect_record.defect_record_id,
+        product_name=product.product_name,
+        job_code=job.job_code,
+        defect_images=defect_image_urls,
+        location_images=location_image_urls
+    )
+    
+    return response    
+
+class DefectRecordUpdateResponse(SQLModel):
+    defect_record_id: int
+    product_name: str
+    job_code: str
+    defect_images: list[str]
+    location_images: list[str]
+    solved_images: list[str]
+
+@router.patch("/defect-record/{defect_record_id}", response_model=DefectRecordUpdateResponse, status_code=status.HTTP_200_OK)
 async def update_defect_record(
     *,
     session: SessionDep,
@@ -347,7 +482,7 @@ async def update_defect_record(
         if not session.exec(status_query).first():
             raise HTTPException(status_code=404, detail="Estado no encontrado")
         update_data.status_id = status_id
-    
+
     if description is not None:
         update_data.description = description
     
@@ -359,9 +494,9 @@ async def update_defect_record(
         setattr(defect_record, key, value)
     
     # 4. Procesar nuevas imágenes si se proporcionan
-    new_defect_image_urls = []
-    new_location_image_urls = []
-    new_solved_image_urls = []
+    defect_image_urls = []
+    location_image_urls = []
+    solved_image_urls = []
     
     # Obtener información necesaria para construir la ruta de las imágenes
     product = defect_record.product
@@ -380,6 +515,10 @@ async def update_defect_record(
         # 4.1 Guardar las nuevas imágenes de defecto (DEFECT IMAGE, id=3)
         if defect_images:
             for i, defect_image in enumerate(defect_images):
+                # Saltar archivos vacíos
+                if defect_image.filename == "":
+                    continue
+                    
                 timestamp = int(time.time() * 1000) + i  # Añadir índice para garantizar unicidad
                 file_extension = Path(defect_image.filename).suffix if defect_image.filename else ".jpg"
                 defect_image_filename = f"defect_{timestamp}{file_extension}"
@@ -402,11 +541,15 @@ async def update_defect_record(
                 )
                 defect_image_db = DefectImage.model_validate(defect_image_data)
                 session.add(defect_image_db)
-                new_defect_image_urls.append(relative_url)
+                defect_image_urls.append(relative_url)
         
         # 4.2 Guardar las nuevas imágenes de ubicación (LOCATION IMAGE, id=2)
         if location_images:
             for i, location_image in enumerate(location_images):
+                # Saltar archivos vacíos
+                if location_image.filename == "":
+                    continue
+                    
                 timestamp = int(time.time() * 1000) + i  # Añadir índice para garantizar unicidad
                 file_extension = Path(location_image.filename).suffix if location_image.filename else ".jpg"
                 location_image_filename = f"location_{timestamp}{file_extension}"
@@ -429,11 +572,15 @@ async def update_defect_record(
                 )
                 location_image_db = DefectImage.model_validate(location_image_data)
                 session.add(location_image_db)
-                new_location_image_urls.append(relative_url)
+                location_image_urls.append(relative_url)
                 
         # 4.3 Guardar las nuevas imágenes de solución (SOLVED IMAGE, id=1)
         if solved_images:
             for i, solved_image in enumerate(solved_images):
+                # Saltar archivos vacíos
+                if solved_image.filename == "":
+                    continue
+                    
                 timestamp = int(time.time() * 1000) + i  # Añadir índice para garantizar unicidad
                 file_extension = Path(solved_image.filename).suffix if solved_image.filename else ".jpg"
                 solved_image_filename = f"solved_{timestamp}{file_extension}"
@@ -456,30 +603,23 @@ async def update_defect_record(
                 )
                 solved_image_db = DefectImage.model_validate(solved_image_data)
                 session.add(solved_image_db)
-                new_solved_image_urls.append(relative_url)
+                solved_image_urls.append(relative_url)
     
     # 5. Confirmar los cambios en la base de datos
     session.commit()
+    session.refresh(defect_record)
     
-    # 6. Recuperar todas las imágenes asociadas al registro
-    all_defect_images = [img.image_url for img in defect_record.images if img.image_type_id == 3]
-    all_location_images = [img.image_url for img in defect_record.images if img.image_type_id == 2]
-    all_solved_images = [img.image_url for img in defect_record.images if img.image_type_id == 1]
+    # 6. Obtener todas las imágenes existentes (incluyendo las que se acaban de añadir)
+    # Para alinear con el patrón del endpoint CREATE, solo incluimos las nuevamente subidas
     
-    # 7. Preparar la respuesta
-    response = {
-        "defect_record_id": defect_record.defect_record_id,
-        "product_name": product.product_name,
-        "job_code": job.job_code,
-        "status": defect_record.status.status_name if defect_record.status else None,
-        "date_updated": datetime.now(timezone.utc).isoformat(),
-        "date_closed": defect_record.date_closed.isoformat() if defect_record.date_closed else None,
-        "defect_images": all_defect_images,
-        "location_images": all_location_images,
-        "solved_images": all_solved_images,
-        "new_defect_images": new_defect_image_urls,
-        "new_location_images": new_location_image_urls,
-        "new_solved_images": new_solved_image_urls
-    }
+    # 7. Preparar la respuesta usando el modelo definido
+    response = DefectRecordUpdateResponse(
+        defect_record_id=defect_record.defect_record_id,
+        product_name=product.product_name,
+        job_code=job.job_code,
+        defect_images=defect_image_urls,
+        location_images=location_image_urls,
+        solved_images=solved_image_urls
+    )
     
     return response
