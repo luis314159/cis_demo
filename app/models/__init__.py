@@ -478,6 +478,7 @@ class ResponseUser(SQLModel):
     employee_number: int
     username: str
     email: EmailStr
+    first_name: str
     middle_name: Optional[str] = Field(max_length=50, default=None)
     first_surname: str = Field(max_length=50)
     second_surname: Optional[str] = Field(max_length=50, default=None)
@@ -487,11 +488,12 @@ class ResponseUser(SQLModel):
 
 class UpdateUserRequest(SQLModel):
     username: Optional[str] = None
+    employee_number: Optional[str] = None
     email: Optional[EmailStr] = None
     first_name: Optional[str] = None
     first_surname: Optional[str] = None
     password: Optional[str] = None
-    role_id: Optional[int] = None
+    role_name: Optional[str] = None
     is_active: Optional[bool] = None
     
 

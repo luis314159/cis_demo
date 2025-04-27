@@ -9,6 +9,10 @@ from sqlmodel import SQLModel
 class JobList(SQLModel):
     job_code: str
 
+class JobListComplete(SQLModel):
+    job_code: str
+    job_id: int
+
 # Crear el router
 router = APIRouter(
     prefix="/jobs",
@@ -56,6 +60,58 @@ def list_jobs(session: SessionDep):
 
     # Transformar a la respuesta deseada
     job_list = [JobList(job_code=job.job_code) for job in jobs]
+
+    return job_list
+
+@router.get("/list-complete", 
+            response_model=List[JobListComplete],
+            summary="List all jobs",
+            response_description="Returns a list of all jobs",
+            status_code=status.HTTP_200_OK)
+def list_jobs(session: SessionDep):
+    """
+    ## Endpoint to list all jobs
+
+    This endpoint retrieves a list of all jobs available in the system.
+
+    ### Returns:
+    - **List[JobList]**: A list of all jobs with job codes and IDs.
+
+    ### Example Usage:
+    ```http
+    GET /jobs/list
+
+    Response:
+    [
+        {
+            "job_code": "JOB123",
+            "job_id": 1
+        },
+        {
+            "job_code": "JOB456",
+            "job_id": 2
+        }
+    ]
+    ```
+
+    ### Workflow:
+    1. Query the database to retrieve all jobs.
+    2. Transform the job data into the desired response format.
+    3. Return the list of jobs.
+    """
+    # Obtener todos los Jobs disponibles
+    jobs = session.exec(select(Job)).all()
+
+    # # Transformar incluyendo todos los campos del modelo de respuesta
+    job_list = [
+        JobListComplete(
+            job_code=job.job_code,
+            job_id=job.job_id  # Campo faltante añadido
+        ) 
+        for job in jobs
+    ]
+
+    
 
     return job_list
 
