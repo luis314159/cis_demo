@@ -220,6 +220,7 @@ function closeImageModal() {
     document.getElementById('imageModal').classList.add('hidden');
 }
 
+
 // Función para mostrar detalles del defecto
 function showDefectDetails(index) {
     currentDefectIndex = index;
@@ -231,16 +232,59 @@ function showDefectDetails(index) {
     
     // Obtener el proceso de corrección si existe
     let correctionProcessName = '-';
+    let correctionProcessId = null;
+    
+    // Determinar el ID del proceso de corrección
     if (defect.correction_process && defect.correction_process.correction_process_id) {
-        const process = correctionProcesses.find(p => p.correction_process_id === defect.correction_process.correction_process_id);
-        if (process) {
+        correctionProcessId = defect.correction_process.correction_process_id;
+    } else if (defect.correction_process_id) {
+        correctionProcessId = defect.correction_process_id;
+    }
+    
+    // Buscar primero en la lista cargada (por si ya está disponible)
+    if (correctionProcessId && correctionProcesses.length > 0) {
+        const process = correctionProcesses.find(p => p.correction_process_id === correctionProcessId);
+        if (process && process.correction_process_description) {
             correctionProcessName = process.correction_process_description;
         }
+    }
+    
+    // Cargar la descripción del proceso de corrección desde el endpoint específico
+    if (correctionProcessId) {
+        // Crear una función para cargar la descripción
+        fetchCorrectionProcessDescription(correctionProcessId)
+            .then(description => {
+                if (description) {
+                    // Actualizar la descripción en el DOM
+                    const correctionProcessElement = document.querySelector('[data-correction-process-element]');
+                    if (correctionProcessElement) {
+                        correctionProcessElement.textContent = description;
+                    }
+                }
+            })
+            .catch(error => console.error('Error al cargar la descripción del proceso de corrección:', error));
     }
     
     // Formatear fechas
     const dateOpened = new Date(defect.date_opened).toLocaleDateString();
     const dateClosed = defect.date_closed ? new Date(defect.date_closed).toLocaleDateString() : '-';
+    
+    // Organizar las imágenes por tipo
+    const defectImages = defect.images ? defect.images.filter(img => 
+        img.image_type?.type_name === "BEFORE ERROR" || 
+        img.image_url.toLowerCase().includes('before') || 
+        img.image_url.toLowerCase().includes('defect')
+    ) : [];
+    
+    const locationImages = defect.images ? defect.images.filter(img => 
+        img.image_type?.type_name === "LOCATION IMAGE" || 
+        img.image_url.toLowerCase().includes('location')
+    ) : [];
+    
+    const solvedImages = defect.images ? defect.images.filter(img => 
+        img.image_type?.type_name === "SOLVED IMAGE" || 
+        img.image_url.toLowerCase().includes('solved')
+    ) : [];
     
     detailContent.innerHTML = `
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -258,6 +302,14 @@ function showDefectDetails(index) {
                                 <dd class="text-sm text-gray-900 col-span-2">${defect.product?.product_name || '-'}</dd>
                             </div>
                             <div class="py-2 grid grid-cols-3 gap-4">
+                                <dt class="text-sm font-medium text-gray-500">Descripción del Defecto:</dt>
+                                <dd class="text-sm text-gray-900 col-span-2">${defect.issue?.issue_description || '-'}</dd>
+                            </div>
+                            <div class="py-2 grid grid-cols-3 gap-4">
+                                <dt class="text-sm font-medium text-gray-500">Proceso:</dt>
+                                <dd class="text-sm text-gray-900 col-span-2">${defect.issue?.process?.process_name || '-'}</dd>
+                            </div>
+                            <div class="py-2 grid grid-cols-3 gap-4">
                                 <dt class="text-sm font-medium text-gray-500">Estado:</dt>
                                 <dd class="text-sm text-gray-900 col-span-2">
                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
@@ -268,7 +320,7 @@ function showDefectDetails(index) {
                             </div>
                             <div class="py-2 grid grid-cols-3 gap-4">
                                 <dt class="text-sm font-medium text-gray-500">Proceso de Corrección:</dt>
-                                <dd class="text-sm text-gray-900 col-span-2">${correctionProcessName}</dd>
+                                <dd class="text-sm text-gray-900 col-span-2" data-correction-process-element>${correctionProcessName}</dd>
                             </div>
                             <div class="py-2 grid grid-cols-3 gap-4">
                                 <dt class="text-sm font-medium text-gray-500">Fecha Apertura:</dt>
@@ -277,6 +329,10 @@ function showDefectDetails(index) {
                             <div class="py-2 grid grid-cols-3 gap-4">
                                 <dt class="text-sm font-medium text-gray-500">Fecha Cierre:</dt>
                                 <dd class="text-sm text-gray-900 col-span-2">${dateClosed}</dd>
+                            </div>
+                            <div class="py-2 grid grid-cols-3 gap-4">
+                                <dt class="text-sm font-medium text-gray-500">Issue ID:</dt>
+                                <dd class="text-sm text-gray-900 col-span-2">${defect.issue_id || '-'}</dd>
                             </div>
                         </dl>
                     </div>
@@ -287,12 +343,29 @@ function showDefectDetails(index) {
                     <div class="mt-2 border-t border-gray-200 pt-2">
                         <dl class="divide-y divide-gray-200">
                             <div class="py-2 grid grid-cols-3 gap-4">
+                                <dt class="text-sm font-medium text-gray-500">ID:</dt>
+                                <dd class="text-sm text-gray-900 col-span-2">${defect.inspector?.user_id || '-'}</dd>
+                            </div>
+                            <div class="py-2 grid grid-cols-3 gap-4">
                                 <dt class="text-sm font-medium text-gray-500">Número de Empleado:</dt>
                                 <dd class="text-sm text-gray-900 col-span-2">${defect.inspector?.employee_number || '-'}</dd>
                             </div>
                             <div class="py-2 grid grid-cols-3 gap-4">
+                                <dt class="text-sm font-medium text-gray-500">Usuario:</dt>
+                                <dd class="text-sm text-gray-900 col-span-2">${defect.inspector?.username || '-'}</dd>
+                            </div>
+                            <div class="py-2 grid grid-cols-3 gap-4">
+                                <dt class="text-sm font-medium text-gray-500">Email:</dt>
+                                <dd class="text-sm text-gray-900 col-span-2">${defect.inspector?.email || '-'}</dd>
+                            </div>
+                            <div class="py-2 grid grid-cols-3 gap-4">
                                 <dt class="text-sm font-medium text-gray-500">Nombre Completo:</dt>
-                                <dd class="text-sm text-gray-900 col-span-2">${defect.inspector?.first_name || '-'} ${defect.inspector?.first_surname || ''}</dd>
+                                <dd class="text-sm text-gray-900 col-span-2">
+                                    ${defect.inspector?.first_name || '-'} 
+                                    ${defect.inspector?.middle_name ? defect.inspector.middle_name : ''} 
+                                    ${defect.inspector?.first_surname || ''} 
+                                    ${defect.inspector?.second_surname ? defect.inspector.second_surname : ''}
+                                </dd>
                             </div>
                             <div class="py-2 grid grid-cols-3 gap-4">
                                 <dt class="text-sm font-medium text-gray-500">Rol:</dt>
@@ -303,16 +376,33 @@ function showDefectDetails(index) {
                 </div>
                 
                 <div>
-                    <h3 class="text-lg font-medium text-gray-900">Error del usuario</h3>
+                    <h3 class="text-lg font-medium text-gray-900">Reportado Por</h3>
                     <div class="mt-2 border-t border-gray-200 pt-2">
                         <dl class="divide-y divide-gray-200">
+                            <div class="py-2 grid grid-cols-3 gap-4">
+                                <dt class="text-sm font-medium text-gray-500">ID:</dt>
+                                <dd class="text-sm text-gray-900 col-span-2">${defect.issue_by_user?.user_id || '-'}</dd>
+                            </div>
                             <div class="py-2 grid grid-cols-3 gap-4">
                                 <dt class="text-sm font-medium text-gray-500">Número de Empleado:</dt>
                                 <dd class="text-sm text-gray-900 col-span-2">${defect.issue_by_user?.employee_number || '-'}</dd>
                             </div>
                             <div class="py-2 grid grid-cols-3 gap-4">
+                                <dt class="text-sm font-medium text-gray-500">Usuario:</dt>
+                                <dd class="text-sm text-gray-900 col-span-2">${defect.issue_by_user?.username || '-'}</dd>
+                            </div>
+                            <div class="py-2 grid grid-cols-3 gap-4">
+                                <dt class="text-sm font-medium text-gray-500">Email:</dt>
+                                <dd class="text-sm text-gray-900 col-span-2">${defect.issue_by_user?.email || '-'}</dd>
+                            </div>
+                            <div class="py-2 grid grid-cols-3 gap-4">
                                 <dt class="text-sm font-medium text-gray-500">Nombre Completo:</dt>
-                                <dd class="text-sm text-gray-900 col-span-2">${defect.issue_by_user?.first_name || '-'} ${defect.issue_by_user?.first_surname || ''}</dd>
+                                <dd class="text-sm text-gray-900 col-span-2">
+                                    ${defect.issue_by_user?.first_name || '-'} 
+                                    ${defect.issue_by_user?.middle_name ? defect.issue_by_user.middle_name : ''} 
+                                    ${defect.issue_by_user?.first_surname || ''} 
+                                    ${defect.issue_by_user?.second_surname ? defect.issue_by_user.second_surname : ''}
+                                </dd>
                             </div>
                             <div class="py-2 grid grid-cols-3 gap-4">
                                 <dt class="text-sm font-medium text-gray-500">Rol:</dt>
@@ -324,18 +414,61 @@ function showDefectDetails(index) {
             </div>
             
             <div>
-                <h3 class="text-lg font-medium text-gray-900 mb-3">Imágenes</h3>
-                <div class="grid grid-cols-1 gap-4">
-                    ${defect.images && defect.images.map((image, imgIndex) => `
-                        <div class="border rounded-lg overflow-hidden">
-                            <img src="${image.image_url}" alt="Defecto ${imgIndex + 1}" 
-                                class="w-full h-auto object-contain cursor-pointer" 
-                                onclick="showFullImage(event, '${image.image_url}')">
-                            <div class="p-2 bg-gray-50">
-                                <p class="text-sm text-gray-500">${getImageTypeLabel(image)}</p>
-                            </div>
-                        </div>
-                    `).join('')}
+                <div class="mb-6">
+                    <h3 class="text-lg font-medium text-gray-900 mb-3">Imágenes del Defecto</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        ${defectImages.length > 0 ? 
+                            defectImages.map((image, imgIndex) => `
+                                <div class="border rounded-lg overflow-hidden">
+                                    <img src="${image.image_url}" alt="Defecto ${imgIndex + 1}" 
+                                        class="w-full h-auto object-contain cursor-pointer" 
+                                        onclick="showFullImage(event, '${image.image_url}')">
+                                    <div class="p-2 bg-gray-50">
+                                        <p class="text-sm text-gray-500">Imagen del Defecto</p>
+                                    </div>
+                                </div>
+                            `).join('') :
+                            '<p class="text-sm text-gray-500 col-span-2">No hay imágenes del defecto</p>'
+                        }
+                    </div>
+                </div>
+                
+                <div class="mb-6">
+                    <h3 class="text-lg font-medium text-gray-900 mb-3">Imágenes de Ubicación</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        ${locationImages.length > 0 ? 
+                            locationImages.map((image, imgIndex) => `
+                                <div class="border rounded-lg overflow-hidden">
+                                    <img src="${image.image_url}" alt="Ubicación ${imgIndex + 1}" 
+                                        class="w-full h-auto object-contain cursor-pointer" 
+                                        onclick="showFullImage(event, '${image.image_url}')">
+                                    <div class="p-2 bg-gray-50">
+                                        <p class="text-sm text-gray-500">Imagen de Ubicación</p>
+                                    </div>
+                                </div>
+                            `).join('') :
+                            '<p class="text-sm text-gray-500 col-span-2">No hay imágenes de ubicación</p>'
+                        }
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-3">Imágenes de Solución</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        ${solvedImages.length > 0 ? 
+                            solvedImages.map((image, imgIndex) => `
+                                <div class="border rounded-lg overflow-hidden">
+                                    <img src="${image.image_url}" alt="Solución ${imgIndex + 1}" 
+                                        class="w-full h-auto object-contain cursor-pointer" 
+                                        onclick="showFullImage(event, '${image.image_url}')">
+                                    <div class="p-2 bg-gray-50">
+                                        <p class="text-sm text-gray-500">Imagen de Solución</p>
+                                    </div>
+                                </div>
+                            `).join('') :
+                            '<p class="text-sm text-gray-500 col-span-2">No hay imágenes de solución</p>'
+                        }
+                    </div>
                 </div>
             </div>
         </div>
@@ -344,26 +477,48 @@ function showDefectDetails(index) {
     document.getElementById('defectDetailModal').classList.remove('hidden');
 }
 
-// Función para obtener el tipo de imagen basado en la URL
-function getImageTypeLabel(image) {
-    // Verificar primero por image_type_id si está disponible
-    if (image.image_type_id === 1) {
-        return 'Solución implementada';
-    } else if (image.image_type_id === 2) {
-        return 'Ubicación del defecto';
-    } else if (image.image_type_id === 3) {
-        return 'Imagen del defecto';
-    }
 
-    // Si no hay image_type_id, intentar deducir por URL
+// Función para obtener la descripción del proceso de corrección
+async function fetchCorrectionProcessDescription(correctionProcessId) {
+    try {
+        const response = await fetch(`http://localhost:8000/correction-processes/${correctionProcessId}`);
+        if (!response.ok) {
+            throw new Error(`Error al obtener el proceso de corrección: ${response.status}`);
+        }
+        const data = await response.json();
+        return data.correction_process_description;
+    } catch (error) {
+        console.error('Error:', error);
+        return null;
+    }
+}
+
+// Función mejorada para obtener el tipo de imagen basado en la URL o el tipo
+function getImageTypeLabel(image) {
+    // Verificar primero por image_type si está disponible
+    if (image.image_type && image.image_type.type_name) {
+        const typeName = image.image_type.type_name.toUpperCase();
+        if (typeName === "BEFORE ERROR" || typeName === "DEFECT IMAGE") {
+            return 'Imagen del Defecto';
+        } else if (typeName === "LOCATION IMAGE") {
+            return 'Ubicación del Defecto';
+        } else if (typeName === "SOLVED IMAGE") {
+            return 'Solución Implementada';
+        }
+        return image.image_type.type_name; // Devolver el nombre del tipo tal cual
+    }
+    
+    // Si no hay image_type, intentar deducir por URL
     const imageUrl = image.image_url.toLowerCase();
     if (imageUrl.includes('solved')) {
-        return 'Solución implementada';
+        return 'Solución Implementada';
     } else if (imageUrl.includes('location')) {
-        return 'Ubicación del defecto';
-    } else if (imageUrl.includes('defect')) {
-        return 'Imagen del defecto';
+        return 'Ubicación del Defecto';
+    } else if (imageUrl.includes('defect') || imageUrl.includes('before')) {
+        return 'Imagen del Defecto';
     }
+    
+    // Tipo por defecto
     return 'Imagen';
 }
 

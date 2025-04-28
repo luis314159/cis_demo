@@ -40,6 +40,10 @@ class JobUpdate(SQLModel):
 class JobResponse(JobBase):
     job_id: Optional[int] | None = None
 
+class JobResponseCode(SQLModel):
+    job_code: str
+    
+
 # Modelos para la tabla Items
 class ItemBase(SQLModel):
     item_name: str = Field(max_length=255, nullable=False)
@@ -167,7 +171,7 @@ class Process(ProcessBase, table=True):
     process_id: Optional[int] = Field(default=None, primary_key=True)
     process_stages: list[ProcessStage] = Relationship(back_populates="process")
     items: list["Item"] = Relationship(back_populates="process")  # Relación con Item
-
+    issues: list["Issue"] = Relationship(back_populates="process")
 
 class ProcessCreate(ProcessBase):
     pass
@@ -180,6 +184,11 @@ class ProcessResponse(ProcessBase):
     process_id: int
     process_name: str
 
+class ProcessNameResponse(SQLModel):
+    process_name: str
+
+
+#ItemStatus
 class ItemStageStatus(SQLModel):
     item_name: str
     item_ocr: str
@@ -218,6 +227,7 @@ class Issue(IssueBase, table=True):
     issue_id: Optional[int] = Field(default=None, primary_key=True)
     process_id: int = Field(foreign_key="process.process_id", nullable=False)
     defect_records: list["DefectRecord"] = Relationship(back_populates="issue")
+    process: "Process" = Relationship(back_populates="issues")
 
 class IssueCreate(IssueBase):
     process_id: int
@@ -229,6 +239,8 @@ class IssueResponse(IssueBase):
     issue_id: int
     process_id: int  # Include the process association in the response
 
+class IssueResponseWithProcess(IssueBase):
+    process: ProcessNameResponse
 
 # --- Status ---
 class StatusBase(SQLModel):
@@ -508,6 +520,7 @@ class ResetPasswordRequest(SQLModel):
 
 
 class CompleteDefectRecordResponse(DefectRecordBase):
+    issue: IssueResponseWithProcess | None = None
     defect_record_id: int
     product: ProductBase | None = None
     status: StatusBase | None = None
