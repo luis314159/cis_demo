@@ -1,13 +1,13 @@
 <!-- templates/issues.html -->
 {% extends 'base.html' %}
 
-{% block title %}Problemas (Issues){% endblock %}
+{% block title %}Issues{% endblock %}
 
 {% block extra_head %}
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-  /* Estilos adicionales para compatibilidad con Bootstrap */
+  /* Additional styles for Bootstrap compatibility */
   .container {
     max-width: 100%;
     padding: 0 1rem;
@@ -15,14 +15,14 @@
   .mt-5 {
     margin-top: 1.25rem !important;
   }
-  /* Estilos para paginación */
+  /* Pagination styles */
   .pagination-btn {
     @apply px-3 py-1 border rounded-md bg-white text-gray-600 hover:bg-gray-50;
   }
   .pagination-btn.active {
     @apply bg-blue-500 text-white hover:bg-blue-600;
   }
-  /* Estilos para notificaciones */
+  /* Notification styles */
   .notification {
     @apply fixed top-4 right-4 p-4 rounded-lg shadow-lg max-w-md transform transition-all duration-300 ease-in-out;
     z-index: 100;
@@ -42,49 +42,49 @@
 
 {% block content %}
 <div class="container mx-auto px-4 py-4">
-    <!-- Menú de navegación -->
+    <!-- Navigation menu -->
     <div class="mb-4 border-b border-gray-200">
         <ul class="nav nav-tabs flex flex-wrap">
             <li class="nav-item mr-2">
                 <a href="/defect-records" class="nav-link px-4 py-2 inline-block border-b-2 border-transparent hover:border-blue-400 hover:text-blue-600">
-                    Registros de Defectos
+                    Punch List
                 </a>
             </li>
             <li class="nav-item mr-2">
                 <a href="/create-defect-record" class="nav-link px-4 py-2 inline-block border-b-2 border-transparent hover:border-blue-400 hover:text-blue-600">
-                    Crear Defecto
+                    Create Punch List Element
                 </a>
             </li>
             <li class="nav-item">
                 <a href="/issues" class="nav-link active px-4 py-2 inline-block border-b-2 border-blue-500 text-blue-600 font-medium">
-                    Problemas (Issues)
+                    Issues
                 </a>
             </li>
         </ul>
     </div>
 
-    <!-- Notificación -->
+    <!-- Notification -->
     <div id="notification" class="notification hidden"></div>
 
-    <!-- Contenido de Problemas (Issues) -->
+    <!-- Issues Content -->
     <div>
         <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-bold">Problemas (Issues)</h1>
+            <h1 class="text-2xl font-bold">Issues</h1>
             <button onclick="openIssueModal()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
                 </svg>
-                Nuevo Problema
+                New Issue
             </button>
         </div>
 
-        <!-- Filtros para Problemas -->
+        <!-- Issue Filters -->
         <div class="flex flex-col md:flex-row gap-4 mb-6">
             <div class="flex-1 relative">
                 <input 
                     type="text" 
                     id="issueSearchInput"
-                    placeholder="Buscar por descripción" 
+                    placeholder="Search by description" 
                     class="pl-10 pr-4 py-2 border rounded-lg w-full"
                     oninput="filterIssues()"
                 >
@@ -93,27 +93,27 @@
                 </svg>
             </div>
             <select id="processFilter" class="border rounded-lg px-4 py-2 w-full md:w-48" onchange="filterIssues()">
-                <option value="">Todos los procesos</option>
+                <option value="">All processes</option>
             </select>
         </div>
 
-        <!-- Tabla de Problemas -->
+        <!-- Issues Table -->
         <div class="bg-white rounded-lg shadow overflow-hidden mb-4">
             <div class="overflow-x-auto">
                 <table class="w-full">
                     <thead class="bg-gray-50">
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Proceso</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Process</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="issuesTableBody" class="divide-y divide-gray-200">
-                        <!-- Los problemas se cargarán aquí dinámicamente -->
+                        <!-- Issues will be loaded here dynamically -->
                         <tr id="loadingRow">
                             <td colspan="4" class="px-6 py-4 text-center">
-                                <div class="loading-spinner"></div> Cargando...
+                                <div class="loading-spinner"></div> Loading...
                             </td>
                         </tr>
                     </tbody>
@@ -121,30 +121,30 @@
             </div>
         </div>
 
-        <!-- Paginación -->
+        <!-- Pagination -->
         <div id="pagination" class="flex justify-center gap-2 mt-4">
-            <!-- Los botones de paginación se generarán dinámicamente -->
+            <!-- Pagination buttons will be generated dynamically -->
         </div>
     </div>
 
-    <!-- Modal para Crear/Editar Problema (Issue) -->
+    <!-- Modal for Create/Edit Issue -->
     <div id="issueModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
         <div class="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 id="issueModalTitle" class="text-xl font-bold mb-4">Nuevo Problema</h2>
+            <h2 id="issueModalTitle" class="text-xl font-bold mb-4">New Issue</h2>
             <form id="issueForm" onsubmit="handleIssueSubmit(event)">
                 <div class="space-y-4">
                     <div>
-                        <label for="issue_description" class="block text-sm font-medium text-gray-700">Descripción</label>
+                        <label for="issue_description" class="block text-sm font-medium text-gray-700">Description</label>
                         <textarea id="issue_description" name="issue_description" required 
                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                             rows="3"></textarea>
                         <div id="description_error" class="text-red-500 text-sm mt-1 hidden"></div>
                     </div>
                     <div>
-                        <label for="issue_process_id" class="block text-sm font-medium text-gray-700">Proceso</label>
+                        <label for="issue_process_id" class="block text-sm font-medium text-gray-700">Process</label>
                         <select id="issue_process_id" name="process_id" required 
                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                            <option value="">Seleccionar proceso</option>
+                            <option value="">Select process</option>
                         </select>
                         <div id="process_error" class="text-red-500 text-sm mt-1 hidden"></div>
                     </div>
@@ -152,11 +152,11 @@
                 <div class="mt-6 flex justify-end gap-4">
                     <button type="button" onclick="closeIssueModal()" 
                         class="px-4 py-2 border rounded-md text-gray-600 hover:bg-gray-50">
-                        Cancelar
+                        Cancel
                     </button>
                     <button type="submit" id="saveButton" 
                         class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 flex items-center gap-2">
-                        <span id="saveButtonText">Guardar</span>
+                        <span id="saveButtonText">Save</span>
                         <span id="saveButtonSpinner" class="loading-spinner hidden"></span>
                     </button>
                 </div>
@@ -165,19 +165,19 @@
         </div>
     </div>
 
-    <!-- Modal de confirmación para eliminar -->
+    <!-- Confirmation modal for delete -->
     <div id="deleteConfirmModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
         <div class="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 class="text-xl font-bold mb-4">Confirmar eliminación</h2>
-            <p>¿Está seguro de que desea eliminar este problema? Esta acción no se puede deshacer.</p>
+            <h2 class="text-xl font-bold mb-4">Confirm deletion</h2>
+            <p>Are you sure you want to delete this issue? This action cannot be undone.</p>
             <div class="mt-6 flex justify-end gap-4">
                 <button onclick="closeDeleteModal()" 
                     class="px-4 py-2 border rounded-md text-gray-600 hover:bg-gray-50">
-                    Cancelar
+                    Cancel
                 </button>
                 <button onclick="confirmDelete()" 
                     class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 flex items-center gap-2">
-                    <span id="deleteButtonText">Eliminar</span>
+                    <span id="deleteButtonText">Delete</span>
                     <span id="deleteButtonSpinner" class="loading-spinner hidden"></span>
                 </button>
             </div>
@@ -188,7 +188,7 @@
 
 {% block extra_scripts %}
 <script>
-    // Variables globales para almacenar datos
+    // Global variables to store data
     let issues = [];
     let processes = [];
     let currentPage = 1;
@@ -196,7 +196,7 @@
     let filteredIssues = [];
     let issuesToDelete = null;
     
-    // Cargar datos iniciales al cargar la página
+    // Load initial data when page loads
     document.addEventListener('DOMContentLoaded', async function() {
         try {
             await Promise.all([
@@ -204,67 +204,67 @@
                 loadIssues()
             ]);
         } catch (error) {
-            showNotification('Error al cargar los datos: ' + error.message, 'error');
+            showNotification('Error loading data: ' + error.message, 'error');
         }
     });
     
-    // Mostrar notificación temporal
+    // Show temporary notification
     function showNotification(message, type = 'success') {
         const notification = document.getElementById('notification');
         notification.textContent = message;
         notification.classList.remove('hidden', 'success', 'error');
         notification.classList.add(type);
         
-        // Ocultar la notificación después de 3 segundos
+        // Hide notification after 3 seconds
         setTimeout(() => {
             notification.classList.add('hidden');
         }, 3000);
     }
     
-    // Cargar lista de procesos
+    // Load list of processes
     async function loadProcesses() {
         try {
             const response = await fetch('/processes');
             if (!response.ok) {
-                throw new Error('Error al cargar los procesos. Código: ' + response.status);
+                throw new Error('Error loading processes. Code: ' + response.status);
             }
             processes = await response.json();
             updateProcessFilter();
             updateProcessSelect();
         } catch (error) {
-            console.error('Error al cargar procesos:', error);
-            showNotification('No se pudieron cargar los procesos', 'error');
+            console.error('Error loading processes:', error);
+            showNotification('Could not load processes', 'error');
         }
     }
     
-    // Actualizar filtro de procesos
+    // Update process filter
     function updateProcessFilter() {
         const processFilter = document.getElementById('processFilter');
-        processFilter.innerHTML = '<option value="">Todos los procesos</option>';
+        processFilter.innerHTML = '<option value="">All processes</option>';
         
         processes.forEach(process => {
             processFilter.add(new Option(process.process_name, process.process_id));
         });
     }
     
-    // Actualizar select de procesos en formulario
+    // Update process select in form
     function updateProcessSelect() {
         const issueProcessSelect = document.getElementById('issue_process_id');
-        issueProcessSelect.innerHTML = '<option value="">Seleccionar proceso</option>';
+        issueProcessSelect.innerHTML = '<option value="">Select process</option>';
         
         processes.forEach(process => {
             issueProcessSelect.add(new Option(process.process_name, process.process_id));
         });
     }
     
-    // Cargar problemas (issues)
+    // Load issues
     async function loadIssues() {
         try {
             document.getElementById('loadingRow').classList.remove('hidden');
             
             const response = await fetch('/issue/');
             if (!response.ok) {
-                throw new Error('Error al cargar los problemas. Código: ' + response.status);
+                throw new Error('Error loading issues. Code: ' + response.status);
             }
             
             issues = await response.json();
@@ -274,12 +274,12 @@
             renderIssues();
         } catch (error) {
             document.getElementById('loadingRow').classList.add('hidden');
-            console.error('Error al cargar problemas:', error);
-            showNotification('No se pudieron cargar los problemas', 'error');
+            console.error('Error loading issues:', error);
+            showNotification('Could not load issues', 'error');
         }
     }
     
-    // Filtrar problemas
+    // Filter issues
     function filterIssues() {
         const searchTerm = document.getElementById('issueSearchInput').value.toLowerCase();
         const selectedProcess = document.getElementById('processFilter').value;
@@ -296,12 +296,12 @@
             filteredIssues = filteredIssues.filter(issue => issue.process_id.toString() === selectedProcess);
         }
         
-        // Resetear a la primera página cuando se aplican filtros
+        // Reset to first page when filters are applied
         currentPage = 1;
         renderIssues();
     }
     
-    // Renderizar problemas en la tabla
+    // Render issues in the table
     function renderIssues() {
         const tbody = document.getElementById('issuesTableBody');
         tbody.innerHTML = '';
@@ -309,14 +309,14 @@
         if (filteredIssues.length === 0) {
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td colspan="4" class="px-6 py-4 text-center text-gray-500">No se encontraron problemas</td>
+                <td colspan="4" class="px-6 py-4 text-center text-gray-500">No issues found</td>
             `;
             tbody.appendChild(tr);
             updatePagination(0);
             return;
         }
         
-        // Calcular paginación
+        // Calculate pagination
         const totalPages = Math.ceil(filteredIssues.length / itemsPerPage);
         const start = (currentPage - 1) * itemsPerPage;
         const end = Math.min(start + itemsPerPage, filteredIssues.length);
@@ -352,7 +352,7 @@
         updatePagination(totalPages);
     }
     
-    // Actualizar controles de paginación
+    // Update pagination controls
     function updatePagination(totalPages) {
         const paginationContainer = document.getElementById('pagination');
         paginationContainer.innerHTML = '';
@@ -361,9 +361,9 @@
             return;
         }
         
-        // Botón Anterior
+        // Previous button
         const prevButton = document.createElement('button');
-        prevButton.textContent = '← Anterior';
+        prevButton.textContent = '← Previous';
         prevButton.classList.add('pagination-btn');
         prevButton.disabled = currentPage === 1;
         if (currentPage === 1) {
@@ -377,7 +377,7 @@
         };
         paginationContainer.appendChild(prevButton);
         
-        // Botones de página
+        // Page buttons
         const maxButtons = 5;
         let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
         let endPage = Math.min(totalPages, startPage + maxButtons - 1);
@@ -400,9 +400,9 @@
             paginationContainer.appendChild(pageButton);
         }
         
-        // Botón Siguiente
+        // Next button
         const nextButton = document.createElement('button');
-        nextButton.textContent = 'Siguiente →';
+        nextButton.textContent = 'Next →';
         nextButton.classList.add('pagination-btn');
         nextButton.disabled = currentPage === totalPages;
         if (currentPage === totalPages) {
@@ -417,7 +417,7 @@
         paginationContainer.appendChild(nextButton);
     }
     
-    // Escapar HTML para prevenir XSS
+    // Escape HTML to prevent XSS
     function escapeHtml(text) {
         if (!text) return '';
         return text
@@ -429,42 +429,42 @@
             .replace(/'/g, "&#039;");
     }
     
-    // Abrir modal para nuevo problema
+    // Open modal for new issue
     function openIssueModal() {
         resetFormErrors();
-        document.getElementById('issueModalTitle').textContent = 'Nuevo Problema';
+        document.getElementById('issueModalTitle').textContent = 'New Issue';
         document.getElementById('issueForm').reset();
         document.getElementById('editingIssueId').value = '';
-        document.getElementById('saveButtonText').textContent = 'Guardar';
+        document.getElementById('saveButtonText').textContent = 'Save';
         
         updateProcessSelect();
         document.getElementById('issueModal').classList.remove('hidden');
     }
     
-    // Cerrar modal de problema
+    // Close issue modal
     function closeIssueModal() {
         document.getElementById('issueModal').classList.add('hidden');
     }
     
-    // Abrir modal de confirmación para eliminar
+    // Open confirmation modal for delete
     function openDeleteModal(issueId) {
         issuesToDelete = issueId;
         document.getElementById('deleteConfirmModal').classList.remove('hidden');
     }
     
-    // Cerrar modal de confirmación
+    // Close confirmation modal
     function closeDeleteModal() {
         document.getElementById('deleteConfirmModal').classList.add('hidden');
         issuesToDelete = null;
     }
     
-    // Confirmar y ejecutar eliminación
+    // Confirm and execute deletion
     async function confirmDelete() {
         if (!issuesToDelete) return;
         
         try {
-            // Mostrar spinner en botón
-            document.getElementById('deleteButtonText').textContent = 'Eliminando...';
+            // Show spinner on button
+            document.getElementById('deleteButtonText').textContent = 'Deleting...';
             document.getElementById('deleteButtonSpinner').classList.remove('hidden');
             
             const response = await fetch(`/issue/${issuesToDelete}`, {
@@ -474,26 +474,26 @@
             if (!response.ok) {
                 if (response.headers.get('content-type')?.includes('application/json')) {
                     const error = await response.json();
-                    throw new Error(error.detail || 'Error al eliminar');
+                    throw new Error(error.detail || 'Error deleting');
                 } else {
-                    throw new Error('Error al eliminar el problema');
+                    throw new Error('Error deleting the issue');
                 }
             }
             
             closeDeleteModal();
-            showNotification('Problema eliminado correctamente');
+            showNotification('Issue deleted successfully');
             await loadIssues();
         } catch (error) {
-            console.error('Error al eliminar problema:', error);
+            console.error('Error deleting issue:', error);
             showNotification(error.message, 'error');
         } finally {
-            // Ocultar spinner
-            document.getElementById('deleteButtonText').textContent = 'Eliminar';
+            // Hide spinner
+            document.getElementById('deleteButtonText').textContent = 'Delete';
             document.getElementById('deleteButtonSpinner').classList.add('hidden');
         }
     }
     
-    // Resetear errores del formulario
+    // Reset form errors
     function resetFormErrors() {
         document.getElementById('description_error').classList.add('hidden');
         document.getElementById('description_error').textContent = '';
@@ -501,80 +501,80 @@
         document.getElementById('process_error').textContent = '';
     }
     
-    // Manejar errores del formulario
+    // Handle form errors
     function showFormError(field, message) {
         const errorElement = document.getElementById(`${field}_error`);
         errorElement.textContent = message;
         errorElement.classList.remove('hidden');
     }
     
-    // Editar problema
+    // Edit issue
     async function editIssue(id) {
         try {
             resetFormErrors();
             
             const response = await fetch(`/issue/${id}`);
             if (!response.ok) {
-                throw new Error('Error al cargar problema');
+                throw new Error('Error loading issue');
             }
             
             const issue = await response.json();
             
-            document.getElementById('issueModalTitle').textContent = 'Editar Problema';
-            document.getElementById('saveButtonText').textContent = 'Actualizar';
+            document.getElementById('issueModalTitle').textContent = 'Edit Issue';
+            document.getElementById('saveButtonText').textContent = 'Update';
             
-            // Actualizar select de procesos
+            // Update process select
             updateProcessSelect();
             
-            // Establecer valores en el formulario
+            // Set form values
             document.getElementById('issue_description').value = issue.issue_description;
             document.getElementById('issue_process_id').value = issue.process_id;
             document.getElementById('editingIssueId').value = id;
             
-            // Abrir modal
+            // Open modal
             document.getElementById('issueModal').classList.remove('hidden');
         } catch (error) {
-            console.error('Error al cargar problema para editar:', error);
-            showNotification('Error al cargar datos del problema', 'error');
+            console.error('Error loading issue for editing:', error);
+            showNotification('Error loading issue data', 'error');
         }
     }
     
-    // Manejar envío del formulario de problema
+    // Handle issue form submission
     async function handleIssueSubmit(event) {
         event.preventDefault();
         resetFormErrors();
         
-        // Validar formulario
+        // Validate form
         const description = document.getElementById('issue_description').value.trim();
         const processId = document.getElementById('issue_process_id').value;
         
         if (!description) {
-            showFormError('description', 'La descripción es obligatoria');
+            showFormError('description', 'Description is required');
             return;
         }
         
         if (!processId) {
-            showFormError('process', 'Debe seleccionar un proceso');
+            showFormError('process', 'You must select a process');
             return;
         }
         
         const formData = new FormData(document.getElementById('issueForm'));
         const data = Object.fromEntries(formData.entries());
         
-        // Convertir process_id a número
+        // Convert process_id to number
         data.process_id = parseInt(data.process_id);
         
         const editingId = document.getElementById('editingIssueId').value;
         
         try {
-            // Mostrar spinner en botón
-            document.getElementById('saveButtonText').textContent = editingId ? 'Actualizando...' : 'Guardando...';
+            // Show spinner on button
+            document.getElementById('saveButtonText').textContent = editingId ? 'Updating...' : 'Saving...';
             document.getElementById('saveButtonSpinner').classList.remove('hidden');
             
             let response;
             
             if (editingId) {
-                // Actualizar problema existente
+                // Update existing issue
                 response = await fetch(`/issue/${editingId}`, {
                     method: 'PUT',
                     headers: {
@@ -583,7 +583,7 @@
                     body: JSON.stringify(data)
                 });
             } else {
-                // Crear nuevo problema
+                // Create new issue
                 response = await fetch('/issue/', {
                     method: 'POST',
                     headers: {
@@ -593,31 +593,31 @@
                 });
             }
             
-            // Manejar respuesta
+            // Handle response
             if (response.ok) {
                 closeIssueModal();
-                showNotification(editingId ? 'Problema actualizado correctamente' : 'Problema creado correctamente');
+                showNotification(editingId ? 'Issue updated successfully' : 'Issue created successfully');
                 await loadIssues();
             } else {
                 const error = await response.json();
                 
-                // Detectar errores específicos
+                // Detect specific errors
                 if (error.detail.includes('Issue description cannot be empty')) {
-                    showFormError('description', 'La descripción no puede estar vacía');
+                    showFormError('description', 'Description cannot be empty');
                 } else if (error.detail.includes('Issue description already exists')) {
-                    showFormError('description', 'Ya existe un problema con esta descripción');
+                    showFormError('description', 'An issue with this description already exists');
                 } else if (error.detail.includes('Process not found')) {
-                    showFormError('process', 'El proceso seleccionado no existe');
+                    showFormError('process', 'The selected process does not exist');
                 } else {
                     showNotification(`Error: ${error.detail}`, 'error');
                 }
             }
         } catch (error) {
-            console.error('Error al guardar problema:', error);
-            showNotification('Ocurrió un error al guardar el problema', 'error');
+            console.error('Error saving issue:', error);
+            showNotification('An error occurred while saving the issue', 'error');
         } finally {
-            // Ocultar spinner
-            document.getElementById('saveButtonText').textContent = editingId ? 'Actualizar' : 'Guardar';
+            // Hide spinner
+            document.getElementById('saveButtonText').textContent = editingId ? 'Update' : 'Save';
             document.getElementById('saveButtonSpinner').classList.add('hidden');
         }
     }

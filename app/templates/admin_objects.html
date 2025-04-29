@@ -1,30 +1,30 @@
 <!-- templates/admin_objects.html -->
 {% extends 'base.html' %}
 
-{% block title %}Administrar Objects{% endblock %}
+{% block title %}Manage Objects{% endblock %}
 
 {% block content %}
-<h1 class="text-center">Administrar Objects</h1>
+<h1 class="text-center">Manage Objects</h1>
 
-<!-- Filtro de Jobs -->
+<!-- Job Filter -->
 <div class="mb-3">
-    <label for="job-filter" class="form-label">Seleccionar Job (Opcional):</label>
+    <label for="job-filter" class="form-label">Select Job (Optional):</label>
     <select id="job-filter" class="form-select">
-        <option value="">Selecciona un Job</option>
-        <!-- Opciones de Jobs serán cargadas dinámicamente -->
+        <option value="">Select a Job</option>
+        <!-- Job options will be loaded dynamically -->
     </select>
 </div>
 
-<!-- Filtro de Items con búsqueda -->
+<!-- Item Filter with search -->
 <div class="mb-3">
-    <label for="item-search" class="form-label">Buscar y seleccionar Item (OCR):</label>
-    <input list="item-options" id="item-search" class="form-control" placeholder="Escribe o selecciona un OCR...">
+    <label for="item-search" class="form-label">Search and select Item (OCR):</label>
+    <input list="item-options" id="item-search" class="form-control" placeholder="Type or select an OCR...">
     <datalist id="item-options">
-        <!-- Opciones de Items serán cargadas dinámicamente -->
+        <!-- Item options will be loaded dynamically -->
     </datalist>
 </div>
 
-<!-- Tabla de Objects -->
+<!-- Objects Table -->
 <h2 class="mt-4">Objects</h2>
 <table class="table table-bordered">
     <thead>
@@ -34,18 +34,18 @@
             <th>Stage</th>
             <th>Rework</th>
             <th>Scrap</th>
-            <th>Acciones</th>
+            <th>Actions</th>
         </tr>
     </thead>
     <tbody id="objects-table">
-        <!-- Los datos serán cargadas dinámicamente -->
+        <!-- Data will be loaded dynamically -->
     </tbody>
 </table>
 
 <script>
-    let allItems = []; // Para almacenar todos los Items cargados dinámicamente
+    let allItems = []; // To store all dynamically loaded Items
 
-    // Función para cargar Jobs para el filtro
+    // Function to load Jobs for the filter
     async function loadJobs() {
         const response = await fetch('/jobs/list');
         const jobs = await response.json();
@@ -59,14 +59,14 @@
         });
     }
 
-    // Función para cargar Items según el Job seleccionado o globalmente si no se selecciona un Job
+    // Function to load Items based on selected Job or globally if no Job is selected
     async function loadItems(jobCode = null) {
         const itemOptions = document.getElementById('item-options');
-        allItems = []; // Reiniciar los items almacenados
-        itemOptions.innerHTML = ''; // Limpiar opciones previas
+        allItems = []; // Reset stored items
+        itemOptions.innerHTML = ''; // Clear previous options
 
         if (jobCode) {
-            // Cargar Items de un Job específico
+            // Load Items from a specific Job
             const response = await fetch(`/jobs/${jobCode}/status`);
             const data = await response.json();
             data.stages.forEach(stage => {
@@ -78,7 +78,7 @@
                 });
             });
         } else {
-            // Cargar Items globalmente
+            // Load Items globally
             const response = await fetch('/jobs/list');
             const jobs = await response.json();
             for (const job of jobs) {
@@ -96,7 +96,7 @@
         }
     }
 
-    // Función para cargar Objects de un Item
+    // Function to load Objects for an Item
     async function loadObjects(itemOCR) {
         if (!itemOCR) {
             document.getElementById('objects-table').innerHTML = '';
@@ -106,7 +106,7 @@
         try {
             const response = await fetch(`/object/${itemOCR}`);
             if (!response.ok) {
-                throw new Error('Error al obtener los datos de los objetos');
+                throw new Error('Error retrieving object data');
             }
 
             const data = await response.json();
@@ -123,36 +123,36 @@
                     <td>${obj.rework}</td>
                     <td>${obj.scrap}</td>
                     <td>
-                        <button class="btn btn-danger" onclick="deleteObject('${data.item_ocr}', ${index + 1})">Eliminar</button>
+                        <button class="btn btn-danger" onclick="deleteObject('${data.item_ocr}', ${index + 1})">Delete</button>
                     </td>
                 `;
                 objectsTable.appendChild(row);
             });
         } catch (error) {
-            console.error('Error al cargar objetos:', error);
-            alert('No se pudo cargar la información de los objetos.');
+            console.error('Error loading objects:', error);
+            alert('Could not load object information.');
         }
     }
 
-    // Función para eliminar un Object
+    // Function to delete an Object
     async function deleteObject(itemOCR, pieceNumber) {
-        if (confirm(`¿Estás seguro de que quieres eliminar la pieza #${pieceNumber} del Item '${itemOCR}'?`)) {
+        if (confirm(`Are you sure you want to delete piece #${pieceNumber} from Item '${itemOCR}'?`)) {
             try {
                 const response = await fetch(`/${itemOCR}/${pieceNumber}`, { method: 'DELETE' });
                 if (response.ok) {
-                    alert('Pieza eliminada correctamente');
+                    alert('Piece successfully deleted');
                     loadObjects(itemOCR);
                 } else {
-                    throw new Error('Error al eliminar la pieza');
+                    throw new Error('Error deleting the piece');
                 }
             } catch (error) {
-                console.error('Error al eliminar pieza:', error);
-                alert('No se pudo eliminar la pieza.');
+                console.error('Error deleting piece:', error);
+                alert('Could not delete the piece.');
             }
         }
     }
 
-    // Eventos
+    // Events
     document.getElementById('job-filter').addEventListener('change', (e) => {
         loadItems(e.target.value);
     });
@@ -167,9 +167,8 @@
         }
     });
 
-    // Inicializar
+    // Initialize
     loadJobs();
-    loadItems(); // Cargar todos los Items por defecto
+    loadItems(); // Load all Items by default
 </script>
 {% endblock %}
-

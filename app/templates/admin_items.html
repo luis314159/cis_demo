@@ -1,15 +1,15 @@
 <!-- templates/admin_items.html -->
 {% extends 'base.html' %}
 
-{% block title %}Administrar Items{% endblock %}
+{% block title %}Manage Items{% endblock %}
 
 {% block content %}
-<h1 class="text-center">Administrar Items</h1>
+<h1 class="text-center">Manage Items</h1>
 
 <div class="mb-3">
-    <label for="job-filter" class="form-label">Filtrar por Job:</label>
+    <label for="job-filter" class="form-label">Filter by Job:</label>
     <select id="job-filter" class="form-select">
-        <!-- Opciones serán cargadas dinámicamente -->
+        <!-- Options will be loaded dynamically -->
     </select>
 </div>
 
@@ -19,11 +19,11 @@
             <th>Item Name</th>
             <th>Stage</th>
             <th>Count</th>
-            <th>Acciones</th>
+            <th>Actions</th>
         </tr>
     </thead>
     <tbody id="items-table">
-        <!-- Los datos serán cargados dinámicamente -->
+        <!-- Data will be loaded dynamically -->
     </tbody>
 </table>
 
@@ -34,7 +34,7 @@
             const jobs = await response.json();
             const jobFilter = document.getElementById('job-filter');
 
-            jobFilter.innerHTML = '<option value="">Selecciona un Job</option>';
+            jobFilter.innerHTML = '<option value="">Select a Job</option>';
             jobs.forEach(job => {
                 const option = document.createElement('option');
                 option.value = job.job_code;
@@ -42,8 +42,8 @@
                 jobFilter.appendChild(option);
             });
         } catch (error) {
-            console.error('Error cargando jobs:', error);
-            alert('Error al cargar los jobs. Por favor, intenta de nuevo más tarde.');
+            console.error('Error loading jobs:', error);
+            alert('Error loading jobs. Please try again later.');
         }
     }
 
@@ -60,7 +60,7 @@
 
             itemsTable.innerHTML = '';
             
-            // Comprobamos si hay objetos para iterar
+            // Check if there are objects to iterate through
             if (data.objects && Array.isArray(data.objects)) {
                 data.objects.forEach(item => {
                     const row = document.createElement('tr');
@@ -69,41 +69,41 @@
                         <td>${item.stage_name}</td>
                         <td>${item.count}</td>
                         <td>
-                            <button class="btn btn-danger" onclick="deleteItem('${item.item_name}')">Eliminar</button>
+                            <button class="btn btn-danger" onclick="deleteItem('${item.item_name}')">Delete</button>
                         </td>
                     `;
                     itemsTable.appendChild(row);
                 });
             } else {
-                itemsTable.innerHTML = '<tr><td colspan="4" class="text-center">No hay items disponibles para este job</td></tr>';
+                itemsTable.innerHTML = '<tr><td colspan="4" class="text-center">No items available for this job</td></tr>';
             }
         } catch (error) {
-            console.error('Error cargando items:', error);
+            console.error('Error loading items:', error);
             document.getElementById('items-table').innerHTML = 
-                '<tr><td colspan="4" class="text-center">Error al cargar los items. Por favor, intenta de nuevo más tarde.</td></tr>';
+                '<tr><td colspan="4" class="text-center">Error loading items. Please try again later.</td></tr>';
         }
     }
 
     async function deleteItem(itemName) {
-        if (confirm(`¿Estás seguro de que quieres eliminar el Item '${itemName}'?`)) {
+        if (confirm(`Are you sure you want to delete Item '${itemName}'?`)) {
             try {
-                // Aquí asumo que el endpoint para eliminar es por el nombre del item,
-                // ajusta según tu API real
+                // Here I assume the endpoint for deletion is by item name,
+                // adjust according to your actual API
                 const response = await fetch(`/items/${encodeURIComponent(itemName)}`, { 
                     method: 'DELETE' 
                 });
                 
                 if (response.ok) {
-                    alert('Item eliminado correctamente');
+                    alert('Item successfully deleted');
                     const jobCode = document.getElementById('job-filter').value;
                     loadItems(jobCode);
                 } else {
                     const errorData = await response.json().catch(() => null);
-                    alert(`Error al eliminar el Item: ${errorData?.message || response.statusText}`);
+                    alert(`Error deleting Item: ${errorData?.message || response.statusText}`);
                 }
             } catch (error) {
-                console.error('Error eliminando item:', error);
-                alert('Error al eliminar el Item. Por favor, intenta de nuevo más tarde.');
+                console.error('Error deleting item:', error);
+                alert('Error deleting Item. Please try again later.');
             }
         }
     }
@@ -112,7 +112,7 @@
         loadItems(e.target.value);
     });
 
-    // Cargar los jobs al iniciar la página
+    // Load jobs when page initializes
     document.addEventListener('DOMContentLoaded', () => {
         loadJobsForFilter();
     });

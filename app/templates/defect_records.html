@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-  /* Estilos adicionales para compatibilidad con Bootstrap */
+  /* Additional styles for Bootstrap compatibility */
   .container {
     max-width: 100%;
     padding: 0 1rem;
@@ -21,7 +21,7 @@
   .defect-image:hover {
     transform: scale(1.05);
   }
-  /* Estilos para mensajes de alerta */
+  /* Styles for alert messages */
   .status-help-text {
     color: #0d6efd;
     font-size: 0.875rem;
@@ -33,84 +33,84 @@
 
 {% block content %}
 <div class="container mx-auto px-4 py-4">
-    <!-- Menú de navegación -->
+    <!-- Navigation menu -->
     <div class="mb-4 border-b border-gray-200">
         <ul class="nav nav-tabs">
             <li class="nav-item">
                 <a href="/defect-records" class="nav-link active">
-                    Registros de Defectos
+                    Punch List
                 </a>
             </li>
             <li class="nav-item">
                 <a href="/create-defect-record" class="nav-link">
-                    Crear Defecto
+                    Create Punch List Element
                 </a>
             </li>
             <li class="nav-item">
                 <a href="/issues" class="nav-link">
-                    Problemas (Issues)
+                    Issues
                 </a>
             </li>
         </ul>
     </div>
 
-    <!-- Contenido de Punch List -->
+    <!-- Punch List Content -->
     <div>
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-2xl font-bold">Punch List</h1>
         </div>
 
-        <!-- Selector de Producto -->
+        <!-- Product Selector -->
         <div class="mb-6">
-            <label for="productSelector" class="block text-sm font-medium text-gray-700 mb-1">Seleccionar Producto:</label>
+            <label for="productSelector" class="block text-sm font-medium text-gray-700 mb-1">Select Product:</label>
             <select id="productSelector" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                <option value="">-- Seleccione un producto --</option>
-                <!-- Los productos se cargarán dinámicamente -->
+                <option value="">-- Select a product --</option>
+                <!-- Products will be loaded dynamically -->
             </select>
         </div>
 
-        <!-- Selector de Job Code (se mostrará después de seleccionar un producto) -->
+        <!-- Job Code Selector (will be shown after selecting a product) -->
         <div id="jobCodeContainer" class="mb-6 hidden">
-            <label for="jobCodeSelector" class="block text-sm font-medium text-gray-700 mb-1">Seleccionar Job Code:</label>
+            <label for="jobCodeSelector" class="block text-sm font-medium text-gray-700 mb-1">Select Job Code:</label>
             <select id="jobCodeSelector" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                <option value="">-- Seleccione un job code --</option>
-                <!-- Los job codes se cargarán dinámicamente -->
+                <option value="">-- Select a job code --</option>
+                <!-- Job codes will be loaded dynamically -->
             </select>
         </div>
 
-        <!-- Tabla de Defectos (se mostrará después de seleccionar un job code) -->
+        <!-- Defects Table (will be shown after selecting a job code) -->
         <div id="defectsContainer" class="hidden">
             <div class="bg-white rounded-lg shadow overflow-x-auto mb-6">
                 <table class="w-full">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Apertura</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Cierre</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Open Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Close Date</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inspector</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reportado Por</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Imágenes</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Error made by</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Images</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="defectsTableBody" class="divide-y divide-gray-200">
-                        <!-- Los defectos se cargarán aquí dinámicamente -->
+                        <!-- Defects will be loaded here dynamically -->
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <!-- Mensaje de no datos -->
+        <!-- No data message -->
         <div id="noDataMessage" class="hidden bg-gray-50 p-6 text-center rounded-lg shadow">
-            <p class="text-gray-500">No se encontraron defectos para el job seleccionado.</p>
+            <p class="text-gray-500">No defects found for the selected job.</p>
         </div>
     </div>
 
-    <!-- Modal para ver detalles de defecto -->
+    <!-- Modal for viewing defect details -->
     <div id="defectDetailModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
         <div class="bg-white rounded-lg p-6 w-full max-w-4xl max-h-screen overflow-y-auto">
             <div class="flex justify-between items-start mb-4">
-                <h2 class="text-xl font-bold">Detalles del Defecto</h2>
+                <h2 class="text-xl font-bold">Defect Details</h2>
                 <button onclick="closeDefectDetailModal()" class="text-gray-500 hover:text-gray-700">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -119,27 +119,27 @@
             </div>
             
             <div id="defectDetailContent" class="space-y-4">
-                <!-- El contenido se cargará dinámicamente -->
+                <!-- Content will be loaded dynamically -->
             </div>
             
             <div class="mt-6 flex justify-center space-x-4">
                 <button onclick="openEditModal()" 
                     class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
-                    Editar
+                    Edit
                 </button>
                 <button onclick="closeDefectDetailModal()" 
                     class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
-                    Cerrar
+                    Close
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Modal para editar defecto -->
+    <!-- Modal for editing defect -->
     <div id="editDefectModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
         <div class="bg-white rounded-lg p-6 w-full max-w-4xl max-h-screen overflow-y-auto">
             <div class="flex justify-between items-start mb-4">
-                <h2 class="text-xl font-bold">Editar Defecto</h2>
+                <h2 class="text-xl font-bold">Edit Defect</h2>
                 <button onclick="closeEditModal()" class="text-gray-500 hover:text-gray-700">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -149,7 +149,7 @@
             
             <form id="editDefectForm" class="space-y-6" enctype="multipart/form-data">
                 <input type="hidden" id="editDefectId" name="defect_record_id">
-                <!-- Los siguientes campos son necesarios para el endpoint pero no se muestran al usuario -->
+                <!-- The following fields are needed for the endpoint but not shown to the user -->
                 <input type="hidden" id="editProductId" name="product_id">
                 <input type="hidden" id="editJobId" name="job_id">
                 <input type="hidden" id="editInspectorUserId" name="inspector_user_id">
@@ -157,48 +157,48 @@
                 <input type="hidden" id="editIssueId" name="issue_id">
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Sección izquierda: Información general -->
+                    <!-- Left section: General information -->
                     <div class="space-y-4">
                         <div>
-                            <label for="editStatus" class="block text-sm font-medium text-gray-700 mb-1">Estado:</label>
+                            <label for="editStatus" class="block text-sm font-medium text-gray-700 mb-1">Status:</label>
                             <select id="editStatus" name="status_id" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                                <!-- Los estados se cargarán dinámicamente -->
+                                <!-- Statuses will be loaded dynamically -->
                             </select>
-                            <p id="statusHelpText" class="status-help-text hidden">Cuando se marca como corregido, debes añadir una imagen de la solución.</p>
+                            <p id="statusHelpText" class="status-help-text hidden">When marked as corrected, you must add an image of the solution.</p>
                         </div>
                         
                         <div>
-                            <label for="editCorrectionProcess" class="block text-sm font-medium text-gray-700 mb-1">Proceso de Corrección:</label>
+                            <label for="editCorrectionProcess" class="block text-sm font-medium text-gray-700 mb-1">Correction Process:</label>
                             <select id="editCorrectionProcess" name="correction_process_id" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                                <!-- Los procesos de corrección se cargarán dinámicamente -->
+                                <!-- Correction processes will be loaded dynamically -->
                             </select>
                         </div>
                         
-                        <!-- ELIMINADO: Checkbox de "Cerrar registro de defecto" -->
+                        <!-- REMOVED: Checkbox for "Close defect record" -->
                     </div>
                     
-                    <!-- Sección derecha: Imágenes -->
+                    <!-- Right section: Images -->
                     <div class="space-y-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Imágenes del Defecto:</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Defect Images:</label>
                             <div id="currentDefectImages" class="grid grid-cols-2 gap-2 mb-2">
-                                <!-- Las imágenes existentes se mostrarán aquí -->
+                                <!-- Existing images will be shown here -->
                             </div>
                             <input type="file" id="defectImages" name="defect_images" multiple accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                         </div>
                         
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Imágenes de Ubicación:</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Location Images:</label>
                             <div id="currentLocationImages" class="grid grid-cols-2 gap-2 mb-2">
-                                <!-- Las imágenes existentes se mostrarán aquí -->
+                                <!-- Existing images will be shown here -->
                             </div>
                             <input type="file" id="locationImages" name="location_images" multiple accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                         </div>
                         
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Imágenes de Solución:</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Solution Images:</label>
                             <div id="currentSolvedImages" class="grid grid-cols-2 gap-2 mb-2">
-                                <!-- Las imágenes existentes se mostrarán aquí -->
+                                <!-- Existing images will be shown here -->
                             </div>
                             <input type="file" id="solvedImages" name="solved_images" multiple accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                         </div>
@@ -207,17 +207,17 @@
                 
                 <div class="flex justify-end space-x-3">
                     <button type="button" onclick="closeEditModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
-                        Cancelar
+                        Cancel
                     </button>
                     <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
-                        Guardar Cambios
+                        Save Changes
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Modal para ver imagen ampliada -->
+    <!-- Modal for viewing enlarged image -->
     <div id="imageModal" class="fixed inset-0 bg-black bg-opacity-75 hidden flex items-center justify-center z-50">
         <div class="relative">
             <button onclick="closeImageModal()" class="absolute top-0 right-0 m-4 text-white hover:text-gray-300">
@@ -225,7 +225,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
             </button>
-            <img id="enlargedImage" src="" alt="Imagen ampliada" class="max-h-screen max-w-screen-lg">
+            <img id="enlargedImage" src="" alt="Enlarged image" class="max-h-screen max-w-screen-lg">
         </div>
     </div>
 </div>

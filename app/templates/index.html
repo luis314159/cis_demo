@@ -1,181 +1,43 @@
 <!-- upload_csv.html -->
 {% extends 'base.html' %}
 
-{% block title %}Subir Archivo CSV{% endblock %}
+{% block title %}Upload CSV File{% endblock %}
 {% block content %}
 <div class="container d-flex flex-column align-items-center justify-content-center mt-5">
-    <!-- Logo de la empresa -->
-    <img src="{{ url_for('static', path='images/logo.jpg') }}" alt="Logo de Grupo Arga" class="logo mb-4">
+    <!-- Company Logo -->
+    <img src="{{ url_for('static', path='images/logo.jpg') }}" alt="Grupo Arga Logo" class="logo mb-4">
 
-    <!-- Título principal -->
-    <h1 class="mb-4">Agregar nuevo Job</h1>
+    <!-- Main Title -->
+    <h1 class="mb-4">Add New Job</h1>
 
-    <!-- Formulario de subida -->
+    <!-- Upload Form -->
     <form id="uploadForm" class="text-center w-50 p-4 border rounded shadow-sm bg-light">
-        <!-- Selector de producto -->
+        <!-- Product Selector -->
         <div class="form-group mb-3">
-            <label for="productSelect" class="form-label">Seleccionar Producto</label>
+            <label for="productSelect" class="form-label">Select Product</label>
             <select id="productSelect" class="form-select" required>
-                <option value="" selected disabled>-- Seleccione un producto --</option>
-                <!-- Los productos se cargarán dinámicamente desde JS -->
+                <option value="" selected disabled>-- Select a product --</option>
+                <!-- Products will be loaded dynamically from JS -->
             </select>
         </div>
 
         <label for="fileInput" class="file-label btn btn-primary w-100 mb-3">
-            Seleccionar archivo CSV
+            Select CSV file
             <input type="file" id="fileInput" accept=".csv" hidden>
         </label>
-        <p id="fileName" class="file-name text-muted mb-3">Ningún archivo seleccionado</p>
-        <button type="submit" class="btn btn-success w-100">Subir</button>
+        <p id="fileName" class="file-name text-muted mb-3">No file selected</p>
+        <button type="submit" class="btn btn-success w-100">Upload</button>
     </form>
 
     <!-- Spinner -->
     <div id="spinner" class="spinner hidden mt-3"></div>
 
-    <!-- Notificación -->
+    <!-- Notification -->
     <div id="notification" class="notification hidden mt-3"></div>
 
 </div>
 
-<!-- Incluye el archivo JS -->
+<!-- Include JS file -->
 <script src="{{ url_for('static', path='js/script.js') }}"></script>
 <link rel="stylesheet" href="{{ url_for('static', path='css/styles.css') }}">
 {% endblock %}
-
-
-const uploadForm = document.getElementById("uploadForm");
-const fileInput = document.getElementById("fileInput");
-const fileName = document.getElementById("fileName");
-const notification = document.getElementById("notification");
-const spinner = document.getElementById("spinner");
-const productSelect = document.getElementById("productSelect");
-
-// Cargar productos cuando se carga la página
-document.addEventListener("DOMContentLoaded", async () => {
-    try {
-        showSpinner();
-        // Usar el endpoint correcto para obtener productos
-        const response = await fetch("/products/");
-
-        if (response.ok) {
-            const products = await response.json();
-
-            // Limpiar opciones anteriores
-            productSelect.innerHTML = '<option value="" selected disabled>-- Seleccione un producto --</option>';
-
-            // Agregar productos al selector
-            products.forEach(product => {
-                const option = document.createElement("option");
-                option.value = product.product_id;
-                option.textContent = product.product_name;
-                productSelect.appendChild(option);
-            });
-        } else {
-            showNotification("Error al cargar los productos.", "error");
-        }
-    } catch (error) {
-        showNotification("No se pudieron cargar los productos.", "error");
-        console.error("Error loading products:", error);
-    } finally {
-        hideSpinner();
-    }
-});
-
-// Mostrar el nombre del archivo seleccionado
-fileInput.addEventListener("change", () => {
-    if (fileInput.files.length > 0) {
-        fileName.textContent = Archivo seleccionado: ${fileInput.files[0].name};
-        fileName.classList.remove("hidden");
-    } else {
-        fileName.textContent = "Ningún archivo seleccionado";
-        fileName.classList.add("hidden");
-    }
-});
-
-uploadForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    // Validar selección de producto
-    const selectedProduct = productSelect.value;
-    const selectedProductText = productSelect.options[productSelect.selectedIndex].text;
-
-    if (!selectedProduct) {
-        showNotification("Por favor, selecciona un producto.", "error");
-        return;
-    }
-
-    // Validar selección de archivo
-    if (!fileInput.files.length) {
-        showNotification("Por favor, selecciona un archivo.", "error");
-        return;
-    }
-
-    showSpinner();
-
-    const file = fileInput.files[0];
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-        console.log("Enviando datos: ", {
-            file: fileInput.files[0].name,
-            product_name: selectedProductText
-        });
-
-        // Enviamos product_name como query parameter 
-        const response = await fetch(/object/validate-and-insert?product_name=${encodeURIComponent(selectedProductText)}, {
-            method: "POST",
-            body: formData,
-        });
-
-        if (!response.ok) {
-            // Intentar obtener detalles del error
-            try {
-                const errorData = await response.json();
-                const errorMessage = typeof errorData === 'object' ? 
-                    (errorData.detail && typeof errorData.detail === 'object' ? 
-                        errorData.detail.error || JSON.stringify(errorData.detail) : 
-                        errorData.detail || JSON.stringify(errorData)) : 
-                    errorData;
-                showNotification(Error: ${errorMessage}, "error");
-                console.error("Error detallado:", errorData);
-            } catch (jsonError) {
-                showNotification(Error ${response.status}: ${response.statusText}, "error");
-                console.error("Estado de respuesta:", response.status, response.statusText);
-            }
-            return;
-        }
-
-        const result = await response.json();
-        showNotification(result.message || ¡Archivo procesado con éxito!, "success");
-
-        // Reiniciar el formulario después de un envío exitoso
-        uploadForm.reset();
-        fileName.textContent = "Ningún archivo seleccionado";
-        fileName.classList.add("hidden");
-
-    } catch (error) {
-        showNotification("Ocurrió un error al subir el archivo.", "error");
-        console.error("Upload error:", error);
-    } finally {
-        hideSpinner();
-    }
-});
-
-function showNotification(message, type) {
-    notification.textContent = message;
-    notification.className = notification ${type};
-    notification.classList.remove("hidden");
-
-    setTimeout(() => {
-        notification.classList.add("hidden");
-    }, 5000);
-}
-
-function showSpinner() {
-    spinner.classList.remove("hidden");
-}
-
-function hideSpinner() {
-    spinner.classList.add("hidden");
-}

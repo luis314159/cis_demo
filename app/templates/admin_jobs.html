@@ -1,22 +1,22 @@
 <!-- templates/admin_jobs.html -->
 {% extends 'base.html' %}
 
-{% block title %}Administrar Jobs{% endblock %}
+{% block title %}Manage Jobs{% endblock %}
 
 {% block content %}
-<h1 class="text-center">Administrar Jobs</h1>
+<h1 class="text-center">Manage Jobs</h1>
 
-<!-- Tabla de Jobs -->
+<!-- Jobs Table -->
 <h2 class="mt-4">Jobs</h2>
 <table class="table table-bordered">
     <thead>
         <tr>
             <th>Job Code</th>
-            <th>Acciones</th>
+            <th>Actions</th>
         </tr>
     </thead>
     <tbody id="jobs-table">
-        <!-- Los datos serán cargados dinámicamente -->
+        <!-- Data will be loaded dynamically -->
     </tbody>
 </table>
 
@@ -33,7 +33,7 @@
             row.innerHTML = `
                 <td>${job.job_code}</td>
                 <td>
-                    <button class="btn btn-danger" onclick="deleteJob('${job.job_code}')">Eliminar</button>
+                    <button class="btn btn-danger" onclick="deleteJob('${job.job_code}')">Delete</button>
                 </td>
             `;
             jobsTable.appendChild(row);
@@ -41,13 +41,13 @@
     }
 
     async function deleteJob(jobCode) {
-        if (confirm(`¿Estás seguro de que quieres eliminar el Job '${jobCode}'?`)) {
+        if (confirm(`Are you sure you want to delete Job '${jobCode}'?`)) {
             const response = await fetch(`/jobs/${jobCode}`, { method: 'DELETE' });
             if (response.ok) {
-                alert('Job eliminado correctamente');
+                alert('Job successfully deleted');
                 loadJobs();
             } else {
-                alert('Error al eliminar el Job');
+                alert('Error deleting Job');
             }
         }
     }

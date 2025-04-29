@@ -322,7 +322,7 @@ async def get_info(
         {"request": request, "current_user": current_user}
     )
 
-@app.get("/documentacion", response_class=HTMLResponse,
+@app.get("/documentation", response_class=HTMLResponse,
         summary="Display the documentation page",
         response_description="Renders the documentation page",
         tags=["Templates"],

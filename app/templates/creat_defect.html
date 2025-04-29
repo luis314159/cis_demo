@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Crear Registro de Defecto{% endblock %}
+{% block title %}Create Defect Record{% endblock %}
 
 {% block extra_head %}
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -31,42 +31,42 @@
 
 {% block content %}
 <div class="container mx-auto px-4 py-4">
-    <!-- Menú de navegación -->
+    <!-- Navigation Menu -->
     <div class="mb-4 border-b border-gray-200">
         <ul class="nav nav-tabs">
             <li class="nav-item">
                 <a href="/defect-records" class="nav-link">
-                    Registros de Defectos
+                    Punch List
                 </a>
             </li>
             <li class="nav-item">
                 <a href="/create-defect-record" class="nav-link active">
-                    Crear Defecto
+                    Create Punch List Element
                 </a>
             </li>
             <li class="nav-item">
                 <a href="/issues" class="nav-link">
-                    Problemas (Issues)
+                    Issues
                 </a>
             </li>
         </ul>
     </div>
 
-    <!-- Formulario de creación -->
+    <!-- Creation Form -->
     <div class="max-w-4xl mx-auto">
-        <h1 class="text-2xl font-bold mb-6 text-center">Crear Nuevo Registro de Defecto</h1>
+        <h1 class="text-2xl font-bold mb-6 text-center">Create New Defect Record</h1>
         
         <form id="defectForm" enctype="multipart/form-data" class="space-y-6">
-            <!-- Producto y Job -->
+            <!-- Product and Job -->
             <div class="form-section">
-                <h2 class="text-lg font-semibold mb-4">Información del Producto</h2>
+                <h2 class="text-lg font-semibold mb-4">Product Information</h2>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label for="productSelector" class="block text-sm font-medium text-gray-700 mb-1">Producto</label>
+                        <label for="productSelector" class="block text-sm font-medium text-gray-700 mb-1">Product</label>
                         <select id="productSelector" name="product_name" required
                             class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                            <option value="">Seleccione un producto</option>
+                            <option value="">Select a product</option>
                         </select>
                     </div>
                     
@@ -74,18 +74,18 @@
                         <label for="jobSelector" class="block text-sm font-medium text-gray-700 mb-1">Job Code</label>
                         <select id="jobSelector" name="job_code" required disabled
                             class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                            <option value="">Primero seleccione un producto</option>
+                            <option value="">First select a product</option>
                         </select>
                     </div>
                 </div>
             </div>
             
-            <!-- Información del Inspector -->
+            <!-- Inspector Information -->
             <div class="form-section">
-                <h2 class="text-lg font-semibold mb-4">Información del Inspector</h2>
+                <h2 class="text-lg font-semibold mb-4">Inspector Information</h2>
                 
                 <div class="mb-4">
-                    <label for="supervisorInfo" class="block text-sm font-medium text-gray-700 mb-1">Supervisor (Usted)</label>
+                    <label for="supervisorInfo" class="block text-sm font-medium text-gray-700 mb-1">Supervisor (You)</label>
                     <div id="supervisorInfo" class="block w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50">
                         {{ current_user.first_name }} {{ current_user.last_name }} - {{ current_user.employee_number }}
                     </div>
@@ -93,52 +93,52 @@
                 </div>
                 
                 <div>
-                    <label for="inspectorSelector" class="block text-sm font-medium text-gray-700 mb-1">Error por (número de empleado)</label>
+                    <label for="inspectorSelector" class="block text-sm font-medium text-gray-700 mb-1">Error by (employee number)</label>
                     <select id="inspectorSelector" name="inspector_employee_number" required
                         class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">Buscar por número de empleado...</option>
+                        <option value="">Search by employee number...</option>
                     </select>
                 </div>
             </div>
             
-            <!-- Detalles del Defecto -->
+            <!-- Defect Details -->
             <div class="form-section">
-                <h2 class="text-lg font-semibold mb-4">Detalles del Defecto</h2>
+                <h2 class="text-lg font-semibold mb-4">Defect Details</h2>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label for="processSelector" class="block text-sm font-medium text-gray-700 mb-1">Proceso</label>
+                        <label for="processSelector" class="block text-sm font-medium text-gray-700 mb-1">Process</label>
                         <select id="processSelector" name="process_name" required
                             class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                            <option value="">Seleccione un proceso</option>
+                            <option value="">Select a process</option>
                         </select>
                     </div>
                     
                     <div>
-                        <label for="issueSelector" class="block text-sm font-medium text-gray-700 mb-1">Tipo de Problema</label>
+                        <label for="issueSelector" class="block text-sm font-medium text-gray-700 mb-1">Issue Type</label>
                         <select id="issueSelector" name="issue_description" required disabled
                             class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                            <option value="">Primero seleccione un proceso</option>
+                            <option value="">First select a process</option>
                         </select>
                     </div>
                     
                     <div>
-                        <label for="correctionProcessSelector" class="block text-sm font-medium text-gray-700 mb-1">Proceso de Corrección</label>
+                        <label for="correctionProcessSelector" class="block text-sm font-medium text-gray-700 mb-1">Correction Process</label>
                         <select id="correctionProcessSelector" name="correction_process_name" required
                             class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                            <option value="">Seleccione un proceso de corrección</option>
+                            <option value="">Select a correction process</option>
                         </select>
                     </div>
                 </div>
             </div>
             
-            <!-- Imágenes -->
+            <!-- Images -->
             <div class="form-section">
-                <h2 class="text-lg font-semibold mb-4">Imágenes</h2>
+                <h2 class="text-lg font-semibold mb-4">Images</h2>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Imágenes del Defecto</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Defect Images</label>
                         <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
                             <div class="space-y-1 text-center">
                                 <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
@@ -146,19 +146,19 @@
                                 </svg>
                                 <div class="flex text-sm text-gray-600">
                                     <label for="defectImages" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                                        <span>Subir archivos</span>
+                                        <span>Upload files</span>
                                         <input id="defectImages" name="defect_images" type="file" multiple accept="image/*" required class="sr-only">
                                     </label>
-                                    <p class="pl-1">o arrastrar y soltar</p>
+                                    <p class="pl-1">or drag and drop</p>
                                 </div>
-                                <p class="text-xs text-gray-500">PNG, JPG hasta 10MB</p>
+                                <p class="text-xs text-gray-500">PNG, JPG up to 10MB</p>
                             </div>
                         </div>
                         <div id="defectImagePreview" class="mt-4 flex flex-wrap"></div>
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Imágenes de Ubicación</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Location Images</label>
                         <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
                             <div class="space-y-1 text-center">
                                 <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
@@ -166,12 +166,12 @@
                                 </svg>
                                 <div class="flex text-sm text-gray-600">
                                     <label for="locationImages" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                                        <span>Subir archivos</span>
+                                        <span>Upload files</span>
                                         <input id="locationImages" name="location_images" type="file" multiple accept="image/*" required class="sr-only">
                                     </label>
-                                    <p class="pl-1">o arrastrar y soltar</p>
+                                    <p class="pl-1">or drag and drop</p>
                                 </div>
-                                <p class="text-xs text-gray-500">PNG, JPG hasta 10MB</p>
+                                <p class="text-xs text-gray-500">PNG, JPG up to 10MB</p>
                             </div>
                         </div>
                         <div id="locationImagePreview" class="mt-4 flex flex-wrap"></div>
@@ -179,15 +179,15 @@
                 </div>
             </div>
             
-            <!-- Botón de envío -->
+            <!-- Submit Button -->
             <div class="flex justify-end space-x-4">
                 <button type="button" onclick="window.history.back()" 
                     class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                    Cancelar
+                    Cancel
                 </button>
                 <button type="submit" 
                     class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                    Crear Registro de Defecto
+                    Create Defect Record
                 </button>
             </div>
         </form>
@@ -195,7 +195,7 @@
 </div>
 
 <script>
-    // Variables globales
+    // Global variables
     let products = [];
     let jobs = [];
     let users = [];
@@ -203,51 +203,51 @@
     let issues = [];
     let correctionProcesses = [];
     
-    // Cargar datos iniciales
+    // Load initial data
     document.addEventListener('DOMContentLoaded', async () => {
         await loadProducts();
         await loadUsers();
         await loadProcesses();
         await loadCorrectionProcesses();
         
-        // Configurar event listeners
+        // Setup event listeners
         setupEventListeners();
     });
     
-    // Funciones para cargar datos
+    // Functions to load data
     async function loadProducts() {
         try {
             const response = await fetch('/products');
-            if (!response.ok) throw new Error('Error al cargar productos');
+            if (!response.ok) throw new Error('Error loading products');
             products = await response.json();
             renderProductSelector(products);
         } catch (error) {
             console.error('Error:', error);
-            alert('Error al cargar productos');
+            alert('Error loading products');
         }
     }
     
     async function loadUsers() {
         try {
             const response = await fetch('/users/list_users');
-            if (!response.ok) throw new Error('Error al cargar usuarios');
+            if (!response.ok) throw new Error('Error loading users');
             users = await response.json();
             renderInspectorSelector(users);
         } catch (error) {
             console.error('Error:', error);
-            alert('Error al cargar usuarios');
+            alert('Error loading users');
         }
     }
     
     async function loadProcesses() {
         try {
             const response = await fetch('/processes');
-            if (!response.ok) throw new Error('Error al cargar procesos');
+            if (!response.ok) throw new Error('Error loading processes');
             processes = await response.json();
             renderProcessSelector(processes);
         } catch (error) {
             console.error('Error:', error);
-            alert('Error al cargar procesos');
+            alert('Error loading processes');
         }
     }
     
@@ -259,31 +259,31 @@
         
         try {
             const response = await fetch(`/issue/process/${processId}`);
-            if (!response.ok) throw new Error('Error al cargar problemas');
+            if (!response.ok) throw new Error('Error loading issues');
             issues = await response.json();
             renderIssueSelector(issues);
         } catch (error) {
             console.error('Error:', error);
-            alert('Error al cargar problemas');
+            alert('Error loading issues');
         }
     }
     
     async function loadCorrectionProcesses() {
         try {
             const response = await fetch('/correction-processes/');
-            if (!response.ok) throw new Error('Error al cargar procesos de corrección');
+            if (!response.ok) throw new Error('Error loading correction processes');
             correctionProcesses = await response.json();
             renderCorrectionProcessSelector(correctionProcesses);
         } catch (error) {
             console.error('Error:', error);
-            alert('Error al cargar procesos de corrección');
+            alert('Error loading correction processes');
         }
     }
     
-    // Funciones para renderizar selectores
+    // Functions to render selectors
     function renderProductSelector(products) {
         const selector = document.getElementById('productSelector');
-        selector.innerHTML = '<option value="">Seleccione un producto</option>';
+        selector.innerHTML = '<option value="">Select a product</option>';
         products.forEach(product => {
             const option = document.createElement('option');
             option.value = product.product_name;
@@ -295,7 +295,7 @@
     
     function renderInspectorSelector(users) {
         const selector = document.getElementById('inspectorSelector');
-        selector.innerHTML = '<option value="">Buscar por número de empleado...</option>';
+        selector.innerHTML = '<option value="">Search by employee number...</option>';
         users.forEach(user => {
             const option = document.createElement('option');
             option.value = user.employee_number;
@@ -307,7 +307,7 @@
     
     function renderProcessSelector(processes) {
         const selector = document.getElementById('processSelector');
-        selector.innerHTML = '<option value="">Seleccione un proceso</option>';
+        selector.innerHTML = '<option value="">Select a process</option>';
         processes.forEach(process => {
             const option = document.createElement('option');
             option.value = process.process_name;
@@ -319,12 +319,12 @@
     
     function renderIssueSelector(issues) {
         const selector = document.getElementById('issueSelector');
-        selector.innerHTML = '<option value="">Seleccione un problema</option>';
+        selector.innerHTML = '<option value="">Select an issue</option>';
         
         if (issues.length === 0) {
             const option = document.createElement('option');
             option.value = "";
-            option.textContent = "No hay problemas para este proceso";
+            option.textContent = "No issues for this process";
             selector.appendChild(option);
             return;
         }
@@ -340,7 +340,7 @@
     
     function renderCorrectionProcessSelector(processes) {
         const selector = document.getElementById('correctionProcessSelector');
-        selector.innerHTML = '<option value="">Seleccione un proceso de corrección</option>';
+        selector.innerHTML = '<option value="">Select a correction process</option>';
         processes.forEach(process => {
             const option = document.createElement('option');
             option.value = process.correction_process_name;
@@ -350,26 +350,26 @@
         });
     }
     
-    // Configurar event listeners
+    // Setup event listeners
     function setupEventListeners() {
-        // Cambio de producto
+        // Product change
         document.getElementById('productSelector').addEventListener('change', async (event) => {
             const productName = event.target.value;
             const jobSelector = document.getElementById('jobSelector');
             
             if (!productName) {
                 jobSelector.disabled = true;
-                jobSelector.innerHTML = '<option value="">Primero seleccione un producto</option>';
+                jobSelector.innerHTML = '<option value="">First select a product</option>';
                 return;
             }
             
             try {
                 const response = await fetch(`/jobs/list-by-product/${productName}`);
-                if (!response.ok) throw new Error('Error al cargar jobs');
+                if (!response.ok) throw new Error('Error loading jobs');
                 jobs = await response.json();
                 
                 jobSelector.disabled = false;
-                jobSelector.innerHTML = '<option value="">Seleccione un job code</option>';
+                jobSelector.innerHTML = '<option value="">Select a job code</option>';
                 
                 jobs.forEach(job => {
                     const option = document.createElement('option');
@@ -379,18 +379,18 @@
                 });
             } catch (error) {
                 console.error('Error:', error);
-                alert('Error al cargar jobs');
+                alert('Error loading jobs');
             }
         });
         
-        // Cambio de proceso
+        // Process change
         document.getElementById('processSelector').addEventListener('change', async (event) => {
             const processId = event.target.selectedOptions[0]?.dataset.processId;
             const issueSelector = document.getElementById('issueSelector');
             
             if (!processId) {
                 issueSelector.disabled = true;
-                issueSelector.innerHTML = '<option value="">Primero seleccione un proceso</option>';
+                issueSelector.innerHTML = '<option value="">First select a process</option>';
                 return;
             }
             
@@ -398,15 +398,15 @@
             await loadIssuesByProcess(processId);
         });
         
-        // Preview de imágenes
+        // Image preview
         document.getElementById('defectImages').addEventListener('change', handleImagePreview);
         document.getElementById('locationImages').addEventListener('change', handleImagePreview);
         
-        // Envío del formulario
+        // Form submission
         document.getElementById('defectForm').addEventListener('submit', handleFormSubmit);
     }
     
-    // Manejar preview de imágenes
+    // Handle image preview
     function handleImagePreview(event) {
         const files = event.target.files;
         const previewId = event.target.id === 'defectImages' ? 'defectImagePreview' : 'locationImagePreview';
@@ -428,13 +428,11 @@
         });
     }
     
-    // Manejar envío del formulario
-    // Manejar envío del formulario
-    // Manejar envío del formulario
+    // Handle form submission
     async function handleFormSubmit(event) {
         event.preventDefault();
         
-        // Obtener IDs a partir de los nombres seleccionados
+        // Get IDs from selected names
         const productSelector = document.getElementById('productSelector');
         const jobSelector = document.getElementById('jobSelector');
         const inspectorSelector = document.getElementById('inspectorSelector');
@@ -448,30 +446,30 @@
         const selectedIssueOption = issueSelector.options[issueSelector.selectedIndex];
         const selectedCorrectionOption = correctionProcessSelector.options[correctionProcessSelector.selectedIndex];
         
-        // Obtener el job_id usando el endpoint correcto
+        // Get job_id using the correct endpoint
         let jobId;
         try {
             const productName = selectedProductOption.value;
             const jobCode = jobSelector.value;
             
-            // Usar el endpoint correcto para obtener la información del job
+            // Use the correct endpoint to get job information
             const response = await fetch(`/jobs/list-by-product-info/${productName}`);
             const jobs = await response.json();
             
-            // Encontrar el job con el job_code seleccionado
+            // Find the job with the selected job_code
             const selectedJob = jobs.find(job => job.job_code === jobCode);
             if (!selectedJob) {
-                throw new Error('Job no encontrado');
+                throw new Error('Job not found');
             }
             
             jobId = selectedJob.job_id;
         } catch (error) {
-            console.error('Error al obtener job:', error);
-            alert('Error al obtener información del job');
+            console.error('Error getting job:', error);
+            alert('Error getting job information');
             return;
         }
         
-        // Valores para debuggear
+        // Debug values
         console.log('Product ID:', selectedProductOption?.dataset?.productId);
         console.log('Job ID:', jobId);
         console.log('Inspector User ID:', selectedInspectorOption?.dataset?.userId);
@@ -480,7 +478,7 @@
         console.log('Status ID:', '1');
         console.log('Issue By User ID:', document.getElementById('supervisorId').value);
         
-        // Verificar que todos los campos requeridos están completos
+        // Verify all required fields are complete
         const requiredFields = {
             'Product ID': selectedProductOption?.dataset?.productId,
             'Job ID': jobId,
@@ -495,25 +493,25 @@
             .map(([key]) => key);
         
         if (missingFields.length > 0) {
-            alert(`Por favor complete los siguientes campos: ${missingFields.join(', ')}`);
+            alert(`Please complete the following fields: ${missingFields.join(', ')}`);
             return;
         }
         
         const formData = new FormData();
         formData.append('product_id', selectedProductOption.dataset.productId);
-        formData.append('job_id', jobId.toString());  // Asegurarse de que sea string
+        formData.append('job_id', jobId.toString());  // Ensure it's a string
         formData.append('inspector_user_id', selectedInspectorOption.dataset.userId);
         formData.append('issue_by_user_id', document.getElementById('supervisorId').value);
         formData.append('issue_id', selectedIssueOption.dataset.issueId);
         formData.append('correction_process_id', selectedCorrectionOption.dataset.processId);
-        formData.append('status_id', '1'); // Siempre Ok
+        formData.append('status_id', '1'); // Always Ok
         
-        // Agregar imágenes
+        // Add images
         const defectFiles = document.getElementById('defectImages').files;
         const locationFiles = document.getElementById('locationImages').files;
         
         if (defectFiles.length === 0 || locationFiles.length === 0) {
-            alert('Por favor agregue al menos una imagen de defecto y una de ubicación');
+            alert('Please add at least one defect image and one location image');
             return;
         }
         
@@ -525,7 +523,7 @@
             formData.append('location_images', locationFiles[i]);
         }
         
-        // Imprimir los datos del formData para debuguear
+        // Print formData for debugging
         for (let pair of formData.entries()) {
             console.log(`${pair[0]}: ${pair[1]}`);
         }
@@ -538,15 +536,15 @@
             
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.detail || 'Error al crear el registro');
+                throw new Error(errorData.detail || 'Error creating the record');
             }
             
             const result = await response.json();
-            alert('Registro de defecto creado exitosamente');
-            window.location.href = '/defect-records'; // Redirigir a la lista de defectos
+            alert('Defect record created successfully');
+            window.location.href = '/defect-records'; // Redirect to defect list
         } catch (error) {
             console.error('Error:', error);
-            alert(error.message || 'Error al crear el registro de defecto');
+            alert(error.message || 'Error creating defect record');
         }
     }
 </script>
