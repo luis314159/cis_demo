@@ -172,4 +172,6 @@ static/qr/generated_qr.png
 app/static/documents/
 app/static/qr/
 
+app/static/punch_list/
+
 .python-version
