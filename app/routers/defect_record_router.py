@@ -9,6 +9,12 @@ from models import DefectImage, DefectImageCreate, DefectRecord, DefectRecordCre
 from db import SessionDep
 from sqlalchemy.orm import aliased
 from pathlib import Path
+import logging
+import json
+
+# Set up a logger
+logger = logging.getLogger("api")
+logger.setLevel(logging.DEBUG)
 
 router = APIRouter(prefix="/defect-records", tags=["Defect Records"])
 
@@ -429,12 +435,47 @@ async def update_defect_record(
     - location_images (ID=2): Imágenes de la ubicación del defecto
     - defect_images (ID=3): Imágenes del defecto mismo
     """
+    # Log all input parameters
+    logger.debug(f"=== START DEBUG: update_defect_record ===")
+    logger.debug(f"defect_record_id: {defect_record_id}")
+    logger.debug(f"product_id: {product_id}")
+    logger.debug(f"job_id: {job_id}")
+    logger.debug(f"inspector_user_id: {inspector_user_id}")
+    logger.debug(f"issue_by_user_id: {issue_by_user_id}")
+    logger.debug(f"issue_id: {issue_id}")
+    logger.debug(f"correction_process_id: {correction_process_id}")
+    logger.debug(f"status_id: {status_id}")
+    logger.debug(f"description: {description}")
+    logger.debug(f"close_record: {close_record}")
+    
+    # Log information about uploaded files
+    if defect_images:
+        defect_images_info = [{"filename": img.filename, "content_type": img.content_type, "size": 0} for img in defect_images]
+        logger.debug(f"defect_images: {json.dumps(defect_images_info)}")
+    else:
+        logger.debug("defect_images: None")
+        
+    if location_images:
+        location_images_info = [{"filename": img.filename, "content_type": img.content_type, "size": 0} for img in location_images]
+        logger.debug(f"location_images: {json.dumps(location_images_info)}")
+    else:
+        logger.debug("location_images: None")
+        
+    if solved_images:
+        solved_images_info = [{"filename": img.filename, "content_type": img.content_type, "size": 0} for img in solved_images]
+        logger.debug(f"solved_images: {json.dumps(solved_images_info)}")
+    else:
+        logger.debug("solved_images: None")
+
     # 1. Buscar el registro de defecto existente
     defect_record_query = select(DefectRecord).where(DefectRecord.defect_record_id == defect_record_id)
     defect_record = session.exec(defect_record_query).first()
     
     if not defect_record:
+        logger.error(f"Registro de defecto no encontrado: {defect_record_id}")
         raise HTTPException(status_code=404, detail="Registro de defecto no encontrado")
+    
+    logger.debug(f"Defect record found: {defect_record.defect_record_id}")
     
     # 2. Preparar datos para actualización
     update_data = DefectRecordUpdate()
@@ -445,7 +486,9 @@ async def update_defect_record(
         product_query = select(Product).where(Product.product_id == product_id)
         product = session.exec(product_query).first()
         if not product:
+            logger.error(f"Producto no encontrado: {product_id}")
             raise HTTPException(status_code=404, detail="Producto no encontrado")
+        logger.debug(f"Product validated: {product.product_id} - {product.product_name}")
         update_data.product_id = product_id
     
     if job_id is not None:
@@ -453,44 +496,63 @@ async def update_defect_record(
         job_query = select(Job).where(Job.job_id == job_id)
         job = session.exec(job_query).first()
         if not job:
+            logger.error(f"Job no encontrado: {job_id}")
             raise HTTPException(status_code=404, detail="Job no encontrado")
+        logger.debug(f"Job validated: {job.job_id} - {job.job_code}")
         update_data.job_id = job_id
     
     if inspector_user_id is not None:
+        logger.debug(f"Setting inspector_user_id: {inspector_user_id}")
         update_data.inspector_user_id = inspector_user_id
     
     if issue_by_user_id is not None:
+        logger.debug(f"Setting issue_by_user_id: {issue_by_user_id}")
         update_data.issue_by_user_id = issue_by_user_id
     
     if issue_id is not None:
         # Verificar que el issue existe
         issue_query = select(Issue).where(Issue.issue_id == issue_id)
-        if not session.exec(issue_query).first():
+        issue = session.exec(issue_query).first()
+        if not issue:
+            logger.error(f"Issue no encontrado: {issue_id}")
             raise HTTPException(status_code=404, detail="Issue no encontrado")
+        logger.debug(f"Issue validated: {issue.issue_id}")
         update_data.issue_id = issue_id
     
     if correction_process_id is not None:
         # Verificar que el correction process existe
         cp_query = select(CorrectionProcess).where(CorrectionProcess.correction_process_id == correction_process_id)
-        if not session.exec(cp_query).first():
+        cp = session.exec(cp_query).first()
+        if not cp:
+            logger.error(f"Proceso de corrección no encontrado: {correction_process_id}")
             raise HTTPException(status_code=404, detail="Proceso de corrección no encontrado")
+        logger.debug(f"Correction process validated: {cp.correction_process_id}")
         update_data.correction_process_id = correction_process_id
     
     if status_id is not None:
         # Verificar que el status existe
         status_query = select(Status).where(Status.status_id == status_id)
-        if not session.exec(status_query).first():
+        status = session.exec(status_query).first()
+        if not status:
+            logger.error(f"Estado no encontrado: {status_id}")
             raise HTTPException(status_code=404, detail="Estado no encontrado")
+        logger.debug(f"Status validated: {status.status_id}")
         update_data.status_id = status_id
 
     if description is not None:
+        logger.debug(f"Setting description: {description[:50]}...")
         update_data.description = description
     
     if close_record:
+        logger.debug("Setting date_closed to current datetime")
         update_data.date_closed = datetime.now(timezone.utc)
     
     # 3. Actualizar el registro con los nuevos datos
-    for key, value in update_data.dict(exclude_unset=True).items():
+    logger.debug("Applying updates to defect record")
+    update_dict = update_data.dict(exclude_unset=True)
+    logger.debug(f"Update dictionary: {update_dict}")
+    
+    for key, value in update_dict.items():
         setattr(defect_record, key, value)
     
     # 4. Procesar nuevas imágenes si se proporcionan
@@ -502,10 +564,15 @@ async def update_defect_record(
     product = defect_record.product
     job = defect_record.job
     
+    logger.debug(f"Product info: {product.product_name}")
+    logger.debug(f"Job info: {job.job_code}")
+    
     if defect_images or location_images or solved_images:
         # Construir la ruta base para guardar las imágenes
         defect_folder_name = f"{product.product_name}_{job.job_code}_{defect_record.defect_record_id}"
         base_path = Path.cwd() / "static" / "punch_list" / product.product_name / job.job_code / defect_folder_name
+        
+        logger.debug(f"Image base path: {base_path}")
         
         # Asegurarse de que existen todos los directorios
         (base_path / "defect_image").mkdir(parents=True, exist_ok=True)
@@ -514,9 +581,11 @@ async def update_defect_record(
         
         # 4.1 Guardar las nuevas imágenes de defecto (DEFECT IMAGE, id=3)
         if defect_images:
+            logger.debug(f"Processing {len(defect_images)} defect images")
             for i, defect_image in enumerate(defect_images):
                 # Saltar archivos vacíos
                 if defect_image.filename == "":
+                    logger.debug(f"Skipping empty defect image at index {i}")
                     continue
                     
                 timestamp = int(time.time() * 1000) + i  # Añadir índice para garantizar unicidad
@@ -524,11 +593,18 @@ async def update_defect_record(
                 defect_image_filename = f"defect_{timestamp}{file_extension}"
                 defect_image_path = base_path / "defect_image" / defect_image_filename
                 
+                logger.debug(f"Saving defect image {i+1}: {defect_image_filename}")
+                
                 # Guardar el archivo
-                with open(defect_image_path, "wb") as f:
-                    content = await defect_image.read()
-                    f.write(content)
-                await defect_image.seek(0)  # Reset file pointer
+                try:
+                    with open(defect_image_path, "wb") as f:
+                        content = await defect_image.read()
+                        f.write(content)
+                    await defect_image.seek(0)  # Reset file pointer
+                    logger.debug(f"Saved defect image: {defect_image_path}")
+                except Exception as e:
+                    logger.error(f"Error saving defect image: {str(e)}")
+                    continue
                 
                 # URL para guardar en la base de datos (ruta relativa desde el directorio static)
                 relative_url = f"/static/punch_list/{product.product_name}/{job.job_code}/{defect_folder_name}/defect_image/{defect_image_filename}"
@@ -542,12 +618,15 @@ async def update_defect_record(
                 defect_image_db = DefectImage.model_validate(defect_image_data)
                 session.add(defect_image_db)
                 defect_image_urls.append(relative_url)
+                logger.debug(f"Added defect image to database: {relative_url}")
         
         # 4.2 Guardar las nuevas imágenes de ubicación (LOCATION IMAGE, id=2)
         if location_images:
+            logger.debug(f"Processing {len(location_images)} location images")
             for i, location_image in enumerate(location_images):
                 # Saltar archivos vacíos
                 if location_image.filename == "":
+                    logger.debug(f"Skipping empty location image at index {i}")
                     continue
                     
                 timestamp = int(time.time() * 1000) + i  # Añadir índice para garantizar unicidad
@@ -555,11 +634,18 @@ async def update_defect_record(
                 location_image_filename = f"location_{timestamp}{file_extension}"
                 location_image_path = base_path / "location_image" / location_image_filename
                 
+                logger.debug(f"Saving location image {i+1}: {location_image_filename}")
+                
                 # Guardar el archivo
-                with open(location_image_path, "wb") as f:
-                    content = await location_image.read()
-                    f.write(content)
-                await location_image.seek(0)  # Reset file pointer
+                try:
+                    with open(location_image_path, "wb") as f:
+                        content = await location_image.read()
+                        f.write(content)
+                    await location_image.seek(0)  # Reset file pointer
+                    logger.debug(f"Saved location image: {location_image_path}")
+                except Exception as e:
+                    logger.error(f"Error saving location image: {str(e)}")
+                    continue
                 
                 # URL para guardar en la base de datos (ruta relativa desde el directorio static)
                 relative_url = f"/static/punch_list/{product.product_name}/{job.job_code}/{defect_folder_name}/location_image/{location_image_filename}"
@@ -573,12 +659,15 @@ async def update_defect_record(
                 location_image_db = DefectImage.model_validate(location_image_data)
                 session.add(location_image_db)
                 location_image_urls.append(relative_url)
+                logger.debug(f"Added location image to database: {relative_url}")
                 
         # 4.3 Guardar las nuevas imágenes de solución (SOLVED IMAGE, id=1)
         if solved_images:
+            logger.debug(f"Processing {len(solved_images)} solved images")
             for i, solved_image in enumerate(solved_images):
                 # Saltar archivos vacíos
                 if solved_image.filename == "":
+                    logger.debug(f"Skipping empty solved image at index {i}")
                     continue
                     
                 timestamp = int(time.time() * 1000) + i  # Añadir índice para garantizar unicidad
@@ -586,11 +675,18 @@ async def update_defect_record(
                 solved_image_filename = f"solved_{timestamp}{file_extension}"
                 solved_image_path = base_path / "solved_image" / solved_image_filename
                 
+                logger.debug(f"Saving solved image {i+1}: {solved_image_filename}")
+                
                 # Guardar el archivo
-                with open(solved_image_path, "wb") as f:
-                    content = await solved_image.read()
-                    f.write(content)
-                await solved_image.seek(0)  # Reset file pointer
+                try:
+                    with open(solved_image_path, "wb") as f:
+                        content = await solved_image.read()
+                        f.write(content)
+                    await solved_image.seek(0)  # Reset file pointer
+                    logger.debug(f"Saved solved image: {solved_image_path}")
+                except Exception as e:
+                    logger.error(f"Error saving solved image: {str(e)}")
+                    continue
                 
                 # URL para guardar en la base de datos (ruta relativa desde el directorio static)
                 relative_url = f"/static/punch_list/{product.product_name}/{job.job_code}/{defect_folder_name}/solved_image/{solved_image_filename}"
@@ -604,13 +700,20 @@ async def update_defect_record(
                 solved_image_db = DefectImage.model_validate(solved_image_data)
                 session.add(solved_image_db)
                 solved_image_urls.append(relative_url)
+                logger.debug(f"Added solved image to database: {relative_url}")
     
     # 5. Confirmar los cambios en la base de datos
-    session.commit()
-    session.refresh(defect_record)
+    logger.debug("Committing changes to database")
+    try:
+        session.commit()
+        session.refresh(defect_record)
+        logger.debug("Database commit successful")
+    except Exception as e:
+        logger.error(f"Error committing to database: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error al guardar los cambios: {str(e)}")
     
-    # 6. Obtener todas las imágenes existentes (incluyendo las que se acaban de añadir)
-    # Para alinear con el patrón del endpoint CREATE, solo incluimos las nuevamente subidas
+    # 6. Preparar la respuesta
+    logger.debug(f"Preparing response with {len(defect_image_urls)} defect images, {len(location_image_urls)} location images, and {len(solved_image_urls)} solved images")
     
     # 7. Preparar la respuesta usando el modelo definido
     response = DefectRecordUpdateResponse(
@@ -621,5 +724,8 @@ async def update_defect_record(
         location_images=location_image_urls,
         solved_images=solved_image_urls
     )
+    
+    logger.debug(f"Response prepared: defect_record_id={response.defect_record_id}")
+    logger.debug(f"=== END DEBUG: update_defect_record ===")
     
     return response
