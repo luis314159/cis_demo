@@ -3,7 +3,7 @@ from sqlmodel import select, Session
 from models import User, Role, UpdateUserRequest
 from db import SessionDep
 from auth import get_password_hash, get_current_active_user
-from models import CreateUser, CreateRole, ResponseUser
+from models import CreateUser, CreateRole, ResponseUser, BaseRole
 from typing import Annotated, Optional
 
 
@@ -537,3 +537,141 @@ def delete_user(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error al eliminar el usuario"
         )
+    
+
+
+@router.get("/roles/{role_id}", response_model=Role,
+            summary="Get role by ID",
+            response_description="Returns the specified role",
+            responses={
+                200: {"description": "Role found successfully"},
+                404: {"description": "Role not found"}
+            }
+        )
+def get_role(role_id: int, session: SessionDep):
+    """
+    ## Get role by ID
+
+    Retrieves a specific role by its unique identifier.
+
+    ### Parameters:
+    - **role_id** (int): Unique identifier of the role
+
+    ### Returns:
+    - **Role**: Role object with the specified ID
+
+    ### Example Response:
+    ```json
+    {
+        "role_id": 1,
+        "role_name": "admin"
+    }
+    ```
+    """
+    role = session.get(Role, role_id)
+    if not role:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rol no encontrado.")
+    return role
+
+
+@router.put("/roles/{role_id}", response_model=Role,
+            summary="Update role",
+            response_description="Returns the updated role",
+            responses={
+                200: {"description": "Role updated successfully"},
+                404: {"description": "Role not found"},
+                409: {"description": "Role name already exists"}
+            }
+        )
+def update_role(role_id: int, role_data: BaseRole, session: SessionDep):
+    """
+    ## Update an existing role
+
+    Updates the details of a specific role identified by its ID.
+
+    ### Parameters:
+    - **role_id** (int): Unique identifier of the role to update
+    - **role_data** (BaseRole): Role update data including:
+        - role_name: New name for the role
+
+    ### Example Request:
+    ```json
+    {
+        "role_name": "senior_admin"
+    }
+    ```
+
+    ### Example Response:
+    ```json
+    {
+        "role_id": 1,
+        "role_name": "senior_admin"
+    }
+    ```
+    """
+    role = session.get(Role, role_id)
+    if not role:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rol no encontrado.")
+        
+    # Verificar si el nuevo nombre de rol ya existe (para otro rol)
+    existing_role = session.exec(
+        select(Role).where(
+            and_(
+                Role.role_name == role_data.role_name,
+                Role.role_id != role_id
+            )
+        )
+    ).first()
+    
+    if existing_role:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Ya existe un rol con ese nombre.")
+    
+    # Actualizar datos del rol
+    role.role_name = role_data.role_name
+    
+    session.add(role)
+    session.commit()
+    session.refresh(role)
+    return role
+
+
+@router.delete("/roles/{role_id}",
+            summary="Delete role",
+            response_description="No content returned",
+            responses={
+                204: {"description": "Role deleted successfully"},
+                404: {"description": "Role not found"},
+                400: {"description": "Cannot delete role with associated users"}
+            },
+            status_code=status.HTTP_204_NO_CONTENT
+        )
+def delete_role(role_id: int, session: SessionDep):
+    """
+    ## Delete a role
+
+    Removes a role from the system.
+
+    ### Parameters:
+    - **role_id** (int): Unique identifier of the role to delete
+
+    ### Notes:
+    - Roles with associated users cannot be deleted
+    - Returns no content on successful deletion
+
+    ### Response:
+    - **204 No Content**: Role was successfully deleted
+    """
+    role = session.get(Role, role_id)
+    if not role:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rol no encontrado.")
+    
+    # Verificar si el rol tiene usuarios asociados
+    if role.users:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="No se puede eliminar un rol que tiene usuarios asociados."
+        )
+    
+    session.delete(role)
+    session.commit()
+    return None
