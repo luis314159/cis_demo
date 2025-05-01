@@ -27,6 +27,38 @@
     font-size: 0.875rem;
     margin-top: 0.25rem;
   }
+  /* Process filter multiselect styles */
+  .process-multiselect {
+    position: relative;
+  }
+  .process-dropdown {
+    position: absolute;
+    z-index: 10;
+    width: 100%;
+    max-height: 200px;
+    overflow-y: auto;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+  .process-selection-summary {
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+    color: #4B5563;
+  }
+  .process-section {
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+    border-top: 1px solid #E5E7EB;
+    padding-top: 1rem;
+  }
+  .process-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    background-color: #F3F4F6;
+    border-radius: 0.25rem;
+  }
 </style>
 <script src="/static/js/punch_list.js" defer></script>
 {% endblock %}
@@ -78,8 +110,53 @@
             </select>
         </div>
 
-        <!-- Defects Table (will be shown after selecting a job code) -->
+        <!-- Process Filter (will be shown after selecting a job code) -->
+        <div id="processFilterContainer" class="mb-6 hidden">
+            <label for="processFilter" class="block text-sm font-medium text-gray-700 mb-1">Filter by Process:</label>
+            <div class="process-multiselect">
+                <div class="relative">
+                    <button id="processFilterButton" type="button" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-left focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        Select processes...
+                    </button>
+                    <div id="processDropdown" class="process-dropdown bg-white border border-gray-300 rounded-md mt-1 hidden">
+                        <div class="p-2 border-b border-gray-200">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="selectAllProcesses" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                <span class="ml-2 text-sm text-gray-700">Select All</span>
+                            </label>
+                        </div>
+                        <div id="processCheckboxes" class="p-2">
+                            <!-- Process checkboxes will be loaded dynamically -->
+                        </div>
+                        <div class="p-2 border-t border-gray-200 flex justify-end">
+                            <button id="applyProcessFilter" type="button" class="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600">
+                                Apply
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <p id="processSelectionSummary" class="process-selection-summary hidden"></p>
+            </div>
+        </div>
+
+        <!-- Defects Container (will hold multiple tables per process) -->
         <div id="defectsContainer" class="hidden">
+            <!-- Process-specific tables will be inserted here -->
+            <div id="processDefectTables">
+                <!-- Each process section will be added here -->
+            </div>
+        </div>
+
+        <!-- No data message -->
+        <div id="noDataMessage" class="hidden bg-gray-50 p-6 text-center rounded-lg shadow">
+            <p class="text-gray-500">No defects found for the selected job.</p>
+        </div>
+    </div>
+
+    <!-- Defect table template (hidden, will be cloned for each process) -->
+    <template id="defectTableTemplate">
+        <div class="process-section">
+            <h2 class="process-title">Process: <span class="process-name"></span></h2>
             <div class="bg-white rounded-lg shadow overflow-x-auto mb-6">
                 <table class="w-full">
                     <thead class="bg-gray-50">
@@ -93,18 +170,13 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
-                    <tbody id="defectsTableBody" class="divide-y divide-gray-200">
+                    <tbody class="defects-table-body divide-y divide-gray-200">
                         <!-- Defects will be loaded here dynamically -->
                     </tbody>
                 </table>
             </div>
         </div>
-
-        <!-- No data message -->
-        <div id="noDataMessage" class="hidden bg-gray-50 p-6 text-center rounded-lg shadow">
-            <p class="text-gray-500">No defects found for the selected job.</p>
-        </div>
-    </div>
+    </template>
 
     <!-- Modal for viewing defect details -->
     <div id="defectDetailModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
@@ -228,5 +300,204 @@
             <img id="enlargedImage" src="" alt="Enlarged image" class="max-h-screen max-w-screen-lg">
         </div>
     </div>
+
+    <!-- Add this script to the template to initialize the process filter -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Process filter dropdown toggle
+            const processFilterButton = document.getElementById('processFilterButton');
+            const processDropdown = document.getElementById('processDropdown');
+            const selectAllCheckbox = document.getElementById('selectAllProcesses');
+            const applyButton = document.getElementById('applyProcessFilter');
+            const processSelectionSummary = document.getElementById('processSelectionSummary');
+            
+            // Show/hide dropdown when button is clicked
+            processFilterButton.addEventListener('click', function() {
+                processDropdown.classList.toggle('hidden');
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(event) {
+                if (!processFilterButton.contains(event.target) && 
+                    !processDropdown.contains(event.target)) {
+                    processDropdown.classList.add('hidden');
+                }
+            });
+            
+            // Select all checkbox
+            selectAllCheckbox.addEventListener('change', function() {
+                const checkboxes = document.querySelectorAll('#processCheckboxes input[type="checkbox"]');
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = selectAllCheckbox.checked;
+                });
+            });
+            
+            // Apply button click
+            applyButton.addEventListener('click', function() {
+                const checkboxes = document.querySelectorAll('#processCheckboxes input[type="checkbox"]');
+                const selectedProcesses = Array.from(checkboxes)
+                    .filter(cb => cb.checked)
+                    .map(cb => cb.value);
+                
+                // Update selection summary
+                if (selectedProcesses.length === 0) {
+                    processSelectionSummary.textContent = 'No processes selected';
+                } else if (selectedProcesses.length === checkboxes.length) {
+                    processSelectionSummary.textContent = 'All processes selected';
+                } else {
+                    processSelectionSummary.textContent = `${selectedProcesses.length} process(es) selected`;
+                }
+                processSelectionSummary.classList.remove('hidden');
+                
+                // Filter and display defects by selected processes
+                renderDefectsByProcess(selectedProcesses);
+                
+                // Hide dropdown
+                processDropdown.classList.add('hidden');
+            });
+        });
+        
+        // This function will be called by the existing handleJobCodeChange function
+        function initializeProcessFilter(defectData) {
+            // Extract unique processes from defects
+            const uniqueProcesses = [...new Set(defectData
+                .filter(defect => defect.issue && defect.issue.process && defect.issue.process.process_name)
+                .map(defect => defect.issue.process.process_name))];
+            
+            // Show process filter if we have multiple processes
+            const processFilterContainer = document.getElementById('processFilterContainer');
+            if (uniqueProcesses.length > 0) {
+                // Populate process checkboxes
+                const processCheckboxes = document.getElementById('processCheckboxes');
+                processCheckboxes.innerHTML = '';
+                
+                uniqueProcesses.forEach(process => {
+                    const checkboxDiv = document.createElement('div');
+                    checkboxDiv.className = 'py-1';
+                    checkboxDiv.innerHTML = `
+                        <label class="flex items-center">
+                            <input type="checkbox" value="${process}" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" checked>
+                            <span class="ml-2 text-sm text-gray-700">${process}</span>
+                        </label>
+                    `;
+                    processCheckboxes.appendChild(checkboxDiv);
+                });
+                
+                // Update selection summary
+                const processSelectionSummary = document.getElementById('processSelectionSummary');
+                processSelectionSummary.textContent = 'All processes selected';
+                processSelectionSummary.classList.remove('hidden');
+                
+                // Show the container
+                processFilterContainer.classList.remove('hidden');
+                
+                // Initially select all checkboxes
+                document.getElementById('selectAllProcesses').checked = true;
+                
+                // Render all processes by default
+                renderDefectsByProcess(uniqueProcesses);
+            } else {
+                processFilterContainer.classList.add('hidden');
+                // If no processes, render defects normally
+                renderDefects(defectData);
+            }
+        }
+        
+        // Function to render defects grouped by process
+        function renderDefectsByProcess(selectedProcesses) {
+            const processDefectTables = document.getElementById('processDefectTables');
+            processDefectTables.innerHTML = '';
+            
+            // If no processes selected, show "no data" message
+            if (selectedProcesses.length === 0) {
+                document.getElementById('defectsContainer').classList.add('hidden');
+                document.getElementById('noDataMessage').classList.remove('hidden');
+                return;
+            }
+            
+            // Group defects by process
+            const defectsByProcess = {};
+            
+            defectData.forEach(defect => {
+                const processName = defect.issue && defect.issue.process ? defect.issue.process.process_name : 'Unknown Process';
+                
+                // Skip if process is not selected
+                if (!selectedProcesses.includes(processName)) return;
+                
+                if (!defectsByProcess[processName]) {
+                    defectsByProcess[processName] = [];
+                }
+                defectsByProcess[processName].push(defect);
+            });
+            
+            // Create a table for each process
+            Object.keys(defectsByProcess).forEach(processName => {
+                const defectsForProcess = defectsByProcess[processName];
+                
+                // Clone the template
+                const template = document.getElementById('defectTableTemplate');
+                const processSection = template.content.cloneNode(true);
+                
+                // Set process name
+                processSection.querySelector('.process-name').textContent = processName;
+                
+                // Get the tbody for this process
+                const tableBody = processSection.querySelector('.defects-table-body');
+                
+                // Fill with defects for this process
+                defectsForProcess.forEach((defect, index) => {
+                    const globalIndex = defectData.findIndex(d => d.defect_record_id === defect.defect_record_id);
+                    const row = document.createElement('tr');
+                    
+                    // Format dates
+                    const dateOpened = new Date(defect.date_opened).toLocaleDateString();
+                    const dateClosed = defect.date_closed ? new Date(defect.date_closed).toLocaleDateString() : '-';
+                    
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap">${dateOpened}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">${dateClosed}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">${defect.inspector?.employee_number || '-'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">${defect.issue_by_user?.employee_number || '-'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                ${defect.status?.status_name === 'Ok' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
+                                ${defect.status?.status_name || 'N/A'}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex space-x-2">
+                                ${defect.images && defect.images.slice(0, 3).map((image, imgIndex) => `
+                                    <img src="${image.image_url}" alt="Defect ${imgIndex + 1}" 
+                                        class="h-16 w-16 object-cover rounded defect-image" 
+                                        onclick="showFullImage(event, '${image.image_url}')">
+                                `).join('')}
+                                ${defect.images && defect.images.length > 3 ? `<span class="text-blue-500">+${defect.images.length - 3} more</span>` : ''}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <button 
+                                class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                                onclick="showDefectDetails(${globalIndex})">
+                                View
+                            </button>
+                            <button 
+                                class="px-3 py-1 ml-2 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+                                onclick="openEditModal(${globalIndex})">
+                                Edit
+                            </button>
+                        </td>
+                    `;
+                    
+                    tableBody.appendChild(row);
+                });
+                
+                processDefectTables.appendChild(processSection);
+            });
+            
+            // Show the container
+            document.getElementById('defectsContainer').classList.remove('hidden');
+            document.getElementById('noDataMessage').classList.add('hidden');
+        }
+    </script>
 </div>
 {% endblock %}

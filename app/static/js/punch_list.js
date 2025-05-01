@@ -798,3 +798,39 @@ document.addEventListener('keydown', (event) => {
         closeEditModal();
     }
 });
+
+
+async function handleJobCodeChange(event) {
+    selectedJobCode = event.target.value;
+    
+    if (!selectedJobCode || !selectedProduct) {
+        document.getElementById('defectsContainer').classList.add('hidden');
+        document.getElementById('noDataMessage').classList.add('hidden');
+        document.getElementById('processFilterContainer').classList.add('hidden'); // Hide process filter
+        return;
+    }
+    
+    try {
+        // Use the updated endpoint
+        const response = await fetch(`/defect-records/complete/${selectedJobCode}/${selectedProduct}`);
+        if (!response.ok) {
+            throw new Error('Error loading defect data');
+        }
+        defectData = await response.json();
+        
+        if (defectData.length === 0) {
+            document.getElementById('defectsContainer').classList.add('hidden');
+            document.getElementById('noDataMessage').classList.remove('hidden');
+            document.getElementById('processFilterContainer').classList.add('hidden'); // Hide process filter
+        } else {
+            // Initialize process filter with defect data
+            initializeProcessFilter(defectData);
+            
+            document.getElementById('defectsContainer').classList.remove('hidden');
+            document.getElementById('noDataMessage').classList.add('hidden');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Could not load defect data. Please try again later.');
+    }
+}
