@@ -26,6 +26,7 @@
   .notification {
     @apply fixed top-4 right-4 p-4 rounded-lg shadow-lg max-w-md transform transition-all duration-300 ease-in-out;
     z-index: 100;
+    color: white; /* Ensuring text is white for all notifications */
   }
   .notification.success {
     @apply bg-green-500 text-white;
@@ -211,13 +212,26 @@
     // Show temporary notification
     function showNotification(message, type = 'success') {
         const notification = document.getElementById('notification');
+        if (!notification) return;
+        
         notification.textContent = message;
         notification.classList.remove('hidden', 'success', 'error');
         notification.classList.add(type);
         
+        // Change background color and text color based on type
+        if (type === 'success') {
+            notification.style.backgroundColor = '#10B981'; // Green background
+            notification.style.color = '#FFFFFF'; // White text
+        } else if (type === 'error') {
+            notification.style.backgroundColor = '#EF4444'; // Red background
+            notification.style.color = '#FFFFFF'; // White text
+        }
+        
         // Hide notification after 3 seconds
         setTimeout(() => {
-            notification.classList.add('hidden');
+            if (notification) {
+                notification.classList.add('hidden');
+            }
         }, 3000);
     }
     
@@ -240,6 +254,8 @@
     // Update process filter
     function updateProcessFilter() {
         const processFilter = document.getElementById('processFilter');
+        if (!processFilter) return;
+        
         processFilter.innerHTML = '<option value="">All processes</option>';
         
         processes.forEach(process => {
@@ -250,6 +266,8 @@
     // Update process select in form
     function updateProcessSelect() {
         const issueProcessSelect = document.getElementById('issue_process_id');
+        if (!issueProcessSelect) return;
+        
         issueProcessSelect.innerHTML = '<option value="">Select process</option>';
         
         processes.forEach(process => {
@@ -260,7 +278,8 @@
     // Load issues
     async function loadIssues() {
         try {
-            document.getElementById('loadingRow').classList.remove('hidden');
+            const loadingRow = document.getElementById('loadingRow');
+            if (loadingRow) loadingRow.classList.remove('hidden');
             
             const response = await fetch('/issue/');
             if (!response.ok) {
@@ -270,10 +289,12 @@
             issues = await response.json();
             filteredIssues = [...issues];
             
-            document.getElementById('loadingRow').classList.add('hidden');
+            if (loadingRow) loadingRow.classList.add('hidden');
             renderIssues();
         } catch (error) {
-            document.getElementById('loadingRow').classList.add('hidden');
+            const loadingRow = document.getElementById('loadingRow');
+            if (loadingRow) loadingRow.classList.add('hidden');
+            
             console.error('Error loading issues:', error);
             showNotification('Could not load issues', 'error');
         }
@@ -281,10 +302,10 @@
     
     // Filter issues
     function filterIssues() {
-        const searchTerm = document.getElementById('issueSearchInput').value.toLowerCase();
-        const selectedProcess = document.getElementById('processFilter').value;
+        const searchTerm = document.getElementById('issueSearchInput')?.value.toLowerCase() || '';
+        const selectedProcess = document.getElementById('processFilter')?.value || '';
         
-        filteredIssues = issues;
+        filteredIssues = [...issues];
         
         if (searchTerm) {
             filteredIssues = filteredIssues.filter(issue => 
@@ -304,6 +325,8 @@
     // Render issues in the table
     function renderIssues() {
         const tbody = document.getElementById('issuesTableBody');
+        if (!tbody) return;
+        
         tbody.innerHTML = '';
         
         if (filteredIssues.length === 0) {
@@ -355,6 +378,8 @@
     // Update pagination controls
     function updatePagination(totalPages) {
         const paginationContainer = document.getElementById('pagination');
+        if (!paginationContainer) return;
+        
         paginationContainer.innerHTML = '';
         
         if (totalPages <= 1) {
@@ -432,29 +457,38 @@
     // Open modal for new issue
     function openIssueModal() {
         resetFormErrors();
-        document.getElementById('issueModalTitle').textContent = 'New Issue';
-        document.getElementById('issueForm').reset();
-        document.getElementById('editingIssueId').value = '';
-        document.getElementById('saveButtonText').textContent = 'Save';
+        const titleEl = document.getElementById('issueModalTitle');
+        const form = document.getElementById('issueForm');
+        const idInput = document.getElementById('editingIssueId');
+        const saveButtonText = document.getElementById('saveButtonText');
+        const modal = document.getElementById('issueModal');
+        
+        if (titleEl) titleEl.textContent = 'New Issue';
+        if (form) form.reset();
+        if (idInput) idInput.value = '';
+        if (saveButtonText) saveButtonText.textContent = 'Save';
         
         updateProcessSelect();
-        document.getElementById('issueModal').classList.remove('hidden');
+        if (modal) modal.classList.remove('hidden');
     }
     
     // Close issue modal
     function closeIssueModal() {
-        document.getElementById('issueModal').classList.add('hidden');
+        const modal = document.getElementById('issueModal');
+        if (modal) modal.classList.add('hidden');
     }
     
     // Open confirmation modal for delete
     function openDeleteModal(issueId) {
         issuesToDelete = issueId;
-        document.getElementById('deleteConfirmModal').classList.remove('hidden');
+        const modal = document.getElementById('deleteConfirmModal');
+        if (modal) modal.classList.remove('hidden');
     }
     
     // Close confirmation modal
     function closeDeleteModal() {
-        document.getElementById('deleteConfirmModal').classList.add('hidden');
+        const modal = document.getElementById('deleteConfirmModal');
+        if (modal) modal.classList.add('hidden');
         issuesToDelete = null;
     }
     
@@ -464,46 +498,69 @@
         
         try {
             // Show spinner on button
-            document.getElementById('deleteButtonText').textContent = 'Deleting...';
-            document.getElementById('deleteButtonSpinner').classList.remove('hidden');
+            const deleteButtonText = document.getElementById('deleteButtonText');
+            const deleteButtonSpinner = document.getElementById('deleteButtonSpinner');
+            
+            if (deleteButtonText) deleteButtonText.textContent = 'Deleting...';
+            if (deleteButtonSpinner) deleteButtonSpinner.classList.remove('hidden');
             
             const response = await fetch(`/issue/${issuesToDelete}`, {
                 method: 'DELETE'
             });
             
-            if (!response.ok) {
-                if (response.headers.get('content-type')?.includes('application/json')) {
-                    const error = await response.json();
-                    throw new Error(error.detail || 'Error deleting');
-                } else {
-                    throw new Error('Error deleting the issue');
+            // Only check the status codes, don't rely on response.ok
+            if (response.status === 204 || response.status === 200) {
+                closeDeleteModal();
+                showNotification('Issue deleted successfully');
+                await loadIssues();
+            } else {
+                let errorMessage = 'Error deleting the issue';
+                
+                try {
+                    if (response.headers.get('content-type')?.includes('application/json')) {
+                        const error = await response.json();
+                        errorMessage = error.detail || errorMessage;
+                    }
+                } catch (jsonError) {
+                    console.error('Error parsing delete response:', jsonError);
                 }
+                
+                showNotification(errorMessage, 'error');
             }
-            
-            closeDeleteModal();
-            showNotification('Issue deleted successfully');
-            await loadIssues();
         } catch (error) {
             console.error('Error deleting issue:', error);
-            showNotification(error.message, 'error');
+            showNotification(error.message || 'Error deleting issue', 'error');
         } finally {
-            // Hide spinner
-            document.getElementById('deleteButtonText').textContent = 'Delete';
-            document.getElementById('deleteButtonSpinner').classList.add('hidden');
+            // Hide spinner - with null checks
+            const deleteButtonText = document.getElementById('deleteButtonText');
+            const deleteButtonSpinner = document.getElementById('deleteButtonSpinner');
+            
+            if (deleteButtonText) deleteButtonText.textContent = 'Delete';
+            if (deleteButtonSpinner) deleteButtonSpinner.classList.add('hidden');
         }
     }
     
     // Reset form errors
     function resetFormErrors() {
-        document.getElementById('description_error').classList.add('hidden');
-        document.getElementById('description_error').textContent = '';
-        document.getElementById('process_error').classList.add('hidden');
-        document.getElementById('process_error').textContent = '';
+        const descriptionError = document.getElementById('description_error');
+        const processError = document.getElementById('process_error');
+        
+        if (descriptionError) {
+            descriptionError.classList.add('hidden');
+            descriptionError.textContent = '';
+        }
+        
+        if (processError) {
+            processError.classList.add('hidden');
+            processError.textContent = '';
+        }
     }
     
     // Handle form errors
     function showFormError(field, message) {
         const errorElement = document.getElementById(`${field}_error`);
+        if (!errorElement) return;
+        
         errorElement.textContent = message;
         errorElement.classList.remove('hidden');
     }
@@ -520,19 +577,26 @@
             
             const issue = await response.json();
             
-            document.getElementById('issueModalTitle').textContent = 'Edit Issue';
-            document.getElementById('saveButtonText').textContent = 'Update';
+            const titleEl = document.getElementById('issueModalTitle');
+            const saveButtonText = document.getElementById('saveButtonText');
+            const descriptionField = document.getElementById('issue_description');
+            const processField = document.getElementById('issue_process_id');
+            const idInput = document.getElementById('editingIssueId');
+            const modal = document.getElementById('issueModal');
+            
+            if (titleEl) titleEl.textContent = 'Edit Issue';
+            if (saveButtonText) saveButtonText.textContent = 'Update';
             
             // Update process select
             updateProcessSelect();
             
             // Set form values
-            document.getElementById('issue_description').value = issue.issue_description;
-            document.getElementById('issue_process_id').value = issue.process_id;
-            document.getElementById('editingIssueId').value = id;
+            if (descriptionField) descriptionField.value = issue.issue_description;
+            if (processField) processField.value = issue.process_id;
+            if (idInput) idInput.value = id;
             
             // Open modal
-            document.getElementById('issueModal').classList.remove('hidden');
+            if (modal) modal.classList.remove('hidden');
         } catch (error) {
             console.error('Error loading issue for editing:', error);
             showNotification('Error loading issue data', 'error');
@@ -545,8 +609,8 @@
         resetFormErrors();
         
         // Validate form
-        const description = document.getElementById('issue_description').value.trim();
-        const processId = document.getElementById('issue_process_id').value;
+        const description = document.getElementById('issue_description')?.value.trim() || '';
+        const processId = document.getElementById('issue_process_id')?.value || '';
         
         if (!description) {
             showFormError('description', 'Description is required');
@@ -558,18 +622,24 @@
             return;
         }
         
-        const formData = new FormData(document.getElementById('issueForm'));
+        const form = document.getElementById('issueForm');
+        if (!form) return;
+        
+        const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
         
         // Convert process_id to number
         data.process_id = parseInt(data.process_id);
         
-        const editingId = document.getElementById('editingIssueId').value;
+        const editingId = document.getElementById('editingIssueId')?.value || '';
         
         try {
-            // Show spinner on button
-            document.getElementById('saveButtonText').textContent = editingId ? 'Updating...' : 'Saving...';
-            document.getElementById('saveButtonSpinner').classList.remove('hidden');
+            // Show spinner on button - with null checks
+            const saveButtonText = document.getElementById('saveButtonText');
+            const saveButtonSpinner = document.getElementById('saveButtonSpinner');
+            
+            if (saveButtonText) saveButtonText.textContent = editingId ? 'Updating...' : 'Saving...';
+            if (saveButtonSpinner) saveButtonSpinner.classList.remove('hidden');
             
             let response;
             
@@ -593,32 +663,55 @@
                 });
             }
             
-            // Handle response
-            if (response.ok) {
+            console.log("Response status:", response.status); // Debug log
+            
+            // Explicitly check for 201 status for creation
+            if (response.status === 201 || response.status === 200 || response.status === 204) {
                 closeIssueModal();
                 showNotification(editingId ? 'Issue updated successfully' : 'Issue created successfully');
                 await loadIssues();
             } else {
-                const error = await response.json();
+                let errorShown = false;
                 
-                // Detect specific errors
-                if (error.detail.includes('Issue description cannot be empty')) {
-                    showFormError('description', 'Description cannot be empty');
-                } else if (error.detail.includes('Issue description already exists')) {
-                    showFormError('description', 'An issue with this description already exists');
-                } else if (error.detail.includes('Process not found')) {
-                    showFormError('process', 'The selected process does not exist');
-                } else {
-                    showNotification(`Error: ${error.detail}`, 'error');
+                try {
+                    if (response.headers.get('content-type')?.includes('application/json')) {
+                        const error = await response.json();
+                        
+                        // Detect specific errors
+                        if (error.detail) {
+                            if (error.detail.includes('Issue description cannot be empty')) {
+                                showFormError('description', 'Description cannot be empty');
+                                errorShown = true;
+                            } else if (error.detail.includes('Issue description already exists')) {
+                                showFormError('description', 'An issue with this description already exists');
+                                errorShown = true;
+                            } else if (error.detail.includes('Process not found')) {
+                                showFormError('process', 'The selected process does not exist');
+                                errorShown = true;
+                            } else {
+                                showNotification(`Error: ${error.detail}`, 'error');
+                                errorShown = true;
+                            }
+                        }
+                    }
+                } catch (jsonError) {
+                    console.error('Error parsing response:', jsonError);
+                }
+                
+                if (!errorShown) {
+                    showNotification(`Error: ${response.status} ${response.statusText || 'Unknown error'}`, 'error');
                 }
             }
         } catch (error) {
             console.error('Error saving issue:', error);
             showNotification('An error occurred while saving the issue', 'error');
         } finally {
-            // Hide spinner
-            document.getElementById('saveButtonText').textContent = editingId ? 'Update' : 'Save';
-            document.getElementById('saveButtonSpinner').classList.add('hidden');
+            // Hide spinner - with null checks
+            const saveButtonText = document.getElementById('saveButtonText');
+            const saveButtonSpinner = document.getElementById('saveButtonSpinner');
+            
+            if (saveButtonText) saveButtonText.textContent = editingId ? 'Update' : 'Save';
+            if (saveButtonSpinner) saveButtonSpinner.classList.add('hidden');
         }
     }
 </script>
