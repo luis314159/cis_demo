@@ -1,16 +1,25 @@
+# alembic/env.py
+
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
+from sqlmodel import SQLModel
 
 from alembic import context
 
-# Importa SQLModel para el metadata
-from sqlmodel import SQLModel
+# Import your models - adjust these imports based on your project structure
+import sys
+import os
 
-# Importa explícitamente todos tus modelos aquí para que Alembic los vea
-# Ajusta estas rutas según la estructura de tu proyecto
-from models.users import User, Role  # Asegúrate de importar todos tus modelos
+# Add the parent directory to the path so we can import our models
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
+# Now import your models - adjust the import path based on where your models are
+# If your models are in a file called models.py in the same directory as main.py:
+from models import User, Role  # Adjust this import path
+# Or if they're in a separate package:
+# from app.models import User, Role
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -23,7 +32,8 @@ if config.config_file_name is not None:
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-# IMPORTANTE: Esto es lo que falta en tu env.py actual
+# from myapp import mymodel
+# target_metadata = mymodel.Base.metadata
 target_metadata = SQLModel.metadata
 
 # other values from the config, defined by the needs of env.py,

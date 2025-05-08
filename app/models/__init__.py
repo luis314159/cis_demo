@@ -449,7 +449,7 @@ class TokenData(SQLModel):
 class BaseUser(SQLModel):
     employee_number: int = Field(unique=True, nullable=False)
     username: str = Field(max_length=50, unique=True, nullable=False)
-    email: str = Field(max_length=255, nullable=False)
+    email: Optional[str] = Field(max_length=255, nullable=True, default=None)
     first_name: str = Field(max_length=50)
     middle_name: Optional[str] = Field(max_length=50, default=None)
     first_surname: str = Field(max_length=50)
@@ -489,7 +489,7 @@ class ResponseUser(SQLModel):
     user_id: int
     employee_number: int
     username: str
-    email: EmailStr
+    email: Optional[EmailStr] = None
     first_name: str
     middle_name: Optional[str] = Field(max_length=50, default=None)
     first_surname: str = Field(max_length=50)

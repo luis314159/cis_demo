@@ -1,16 +1,23 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import ValidationError
 from sqlmodel import select, Session
 from models import User, Role, UpdateUserRequest
 from db import SessionDep
 from auth import get_password_hash, get_current_active_user
 from models import CreateUser, CreateRole, ResponseUser, BaseRole
 from typing import Annotated, Optional
+from sqlalchemy.exc import SQLAlchemyError
+import logging
+from time import perf_counter
 
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/users",
     tags=["Users"]
 )
+
+
 
 
 @router.post("/add_user", response_model=ResponseUser,
@@ -76,34 +83,84 @@ def add_user(user_data: CreateUser, session: SessionDep, status_code = status.HT
     }
     ```
     """
-    # Verificar si el usuario ya existe
-    existing_user = session.exec(select(User).where(User.username == user_data.username)).first()
-    if existing_user:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="El usuario ya existe.")
-
-    # Buscar el role_id basado en role_name
-    role = session.exec(select(Role).where(Role.role_name == user_data.role_name)).first()
-    if not role:
-        raise HTTPException(status_code= status.HTTP_404_NOT_FOUND, detail="El rol especificado no existe.")
+    logger.info(f"Starting user creation process for username: {user_data.username}")
     
-    # Crear una instancia de User con la contraseña hasheada
-    hashed_password = get_password_hash(user_data.password)
-    user = User(
-        username=user_data.username,
-        email=user_data.email,
-        first_name=user_data.first_name,
-        middle_name=user_data.middle_name,
-        first_surname=user_data.first_surname,
-        second_surname=user_data.second_surname,
-        hashed_password=hashed_password,
-        role_id=role.role_id,
-        employee_number=user_data.employee_number  # Añadido el campo de número de empleado
-    )
-    session.add(user)
-    session.commit()
-    session.refresh(user)
-    return user
+    try:
+        # Verificar si el usuario ya existe
+        logger.debug(f"Checking if username '{user_data.username}' already exists")
+        existing_user = session.exec(select(User).where(User.username == user_data.username)).first()
+        if existing_user:
+            logger.warning(f"User creation failed: Username '{user_data.username}' already exists")
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="El usuario ya existe.")
 
+        # Buscar el role_id basado en role_name
+        logger.debug(f"Looking up role: {user_data.role_name}")
+        role = session.exec(select(Role).where(Role.role_name == user_data.role_name)).first()
+        if not role:
+            logger.error(f"User creation failed: Role '{user_data.role_name}' not found")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="El rol especificado no existe.")
+        
+        # Handle empty email case
+        email = user_data.email if user_data.email and user_data.email.strip() else None
+        if email != user_data.email:
+            logger.info(f"Normalized empty email for user '{user_data.username}'")
+        
+        # Crear una instancia de User con la contraseña hasheada
+        logger.debug("Hashing password and creating user object")
+        hashed_password = get_password_hash(user_data.password)
+        user = User(
+            username=user_data.username,
+            email=email,  # Use our processed email value
+            first_name=user_data.first_name,
+            middle_name=user_data.middle_name,
+            first_surname=user_data.first_surname,
+            second_surname=user_data.second_surname,
+            hashed_password=hashed_password,
+            role_id=role.role_id,
+            employee_number=user_data.employee_number
+        )
+        
+        logger.debug("Adding user to database session")
+        session.add(user)
+        
+        logger.debug("Committing transaction")
+        session.commit()
+        
+        logger.debug("Refreshing user object")
+        session.refresh(user)
+        
+        logger.info(f"User '{user_data.username}' created successfully with ID: {user.user_id}")
+        return user
+        
+    except ValidationError as e:
+        # Handle pydantic validation errors
+        error_details = e.errors()
+        logger.error(f"Validation error during user creation: {error_details}")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"validation_error": error_details}
+        )
+        
+    except SQLAlchemyError as e:
+        # Handle database errors
+        session.rollback()
+        error_message = str(e)
+        logger.error(f"Database error during user creation: {error_message}")
+        
+        if "unique constraint" in error_message.lower():
+            if "username" in error_message.lower():
+                logger.warning(f"User creation failed: Username '{user_data.username}' violates unique constraint")
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="El nombre de usuario ya está en uso.")
+            elif "employee_number" in error_message.lower():
+                logger.warning(f"User creation failed: Employee number '{user_data.employee_number}' violates unique constraint")
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="El número de empleado ya está en uso.")
+            elif "email" in error_message.lower():
+                logger.warning(f"User creation failed: Email '{email}' violates unique constraint")
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="El correo electrónico ya está en uso.")
+        
+        logger.error(f"Unhandled database error during user creation: {error_message}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error al procesar la solicitud.")
+    
 
 @router.post("/add_role", response_model=Role,
             summary="Create new role",
