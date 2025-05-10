@@ -8,18 +8,31 @@ INSERT INTO stage (stage_name) VALUES
     ('WAREHOUSE'),
     ('BENT');
 
+-- Tabla process_order
+INSERT INTO process_order (process_order_id) VALUES
+    (1),
+    (2),
+    (3),
+    (4),
+    (5),
+    (6),
+    (7),
+    (8),
+    (9);
+
 -- Tabla process
-INSERT INTO process (process_name) VALUES 
-    ('Incoming Inspection'),
-    ('Cutting'),
-    ('Bending'),
-    ('Assembly'),
-    ('Welding'),
-    ('Mock up'),
-    ('Sand Blast'),
-    ('Pressure Test'),
-    ('Painting'),
-    ('Shipping');
+INSERT INTO process (process_name, process_order_id) VALUES 
+    ('Incoming Inspection', 1),
+    ('Cutting', 2),
+    ('Bending', 2),
+    ('Assembly', 3),
+    ('Welding', 3),
+    ('Mock up', 5),
+    ('Sand Blast', 6),
+    ('Pressure Test', 7),
+    ('Painting', 8),
+    ('Shipping', 9);
+
 
 -- Tabla product  
 -- Se asignan IDs numéricos a los productos para cumplir con la inserción en dos columnas.
@@ -84,17 +97,17 @@ INSERT INTO issue (issue_description, process_id) VALUES
     ('Packaging damage', 10);
 
 -- Tabla job (trabajos relacionados con productos)
-INSERT INTO job (job_code, status, created_at, product_id) VALUES 
-    ('VA3300-001', 1, datetime('now', '-30 days'), 1),
-    ('WN634C-001', 1, datetime('now', '-28 days'), 1),
-    ('VA325E-001', 0, datetime('now', '-25 days'), 2),
-    ('62094-001', 1, datetime('now', '-20 days'), 2),
-    ('VA3300-002', 0, datetime('now', '-18 days'), 3),
-    ('WN634C-002', 1, datetime('now', '-15 days'), 3),
-    ('VA325E-002', 0, datetime('now', '-12 days'), 4),
-    ('62094-002', 1, datetime('now', '-10 days'), 4),
-    ('VA3300-003', 0, datetime('now', '-8 days'), 5),
-    ('WN634C-003', 1, datetime('now', '-5 days'), 5);
+INSERT INTO job (job_code, status, created_at, product_id, process_order_id) VALUES 
+    ('VA3300-001', 1, datetime('now', '-30 days'), 1, 1),
+    ('WN634C-001', 1, datetime('now', '-28 days'), 1, 2),
+    ('VA325E-001', 0, datetime('now', '-25 days'), 2, 3),
+    ('62094-001', 1, datetime('now', '-20 days'), 2, 3),
+    ('VA3300-002', 0, datetime('now', '-18 days'), 3, 3),
+    ('WN634C-002', 1, datetime('now', '-15 days'), 3, 4),
+    ('VA325E-002', 0, datetime('now', '-12 days'), 4, 5),
+    ('62094-002', 1, datetime('now', '-10 days'), 4, 6),
+    ('VA3300-003', 0, datetime('now', '-8 days'), 5, 7),
+    ('WN634C-003', 1, datetime('now', '-5 days'), 5, 8);
 
 -- Tabla user (usuarios con roles)
 -- Se corrige el nombre de la columna 'password' a 'hashed_pwd' según la definición de la tabla.
