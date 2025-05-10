@@ -29,6 +29,8 @@ class Job(JobBase, table=True):
     product_id: int = Field(foreign_key="product.product_id", nullable=False)
     product: "Product" = Relationship(back_populates="jobs")
     defect_records: list["DefectRecord"] = Relationship(back_populates="job")
+    process_order: "ProcessOrder" = Relationship(back_populates="jobs")
+    process_order_id: int = Field(foreign_key="process_order.process_order_id", nullable=False)
 
 class JobCreate(JobBase):
     client_id: int
@@ -172,6 +174,8 @@ class Process(ProcessBase, table=True):
     process_stages: list[ProcessStage] = Relationship(back_populates="process")
     items: list["Item"] = Relationship(back_populates="process")  # Relación con Item
     issues: list["Issue"] = Relationship(back_populates="process")
+    process_order_id: int = Field(foreign_key="process_order.process_order_id", nullable=False)
+    process_order: "ProcessOrder" = Relationship(back_populates="processes")
 
 class ProcessCreate(ProcessBase):
     pass
@@ -527,3 +531,9 @@ class CompleteDefectRecordResponse(DefectRecordBase):
     images: list[PublicDefectImage]  | None = None
     inspector: ResponseUser | None = None
     issue_by_user: ResponseUser | None = None
+
+class ProcessOrder(SQLModel, table=True):
+    __tablename__ = "process_order"
+    process_order_id: Optional[int] = Field(default=None, primary_key=True)
+    jobs: List["Job"] = Relationship(back_populates="process_order")
+    processes: List["Process"] = Relationship(back_populates="process_order")
