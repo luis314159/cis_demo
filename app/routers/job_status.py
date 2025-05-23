@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status
-from sqlmodel import select
+from sqlmodel import select, asc, literal, and_
 from db import SessionDep
-from models import Job, Item, JobStatus, ProcessStage, StageStatus, ItemStageStatus, Object, Stage, Process
+from models import Job, Item, JobStatus, ProcessStage, StageStatus, ItemStageStatus, Object, Stage, Process, ProcessOrder, DefectRecord, Status, JobOrder
 from sqlmodel import SQLModel
 import logging
 
@@ -306,3 +306,64 @@ async def delete_job(job_code: str, session: SessionDep):
     session.commit()
 
     return {"message": f"El Job '{job_code}' y todos los datos relacionados fueron eliminados exitosamente."}
+
+@router.patch(
+    "/{job_code}/next-process",
+    response_model=JobOrder,
+    summary="Tries to set the job to the next process",
+    responses={
+        200: {"description": "Successfully moved to next process"},
+        400: {"description": "Unresolved defects or already at last process"},
+        404: {"description": "Job not found"},
+    },
+)
+async def move_job_to_next_process(
+    job_code: str,
+    session: SessionDep,
+):
+    # 1) comprobar que NO hay defectos abiertos
+    defect_check = (
+        select(literal(1))
+        .select_from(Job)
+        .join(DefectRecord, DefectRecord.job_id == Job.job_id)
+        .join(
+            Status,
+            and_(
+                Status.status_id == DefectRecord.status_id,
+                ~Status.status_name.ilike("%Ok%")
+            )
+        )
+        .where(Job.job_code == job_code)
+        .limit(1)
+    )
+    if session.execute(defect_check).scalar():
+        raise HTTPException(status_code=400, detail="Job has unresolved defects")
+
+    # 2) obtener el job actual
+    job = session.execute(
+        select(Job).where(Job.job_code == job_code)
+    ).scalars().one_or_none()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    # 3) buscar siguiente process_order_id
+    current_po = job.process_order_id
+    next_po = session.execute(
+        select(ProcessOrder.process_order_id)
+        .where(ProcessOrder.process_order_id > current_po)
+        .order_by(asc(ProcessOrder.process_order_id))
+        .limit(1)
+    ).scalar_one_or_none()
+    if not next_po:
+        raise HTTPException(status_code=400, detail="No next process defined")
+
+    # 4) actualizar y commitear
+    job.process_order_id = next_po
+    session.commit()
+    session.refresh(job)
+
+    # 5) devolver JobStatus con el campo stages
+    return JobOrder(
+        job_code=job.job_code,
+        process_order_id=job.process_order_id,
+    )

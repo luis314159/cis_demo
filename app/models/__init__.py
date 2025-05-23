@@ -207,6 +207,11 @@ class JobStatus(SQLModel):
     job_code: str
     stages: list[StageStatus]
 
+class JobOrder(SQLModel):
+    job_code: str
+    process_order_id: Optional[int] 
+
+
 
 # --- Product ---
 class ProductBase(SQLModel):
