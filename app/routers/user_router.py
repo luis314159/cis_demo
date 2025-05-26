@@ -319,7 +319,10 @@ def list_users_by_role_name(
     ]
     ```
     """
-    query = select(User).join(User.role)  # Asume relación User.role con tabla Role
+    if role_name=='Engineer':
+        role_name= 'INSPECTOR DE CALIDAD'
+
+    query = select(User).join(User.role)
     
     if role_name is not None:
         # Búsqueda case-insensitive (ilike) y verificación que el rol exista
