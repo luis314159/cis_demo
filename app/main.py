@@ -13,7 +13,7 @@ from routers import (
     ocr_routes, validate_csv, list_jobs, details, job_status, 
     object_current_stage, item_router, user_router, auth_router, 
     rest_password_router, products_router, issue_router, defect_record_router,
-    correction_process_router, status_router
+    correction_process_router, status_router, process_order
 
 )
 from generate_qr import generate_qr, generate_pdf
@@ -177,6 +177,7 @@ app.include_router(issue_router.router)
 app.include_router(defect_record_router.router)
 app.include_router(correction_process_router.router)
 app.include_router(status_router.router)
+app.include_router(process_order.router)
 
 # Configuración de archivos estáticos
 app.mount("/static", StaticFiles(directory="./static"), name="static")

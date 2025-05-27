@@ -1,14 +1,17 @@
+from sqlite3 import IntegrityError
 from fastapi import APIRouter, status
 from sqlmodel import select
-from models import Process, ProcessResponse, ProcessCreate, ProcessUpdate
+from models import Process, ProcessResponse, ProcessCreate, ProcessUpdate,ProcessOrder
 from db import SessionDep
 from fastapi import HTTPException
+from logs_setup import setup_api_logger
 
 router = APIRouter(
     prefix="/processes",
     tags=["Process"]
 )
 
+logger = setup_api_logger("process")
 
 @router.get('', response_model=list[Process],
             summary="List all processes",
@@ -281,42 +284,18 @@ def create_process(
 ):
     """
     ## Create a new process
-    
     Creates a new process with a unique name. Processes are initially created without stages.
-    
-    ### Parameters:
-    - **process_data** (ProcessCreate): Process creation data including:
-        - process_name: Unique name for the new process
-    
-    ### Example Request:
-    ```json
-    {
-        "process_name": "manufacturing_flow"
-    }
-    ```
-    
-    ### Example Response:
-    ```json
-    {
-        "process_id": 1,
-        "process_name": "manufacturing_flow",
-        "process_stages": []
-    }
-    ```
     """
     existing_process = session.exec(select(Process).where(Process.process_name == process_data.process_name)).first()
     if existing_process:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="El proceso ya está registrado.")
     
-    process = Process(
-        process_name=process_data.process_name
-    )
+    process = Process.model_validate(process_data)
 
     session.add(process)
     session.commit()
     session.refresh(process)
     
-    # Establece el código de estado correcto para creación
     return process
 
 @router.get(
@@ -364,68 +343,45 @@ def get_process_by_id(process_id: int, session: SessionDep):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Proceso no encontrado")
     return process
 
-@router.put(
-    "/{process_id}",
-    response_model=ProcessResponse,
-    summary="Update a process",
-    status_code=status.HTTP_200_OK,
-    responses={
-        status.HTTP_200_OK: {
-            "description": "Process updated successfully",
-            "content": {"application/json": {"example": {
-                "process_id": 1,
-                "process_name": "updated_process",
-                "process_stages": []
-            }}}
-        },
-        status.HTTP_404_NOT_FOUND: {"description": "Process not found"},
-        status.HTTP_409_CONFLICT: {
-            "description": "Process name already exists",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "El nombre del proceso ya está registrado"}
-                }
-            }
-        }
-    }
-)
+@router.put("/{process_id}", response_model=ProcessResponse)
 def update_process(
     process_id: int,
     process_data: ProcessUpdate,
     session: SessionDep
 ):
-    """
-    ## Update a process
-    
-    Updates the name of an existing process while maintaining its unique constraint.
-    
-    ### Parameters:
-    - **process_id** (int): ID of the process to update
-    - **process_data** (ProcessUpdate): New process data
-    
-    ### Raises:
-    - status.HTTP_404_NOT_FOUND: If process doesn't exist
-    - status.HTTP_409_CONFLICT: If new process name already exists
-    """
+    """Update a process name while maintaining its unique constraint."""
     process = session.get(Process, process_id)
     if not process:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Proceso no encontrado")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="Proceso no encontrado"
+        )
     
-    # Verificar colisión de nombres
-    if process_data.process_name != process.process_name:
-        existing_process = session.exec(
-            select(Process)
-            .where(Process.process_name == process_data.process_name)
-            .where(Process.process_id != process_id)
-        ).first()
-        if existing_process:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="El nombre del proceso ya está registrado")
+    if process_data.process_name and process_data.process_name != process.process_name:
+        process.process_name = process_data.process_name
+
     
-    process.process_name = process_data.process_name
-    session.add(process)
-    session.commit()
-    session.refresh(process)
-    return process
+    if process_data.process_order_id and process_data.process_order_id != process.process_order_id:
+        process_id = process_data.process_order_id
+        existing_order = session.get(ProcessOrder, process_id)
+        logger.info(existing_order)
+        if not existing_order:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Process order ID {process_id} does not exist"
+            )
+        process.process_order_id = process_data.process_order_id
+    
+    try:
+        session.commit()
+        session.refresh(process)
+        return process
+    except IntegrityError:
+        session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="El nombre del proceso ya está registrado"
+        )
 
 @router.delete(
     "/{process_id}",

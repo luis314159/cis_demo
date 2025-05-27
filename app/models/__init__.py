@@ -178,15 +178,16 @@ class Process(ProcessBase, table=True):
     process_order: "ProcessOrder" = Relationship(back_populates="processes")
 
 class ProcessCreate(ProcessBase):
-    pass
+    process_order_id: int
 
 
 class ProcessUpdate(ProcessBase):
-    pass
+    process_order_id: Optional[int] = None
 
 class ProcessResponse(ProcessBase):
     process_id: int
     process_name: str
+    process_order_id: int
 
 class ProcessNameResponse(SQLModel):
     process_name: str
@@ -542,3 +543,15 @@ class ProcessOrder(SQLModel, table=True):
     process_order_id: Optional[int] = Field(default=None, primary_key=True)
     jobs: List["Job"] = Relationship(back_populates="process_order")
     processes: List["Process"] = Relationship(back_populates="process_order")
+
+class ProcessOrderCreate(SQLModel):
+    pass
+
+class ProcessOrderRead(SQLModel):
+    process_order_id: int
+
+    class Config:
+        orm_mode = True
+
+class ProcessOrderUpdate(SQLModel):
+    pass
