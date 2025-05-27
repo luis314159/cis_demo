@@ -1,7 +1,5 @@
 {% extends 'base.html' %}
-
 {% block title %}Create Defect Record{% endblock %}
-
 {% block extra_head %}
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="https://cdn.tailwindcss.com"></script>
@@ -28,7 +26,6 @@
     }
 </style>
 {% endblock %}
-
 {% block content %}
 <div class="container mx-auto px-4 py-4">
     <!-- Navigation Menu -->
@@ -51,7 +48,6 @@
             </li>
         </ul>
     </div>
-
     <!-- Creation Form -->
     <div class="max-w-4xl mx-auto">
         <h1 class="text-2xl font-bold mb-6 text-center">Create New Defect Record</h1>
@@ -85,16 +81,19 @@
                 <h2 class="text-lg font-semibold mb-4">Inspector Information</h2>
                 
                 <div class="mb-4">
-                    <label for="supervisorInfo" class="block text-sm font-medium text-gray-700 mb-1">Supervisor (You)</label>
+                    <label for="supervisorInfo" class="block text-sm font-medium text-gray-700 mb-1">Inspector (You)</label>
                     <div id="supervisorInfo" class="block w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50">
                         {{ current_user.first_name }} {{ current_user.last_name }} - {{ current_user.employee_number }}
                     </div>
-                    <input type="hidden" id="supervisorId" name="issue_by_user_id" value="{{ current_user.user_id }}">
+                    <!-- CORREGIDO: El supervisor es el inspector -->
+                    <input type="hidden" id="supervisorId" name="inspector_user_id" value="{{ current_user.user_id }}">
                 </div>
                 
                 <div>
-                    <label for="inspectorSelector" class="block text-sm font-medium text-gray-700 mb-1">Error by (employee number)</label>
-                    <select id="inspectorSelector" name="inspector_employee_number" required
+                    <!-- CORREGIDO: La etiqueta ahora es clara -->
+                    <label for="issueBySelector" class="block text-sm font-medium text-gray-700 mb-1">Error made by (employee number)</label>
+                    <!-- CORREGIDO: El ID y name también cambiaron -->
+                    <select id="issueBySelector" name="issue_by_employee_number" required
                         class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                         <option value="">Search by employee number...</option>
                     </select>
@@ -193,7 +192,6 @@
         </form>
     </div>
 </div>
-
 <script>
     // Global variables
     let products = [];
@@ -232,7 +230,7 @@
             const response = await fetch('/users/list_users');
             if (!response.ok) throw new Error('Error loading users');
             users = await response.json();
-            renderInspectorSelector(users);
+            renderIssueBySelector(users); // CORREGIDO: Nombre de función cambiado
         } catch (error) {
             console.error('Error:', error);
             alert('Error loading users');
@@ -293,8 +291,9 @@
         });
     }
     
-    function renderInspectorSelector(users) {
-        const selector = document.getElementById('inspectorSelector');
+    // CORREGIDO: Función renombrada y actualizada
+    function renderIssueBySelector(users) {
+        const selector = document.getElementById('issueBySelector'); // ID cambiado
         selector.innerHTML = '<option value="">Search by employee number...</option>';
         users.forEach(user => {
             const option = document.createElement('option');
@@ -428,20 +427,20 @@
         });
     }
     
-    // Handle form submission
+    // Handle form submission - CORREGIDO COMPLETAMENTE
     async function handleFormSubmit(event) {
         event.preventDefault();
         
         // Get IDs from selected names
         const productSelector = document.getElementById('productSelector');
         const jobSelector = document.getElementById('jobSelector');
-        const inspectorSelector = document.getElementById('inspectorSelector');
+        const issueBySelector = document.getElementById('issueBySelector'); // ID cambiado
         const processSelector = document.getElementById('processSelector');
         const issueSelector = document.getElementById('issueSelector');
         const correctionProcessSelector = document.getElementById('correctionProcessSelector');
         
         const selectedProductOption = productSelector.options[productSelector.selectedIndex];
-        const selectedInspectorOption = inspectorSelector.options[inspectorSelector.selectedIndex];
+        const selectedIssueByOption = issueBySelector.options[issueBySelector.selectedIndex]; // Variable renombrada
         const selectedProcessOption = processSelector.options[processSelector.selectedIndex];
         const selectedIssueOption = issueSelector.options[issueSelector.selectedIndex];
         const selectedCorrectionOption = correctionProcessSelector.options[correctionProcessSelector.selectedIndex];
@@ -469,23 +468,24 @@
             return;
         }
         
-        // Debug values
+        // Debug values - CORREGIDOS
+        console.log('=== DEBUG VALUES ===');
         console.log('Product ID:', selectedProductOption?.dataset?.productId);
         console.log('Job ID:', jobId);
-        console.log('Inspector User ID:', selectedInspectorOption?.dataset?.userId);
+        console.log('Inspector User ID (current user):', document.getElementById('supervisorId').value);
+        console.log('Issue By User ID (error maker):', selectedIssueByOption?.dataset?.userId);
         console.log('Issue ID:', selectedIssueOption?.dataset?.issueId);
         console.log('Correction Process ID:', selectedCorrectionOption?.dataset?.processId);
         console.log('Status ID:', '1');
-        console.log('Issue By User ID:', document.getElementById('supervisorId').value);
         
-        // Verify all required fields are complete
+        // Verify all required fields are complete - CORREGIDOS
         const requiredFields = {
             'Product ID': selectedProductOption?.dataset?.productId,
             'Job ID': jobId,
-            'Inspector User ID': selectedInspectorOption?.dataset?.userId,
+            'Inspector User ID': document.getElementById('supervisorId').value,
+            'Issue By User ID': selectedIssueByOption?.dataset?.userId,
             'Issue ID': selectedIssueOption?.dataset?.issueId,
             'Correction Process ID': selectedCorrectionOption?.dataset?.processId,
-            'Issue By User ID': document.getElementById('supervisorId').value
         };
         
         const missingFields = Object.entries(requiredFields)
@@ -499,9 +499,10 @@
         
         const formData = new FormData();
         formData.append('product_id', selectedProductOption.dataset.productId);
-        formData.append('job_id', jobId.toString());  // Ensure it's a string
-        formData.append('inspector_user_id', selectedInspectorOption.dataset.userId);
-        formData.append('issue_by_user_id', document.getElementById('supervisorId').value);
+        formData.append('job_id', jobId.toString());
+        // CORREGIDOS: Los valores ahora van a los campos correctos
+        formData.append('inspector_user_id', document.getElementById('supervisorId').value); // El supervisor es el inspector
+        formData.append('issue_by_user_id', selectedIssueByOption.dataset.userId); // El empleado seleccionado cometió el error
         formData.append('issue_id', selectedIssueOption.dataset.issueId);
         formData.append('correction_process_id', selectedCorrectionOption.dataset.processId);
         formData.append('status_id', '1'); // Always Ok
@@ -524,6 +525,7 @@
         }
         
         // Print formData for debugging
+        console.log('=== FORM DATA DEBUG ===');
         for (let pair of formData.entries()) {
             console.log(`${pair[0]}: ${pair[1]}`);
         }

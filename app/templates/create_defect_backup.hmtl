@@ -1,311 +1,551 @@
-<!-- templates/test_create_defect_record.html -->
 {% extends 'base.html' %}
 
-{% block title %}Crear Registro de Defecto{% endblock %}
+{% block title %}Create Defect Record{% endblock %}
 
 {% block extra_head %}
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-  /* Estilos adicionales para compatibilidad con Bootstrap */
-  .container {
-    max-width: 100%;
-    padding: 0 1rem;
-  }
-  .mt-5 {
-    margin-top: 1.25rem !important;
-  }
-  
-  /* Estilos para la vista previa de imágenes */
-  .image-preview {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    margin-top: 1rem;
-  }
-  
-  .image-preview-item {
-    position: relative;
-    width: 100px;
-    height: 100px;
-  }
-  
-  .image-preview-item img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 0.5rem;
-  }
-  
-  .image-preview-item .remove-image {
-    position: absolute;
-    top: -0.5rem;
-    right: -0.5rem;
-    background: red;
-    color: white;
-    border-radius: 50%;
-    width: 1.5rem;
-    height: 1.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-  }
+    .container {
+        max-width: 100%;
+        padding: 0 1rem;
+    }
+    .mt-5 {
+        margin-top: 1.25rem !important;
+    }
+    .form-section {
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+        background-color: #f8f9fa;
+        border-radius: 0.5rem;
+    }
+    .preview-image {
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+        border-radius: 0.375rem;
+        margin: 0.5rem;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container mx-auto px-4 py-4">
-    <!-- Menú de navegación -->
+    <!-- Navigation Menu -->
     <div class="mb-4 border-b border-gray-200">
         <ul class="nav nav-tabs">
             <li class="nav-item">
-                <a href="/defect-records" class="nav-link active">
-                    Registros de Defectos
+                <a href="/defect-records" class="nav-link">
+                    Punch List
                 </a>
             </li>
             <li class="nav-item">
-                <a href="/defect-codes" class="nav-link">
-                    Códigos de Defectos
+                <a href="/create-defect-record" class="nav-link active">
+                    Create Punch List Element
                 </a>
             </li>
             <li class="nav-item">
                 <a href="/issues" class="nav-link">
-                    Problemas (Issues)
+                    Issues
                 </a>
             </li>
         </ul>
     </div>
 
-    <!-- Formulario para crear Defect Record -->
-    <div>
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-bold">Crear Registro de Defecto</h1>
-        </div>
-
-        <div class="bg-white rounded-lg shadow p-6">
-            <form id="createDefectRecordForm" onsubmit="handleCreateDefectRecord(event)" enctype="multipart/form-data">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Campos del formulario -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">ID del Producto</label>
-                        <input type="number" id="product_id" name="product_id" required 
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">ID del Trabajo</label>
-                        <input type="number" id="job_id" name="job_id" required 
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">ID del Inspector</label>
-                        <input type="number" id="inspector_user_id" name="inspector_user_id" required 
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">ID del Usuario que Reporta</label>
-                        <input type="number" id="issue_by_user_id" name="issue_by_user_id" required 
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">ID del Problema (Issue)</label>
-                        <input type="number" id="issue_id" name="issue_id" required 
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">ID del Proceso de Corrección</label>
-                        <input type="number" id="correction_process_id" name="correction_process_id" required 
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">ID del Estado</label>
-                        <input type="number" id="status_id" name="status_id" required 
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                    </div>
-                </div>
+    <!-- Creation Form -->
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-2xl font-bold mb-6 text-center">Create New Defect Record</h1>
+        
+        <form id="defectForm" enctype="multipart/form-data" class="space-y-6">
+            <!-- Product and Job -->
+            <div class="form-section">
+                <h2 class="text-lg font-semibold mb-4">Product Information</h2>
                 
-                <!-- Sección de imágenes -->
-                <div class="mt-8">
-                    <h2 class="text-lg font-medium text-gray-900 mb-4">Imágenes del Defecto</h2>
-                    
-                    <!-- Imágenes de defecto -->
-                    <div class="mb-6">
-                        <label class="block text-sm font-medium text-gray-700">Imágenes del Defecto</label>
-                        <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                            <div class="space-y-1 text-center">
-                                <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                                </svg>
-                                <div class="flex text-sm text-gray-600">
-                                    <label for="defect_images" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                                        <span>Subir imágenes de defecto</span>
-                                        <input id="defect_images" name="defect_images" type="file" class="sr-only" multiple accept="image/*" onchange="previewImages(event, 'defect_images_preview')">
-                                    </label>
-                                </div>
-                                <p class="text-xs text-gray-500">PNG, JPG, GIF hasta 10MB</p>
-                            </div>
-                        </div>
-                        <div id="defect_images_preview" class="image-preview"></div>
-                    </div>
-                    
-                    <!-- Imágenes de ubicación -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Imágenes de Ubicación</label>
-                        <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                            <div class="space-y-1 text-center">
-                                <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                                </svg>
-                                <div class="flex text-sm text-gray-600">
-                                    <label for="location_images" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                                        <span>Subir imágenes de ubicación</span>
-                                        <input id="location_images" name="location_images" type="file" class="sr-only" multiple accept="image/*" onchange="previewImages(event, 'location_images_preview')">
-                                    </label>
-                                </div>
-                                <p class="text-xs text-gray-500">PNG, JPG, GIF hasta 10MB</p>
-                            </div>
-                        </div>
-                        <div id="location_images_preview" class="image-preview"></div>
+                        <label for="productSelector" class="block text-sm font-medium text-gray-700 mb-1">Product</label>
+                        <select id="productSelector" name="product_name" required
+                            class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Select a product</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="jobSelector" class="block text-sm font-medium text-gray-700 mb-1">Job Code</label>
+                        <select id="jobSelector" name="job_code" required disabled
+                            class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">First select a product</option>
+                        </select>
                     </div>
                 </div>
-                
-                <!-- Botones de acción -->
-                <div class="mt-8 flex justify-end gap-4">
-                    <button type="button" onclick="window.location.href='/defect-records'" 
-                        class="px-4 py-2 border rounded-md text-gray-600 hover:bg-gray-50">
-                        Cancelar
-                    </button>
-                    <button type="submit" 
-                        class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
-                        Crear Registro de Defecto
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modal de respuesta exitosa -->
-    <div id="successModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
-        <div class="bg-white rounded-lg p-6 w-full max-w-lg">
-            <h2 class="text-xl font-bold mb-4">Registro de Defecto Creado</h2>
-            <div id="responseContent" class="mb-6">
-                <!-- El contenido de la respuesta se insertará aquí -->
             </div>
-            <div class="flex justify-end">
-                <button type="button" onclick="closeSuccessModal()" 
-                    class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
-                    Cerrar
+            
+            <!-- Inspector Information -->
+            <div class="form-section">
+                <h2 class="text-lg font-semibold mb-4">Inspector Information</h2>
+                
+                <div class="mb-4">
+                    <label for="supervisorInfo" class="block text-sm font-medium text-gray-700 mb-1">Supervisor (You)</label>
+                    <div id="supervisorInfo" class="block w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50">
+                        {{ current_user.first_name }} {{ current_user.last_name }} - {{ current_user.employee_number }}
+                    </div>
+                    <input type="hidden" id="supervisorId" name="issue_by_user_id" value="{{ current_user.user_id }}">
+                </div>
+                
+                <div>
+                    <label for="inspectorSelector" class="block text-sm font-medium text-gray-700 mb-1">Error by (employee number)</label>
+                    <select id="inspectorSelector" name="inspector_employee_number" required
+                        class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Search by employee number...</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Defect Details -->
+            <div class="form-section">
+                <h2 class="text-lg font-semibold mb-4">Defect Details</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="processSelector" class="block text-sm font-medium text-gray-700 mb-1">Process</label>
+                        <select id="processSelector" name="process_name" required
+                            class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Select a process</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="issueSelector" class="block text-sm font-medium text-gray-700 mb-1">Issue Type</label>
+                        <select id="issueSelector" name="issue_description" required disabled
+                            class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">First select a process</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="correctionProcessSelector" class="block text-sm font-medium text-gray-700 mb-1">Correction Process</label>
+                        <select id="correctionProcessSelector" name="correction_process_name" required
+                            class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Select a correction process</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Images -->
+            <div class="form-section">
+                <h2 class="text-lg font-semibold mb-4">Images</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Defect Images</label>
+                        <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                            <div class="space-y-1 text-center">
+                                <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                                <div class="flex text-sm text-gray-600">
+                                    <label for="defectImages" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                                        <span>Upload files</span>
+                                        <input id="defectImages" name="defect_images" type="file" multiple accept="image/*" required class="sr-only">
+                                    </label>
+                                    <p class="pl-1">or drag and drop</p>
+                                </div>
+                                <p class="text-xs text-gray-500">PNG, JPG up to 10MB</p>
+                            </div>
+                        </div>
+                        <div id="defectImagePreview" class="mt-4 flex flex-wrap"></div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Location Images</label>
+                        <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                            <div class="space-y-1 text-center">
+                                <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                                <div class="flex text-sm text-gray-600">
+                                    <label for="locationImages" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                                        <span>Upload files</span>
+                                        <input id="locationImages" name="location_images" type="file" multiple accept="image/*" required class="sr-only">
+                                    </label>
+                                    <p class="pl-1">or drag and drop</p>
+                                </div>
+                                <p class="text-xs text-gray-500">PNG, JPG up to 10MB</p>
+                            </div>
+                        </div>
+                        <div id="locationImagePreview" class="mt-4 flex flex-wrap"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Submit Button -->
+            <div class="flex justify-end space-x-4">
+                <button type="button" onclick="window.history.back()" 
+                    class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Cancel
+                </button>
+                <button type="submit" 
+                    class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Create Defect Record
                 </button>
             </div>
-        </div>
+        </form>
     </div>
+</div>
 
-    <script>
-        // Función para previsualizar imágenes
-        function previewImages(event, previewContainerId) {
-            const previewContainer = document.getElementById(previewContainerId);
-            previewContainer.innerHTML = '';
-            
-            const files = event.target.files;
-            
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                const reader = new FileReader();
-                
-                reader.onload = function(e) {
-                    const div = document.createElement('div');
-                    div.className = 'image-preview-item';
-                    div.innerHTML = `
-                        <img src="${e.target.result}" alt="Preview">
-                        <span class="remove-image" onclick="removeImage(this, '${event.target.id}', ${i})">×</span>
-                    `;
-                    previewContainer.appendChild(div);
-                }
-                
-                reader.readAsDataURL(file);
-            }
+<script>
+    // Global variables
+    let products = [];
+    let jobs = [];
+    let users = [];
+    let processes = [];
+    let issues = [];
+    let correctionProcesses = [];
+    
+    // Load initial data
+    document.addEventListener('DOMContentLoaded', async () => {
+        await loadProducts();
+        await loadUsers();
+        await loadProcesses();
+        await loadCorrectionProcesses();
+        
+        // Setup event listeners
+        setupEventListeners();
+    });
+    
+    // Functions to load data
+    async function loadProducts() {
+        try {
+            const response = await fetch('/products');
+            if (!response.ok) throw new Error('Error loading products');
+            products = await response.json();
+            renderProductSelector(products);
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error loading products');
+        }
+    }
+    
+    async function loadUsers() {
+        try {
+            const response = await fetch('/users/list_users');
+            if (!response.ok) throw new Error('Error loading users');
+            users = await response.json();
+            renderInspectorSelector(users);
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error loading users');
+        }
+    }
+    
+    async function loadProcesses() {
+        try {
+            const response = await fetch('/processes');
+            if (!response.ok) throw new Error('Error loading processes');
+            processes = await response.json();
+            renderProcessSelector(processes);
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error loading processes');
+        }
+    }
+    
+    async function loadIssuesByProcess(processId) {
+        if (!processId) {
+            issues = [];
+            return;
         }
         
-        // Función para eliminar una imagen de la vista previa
-        function removeImage(element, inputId, index) {
-            const input = document.getElementById(inputId);
-            const dt = new DataTransfer();
-            const files = input.files;
-            
-            for (let i = 0; i < files.length; i++) {
-                if (i !== index) {
-                    dt.items.add(files[i]);
-                }
-            }
-            
-            input.files = dt.files;
-            element.parentElement.remove();
+        try {
+            const response = await fetch(`/issue/process/${processId}`);
+            if (!response.ok) throw new Error('Error loading issues');
+            issues = await response.json();
+            renderIssueSelector(issues);
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error loading issues');
+        }
+    }
+    
+    async function loadCorrectionProcesses() {
+        try {
+            const response = await fetch('/correction-processes/');
+            if (!response.ok) throw new Error('Error loading correction processes');
+            correctionProcesses = await response.json();
+            renderCorrectionProcessSelector(correctionProcesses);
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error loading correction processes');
+        }
+    }
+    
+    // Functions to render selectors
+    function renderProductSelector(products) {
+        const selector = document.getElementById('productSelector');
+        selector.innerHTML = '<option value="">Select a product</option>';
+        products.forEach(product => {
+            const option = document.createElement('option');
+            option.value = product.product_name;
+            option.dataset.productId = product.product_id;
+            option.textContent = product.product_name;
+            selector.appendChild(option);
+        });
+    }
+    
+    function renderInspectorSelector(users) {
+        const selector = document.getElementById('inspectorSelector');
+        selector.innerHTML = '<option value="">Search by employee number...</option>';
+        users.forEach(user => {
+            const option = document.createElement('option');
+            option.value = user.employee_number;
+            option.dataset.userId = user.user_id;
+            option.textContent = `${user.employee_number} - ${user.first_name} ${user.last_name}`;
+            selector.appendChild(option);
+        });
+    }
+    
+    function renderProcessSelector(processes) {
+        const selector = document.getElementById('processSelector');
+        selector.innerHTML = '<option value="">Select a process</option>';
+        processes.forEach(process => {
+            const option = document.createElement('option');
+            option.value = process.process_name;
+            option.dataset.processId = process.process_id;
+            option.textContent = process.process_name;
+            selector.appendChild(option);
+        });
+    }
+    
+    function renderIssueSelector(issues) {
+        const selector = document.getElementById('issueSelector');
+        selector.innerHTML = '<option value="">Select an issue</option>';
+        
+        if (issues.length === 0) {
+            const option = document.createElement('option');
+            option.value = "";
+            option.textContent = "No issues for this process";
+            selector.appendChild(option);
+            return;
         }
         
-        // Función para manejar el envío del formulario
-        async function handleCreateDefectRecord(event) {
-            event.preventDefault();
+        issues.forEach(issue => {
+            const option = document.createElement('option');
+            option.value = issue.issue_description;
+            option.dataset.issueId = issue.issue_id;
+            option.textContent = issue.issue_description;
+            selector.appendChild(option);
+        });
+    }
+    
+    function renderCorrectionProcessSelector(processes) {
+        const selector = document.getElementById('correctionProcessSelector');
+        selector.innerHTML = '<option value="">Select a correction process</option>';
+        processes.forEach(process => {
+            const option = document.createElement('option');
+            option.value = process.correction_process_name;
+            option.dataset.processId = process.correction_process_id;
+            option.textContent = process.correction_process_description;
+            selector.appendChild(option);
+        });
+    }
+    
+    // Setup event listeners
+    function setupEventListeners() {
+        // Product change
+        document.getElementById('productSelector').addEventListener('change', async (event) => {
+            const productName = event.target.value;
+            const jobSelector = document.getElementById('jobSelector');
             
-            const formData = new FormData(event.target);
+            if (!productName) {
+                jobSelector.disabled = true;
+                jobSelector.innerHTML = '<option value="">First select a product</option>';
+                return;
+            }
             
             try {
-                const response = await fetch('/defect-records/create-defect-record', {
-                    method: 'POST',
-                    body: formData
+                const response = await fetch(`/jobs/list-by-product/${productName}`);
+                if (!response.ok) throw new Error('Error loading jobs');
+                jobs = await response.json();
+                
+                jobSelector.disabled = false;
+                jobSelector.innerHTML = '<option value="">Select a job code</option>';
+                
+                jobs.forEach(job => {
+                    const option = document.createElement('option');
+                    option.value = job.job_code;
+                    option.textContent = job.job_code;
+                    jobSelector.appendChild(option);
                 });
-                
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.detail || 'Error al crear el registro de defecto');
-                }
-                
-                const result = await response.json();
-                
-                // Mostrar el modal de éxito con la respuesta
-                const responseContent = document.getElementById('responseContent');
-                responseContent.innerHTML = `
-                    <div class="space-y-4">
-                        <p><strong>ID del Registro:</strong> ${result.defect_record_id}</p>
-                        <p><strong>Producto:</strong> ${result.product_name}</p>
-                        <p><strong>Código de Trabajo:</strong> ${result.job_code}</p>
-                        
-                        <div>
-                            <strong>Imágenes de Defecto:</strong>
-                            <ul class="list-disc pl-5 mt-2">
-                                ${result.defect_images.map(img => `<li class="text-sm break-all">${img}</li>`).join('')}
-                            </ul>
-                        </div>
-                        
-                        <div>
-                            <strong>Imágenes de Ubicación:</strong>
-                            <ul class="list-disc pl-5 mt-2">
-                                ${result.location_images.map(img => `<li class="text-sm break-all">${img}</li>`).join('')}
-                            </ul>
-                        </div>
-                    </div>
-                `;
-                
-                const modal = document.getElementById('successModal');
-                modal.classList.remove('hidden');
-                
             } catch (error) {
                 console.error('Error:', error);
-                alert(error.message);
+                alert('Error loading jobs');
             }
+        });
+        
+        // Process change
+        document.getElementById('processSelector').addEventListener('change', async (event) => {
+            const processId = event.target.selectedOptions[0]?.dataset.processId;
+            const issueSelector = document.getElementById('issueSelector');
+            
+            if (!processId) {
+                issueSelector.disabled = true;
+                issueSelector.innerHTML = '<option value="">First select a process</option>';
+                return;
+            }
+            
+            issueSelector.disabled = false;
+            await loadIssuesByProcess(processId);
+        });
+        
+        // Image preview
+        document.getElementById('defectImages').addEventListener('change', handleImagePreview);
+        document.getElementById('locationImages').addEventListener('change', handleImagePreview);
+        
+        // Form submission
+        document.getElementById('defectForm').addEventListener('submit', handleFormSubmit);
+    }
+    
+    // Handle image preview
+    function handleImagePreview(event) {
+        const files = event.target.files;
+        const previewId = event.target.id === 'defectImages' ? 'defectImagePreview' : 'locationImagePreview';
+        const previewContainer = document.getElementById(previewId);
+        
+        previewContainer.innerHTML = '';
+        
+        Array.from(files).forEach(file => {
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.className = 'preview-image';
+                    previewContainer.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+    
+    // Handle form submission
+    async function handleFormSubmit(event) {
+        event.preventDefault();
+        
+        // Get IDs from selected names
+        const productSelector = document.getElementById('productSelector');
+        const jobSelector = document.getElementById('jobSelector');
+        const inspectorSelector = document.getElementById('inspectorSelector');
+        const processSelector = document.getElementById('processSelector');
+        const issueSelector = document.getElementById('issueSelector');
+        const correctionProcessSelector = document.getElementById('correctionProcessSelector');
+        
+        const selectedProductOption = productSelector.options[productSelector.selectedIndex];
+        const selectedInspectorOption = inspectorSelector.options[inspectorSelector.selectedIndex];
+        const selectedProcessOption = processSelector.options[processSelector.selectedIndex];
+        const selectedIssueOption = issueSelector.options[issueSelector.selectedIndex];
+        const selectedCorrectionOption = correctionProcessSelector.options[correctionProcessSelector.selectedIndex];
+        
+        // Get job_id using the correct endpoint
+        let jobId;
+        try {
+            const productName = selectedProductOption.value;
+            const jobCode = jobSelector.value;
+            
+            // Use the correct endpoint to get job information
+            const response = await fetch(`/jobs/list-by-product-info/${productName}`);
+            const jobs = await response.json();
+            
+            // Find the job with the selected job_code
+            const selectedJob = jobs.find(job => job.job_code === jobCode);
+            if (!selectedJob) {
+                throw new Error('Job not found');
+            }
+            
+            jobId = selectedJob.job_id;
+        } catch (error) {
+            console.error('Error getting job:', error);
+            alert('Error getting job information');
+            return;
         }
         
-        // Cerrar modal de éxito
-        function closeSuccessModal() {
-            const modal = document.getElementById('successModal');
-            modal.classList.add('hidden');
-            window.location.href = '/defect-records';
+        // Debug values
+        console.log('Product ID:', selectedProductOption?.dataset?.productId);
+        console.log('Job ID:', jobId);
+        console.log('Inspector User ID:', selectedInspectorOption?.dataset?.userId);
+        console.log('Issue ID:', selectedIssueOption?.dataset?.issueId);
+        console.log('Correction Process ID:', selectedCorrectionOption?.dataset?.processId);
+        console.log('Status ID:', '1');
+        console.log('Issue By User ID:', document.getElementById('supervisorId').value);
+        
+        // Verify all required fields are complete
+        const requiredFields = {
+            'Product ID': selectedProductOption?.dataset?.productId,
+            'Job ID': jobId,
+            'Inspector User ID': selectedInspectorOption?.dataset?.userId,
+            'Issue ID': selectedIssueOption?.dataset?.issueId,
+            'Correction Process ID': selectedCorrectionOption?.dataset?.processId,
+            'Issue By User ID': document.getElementById('supervisorId').value
+        };
+        
+        const missingFields = Object.entries(requiredFields)
+            .filter(([key, value]) => !value)
+            .map(([key]) => key);
+        
+        if (missingFields.length > 0) {
+            alert(`Please complete the following fields: ${missingFields.join(', ')}`);
+            return;
         }
-    </script>
-</div>
+        
+        const formData = new FormData();
+        formData.append('product_id', selectedProductOption.dataset.productId);
+        formData.append('job_id', jobId.toString());  // Ensure it's a string
+        formData.append('inspector_user_id', selectedInspectorOption.dataset.userId);
+        formData.append('issue_by_user_id', document.getElementById('supervisorId').value);
+        formData.append('issue_id', selectedIssueOption.dataset.issueId);
+        formData.append('correction_process_id', selectedCorrectionOption.dataset.processId);
+        formData.append('status_id', '1'); // Always Ok
+        
+        // Add images
+        const defectFiles = document.getElementById('defectImages').files;
+        const locationFiles = document.getElementById('locationImages').files;
+        
+        if (defectFiles.length === 0 || locationFiles.length === 0) {
+            alert('Please add at least one defect image and one location image');
+            return;
+        }
+        
+        for (let i = 0; i < defectFiles.length; i++) {
+            formData.append('defect_images', defectFiles[i]);
+        }
+        
+        for (let i = 0; i < locationFiles.length; i++) {
+            formData.append('location_images', locationFiles[i]);
+        }
+        
+        // Print formData for debugging
+        for (let pair of formData.entries()) {
+            console.log(`${pair[0]}: ${pair[1]}`);
+        }
+        
+        try {
+            const response = await fetch('/defect-records/create-defect-record', {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || 'Error creating the record');
+            }
+            
+            const result = await response.json();
+            alert('Defect record created successfully');
+            window.location.href = '/defect-records'; // Redirect to defect list
+        } catch (error) {
+            console.error('Error:', error);
+            alert(error.message || 'Error creating defect record');
+        }
+    }
+</script>
 {% endblock %}
