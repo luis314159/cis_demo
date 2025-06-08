@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status
 from sqlmodel import select
 from db import SessionDep
-from models import Job, Item, JobStatus, ProcessStage, StageStatus, ItemStageStatus, Object, Stage, Process
+from models import DefectRecord, Job, Item, JobStatus, ProcessStage, StageStatus, ItemStageStatus, Object, Stage, Process
 from sqlmodel import SQLModel
 import logging
 
@@ -300,7 +300,12 @@ async def delete_job(job_code: str, session: SessionDep):
         session.delete(item)
 
     # Eliminar el Job
-    session.delete(job)
+
+    defects = session.exec(select(DefectRecord).where(DefectRecord.job_id == job.job_id)).all()
+    for defect in defects:
+        # También puedes borrar imágenes asociadas si es necesario
+        session.delete(defect)
+        session.delete(job)
 
     # Confirmar los cambios
     session.commit()
