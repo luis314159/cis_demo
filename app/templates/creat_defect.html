@@ -1,3 +1,4 @@
+{# create_defect.html #}
 {% extends 'base.html' %}
 {% block title %}Create Defect Record{% endblock %}
 {% block extra_head %}
@@ -204,7 +205,7 @@
     // Load initial data
     document.addEventListener('DOMContentLoaded', async () => {
         await loadProducts();
-        await loadUsers();
+        await loadUsers(); // Cargar todos los usuarios inicialmente
         await loadProcesses();
         await loadCorrectionProcesses();
         
@@ -225,12 +226,25 @@
         }
     }
     
-    async function loadUsers() {
+    // ACTUALIZADA: Función más flexible para cargar usuarios
+    async function loadUsers(processId = null) {
         try {
-            const response = await fetch('/users/list_users');
+            let url = '/users/list_users';
+            if (processId) {
+                url += `?process_id=${processId}`;
+                console.log(`Loading users filtered by process ${processId}`);
+            } else {
+                console.log('Loading all users');
+            }
+            
+            const response = await fetch(url);
             if (!response.ok) throw new Error('Error loading users');
             users = await response.json();
-            renderIssueBySelector(users); // CORREGIDO: Nombre de función cambiado
+            renderIssueBySelector(users);
+            
+            // Log para debug
+            console.log(`Loaded ${users.length} users${processId ? ` for process ${processId}` : ''}`);
+            
         } catch (error) {
             console.error('Error:', error);
             alert('Error loading users');
@@ -291,17 +305,48 @@
         });
     }
     
-    // CORREGIDO: Función renombrada y actualizada
+    // ACTUALIZADA: Función de renderizado con mejor feedback
     function renderIssueBySelector(users) {
-        const selector = document.getElementById('issueBySelector'); // ID cambiado
-        selector.innerHTML = '<option value="">Search by employee number...</option>';
+        const selector = document.getElementById('issueBySelector');
+        const processSelector = document.getElementById('processSelector');
+        const selectedProcess = processSelector.options[processSelector.selectedIndex];
+        const processName = selectedProcess?.textContent || '';
+        
+        // Clear current options
+        selector.innerHTML = '';
+        
+        if (users.length === 0) {
+            const option = document.createElement('option');
+            option.value = "";
+            if (processName && processName !== 'Select a process') {
+                option.textContent = `No employees authorized for "${processName}" process`;
+            } else {
+                option.textContent = "No employees available";
+            }
+            selector.appendChild(option);
+            return;
+        }
+        
+        // Add default option
+        const defaultOption = document.createElement('option');
+        defaultOption.value = "";
+        if (processName && processName !== 'Select a process') {
+            defaultOption.textContent = `Select employee authorized for "${processName}"...`;
+        } else {
+            defaultOption.textContent = "Search by employee number...";
+        }
+        selector.appendChild(defaultOption);
+        
+        // Add user options
         users.forEach(user => {
             const option = document.createElement('option');
             option.value = user.employee_number;
             option.dataset.userId = user.user_id;
-            option.textContent = `${user.employee_number} - ${user.first_name} ${user.last_name}`;
+            option.textContent = `${user.employee_number} - ${user.first_name} ${user.first_surname}`;
             selector.appendChild(option);
         });
+        
+        console.log(`Rendered ${users.length} users in selector`);
     }
     
     function renderProcessSelector(processes) {
@@ -349,7 +394,7 @@
         });
     }
     
-    // Setup event listeners
+    // ACTUALIZADA: Setup event listeners con nueva lógica
     function setupEventListeners() {
         // Product change
         document.getElementById('productSelector').addEventListener('change', async (event) => {
@@ -382,19 +427,38 @@
             }
         });
         
-        // Process change
+        // ACTUALIZADO: Process change con nueva lógica para usuarios
         document.getElementById('processSelector').addEventListener('change', async (event) => {
             const processId = event.target.selectedOptions[0]?.dataset.processId;
+            const processName = event.target.value;
             const issueSelector = document.getElementById('issueSelector');
+            const issueBySelector = document.getElementById('issueBySelector');
             
             if (!processId) {
+                // No process selected - reset to default state
                 issueSelector.disabled = true;
                 issueSelector.innerHTML = '<option value="">First select a process</option>';
+                
+                // Reload all users (original behavior)
+                await loadUsers();
                 return;
             }
             
+            console.log(`Process selected: ${processName} (ID: ${processId})`);
+            
+            // Load issues for the selected process
             issueSelector.disabled = false;
             await loadIssuesByProcess(processId);
+            
+            // NUEVA FUNCIONALIDAD: Load users filtered by process
+            await loadUsers(processId);
+            
+            // Show info message about filtering
+            const currentSelection = issueBySelector.value;
+            if (currentSelection && !issueBySelector.querySelector(`option[value="${currentSelection}"]`)) {
+                // Previously selected user is not available for this process
+                alert(`Note: The previously selected employee is not authorized to work on the "${processName}" process. Please select a different employee.`);
+            }
         });
         
         // Image preview

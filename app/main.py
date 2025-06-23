@@ -13,9 +13,9 @@ from routers import (
     ocr_routes, validate_csv, list_jobs, details, job_status, 
     object_current_stage, item_router, user_router, auth_router, 
     rest_password_router, products_router, issue_router, defect_record_router,
-    correction_process_router, status_router
-
+    correction_process_router, status_router, process_role
 )
+
 from generate_qr import generate_qr, generate_pdf
 from middleware import auth_middleware
 
@@ -177,6 +177,7 @@ app.include_router(issue_router.router)
 app.include_router(defect_record_router.router)
 app.include_router(correction_process_router.router)
 app.include_router(status_router.router)
+app.include_router(process_role.router)
 
 # Configuración de archivos estáticos
 app.mount("/static", StaticFiles(directory="./static"), name="static")
@@ -580,3 +581,32 @@ async def issues(
         "creat_defect.html", 
         {"request": request, "current_user": current_user}
     )
+
+@app.get("/process-role", response_class=HTMLResponse,
+        summary="Display the issues management page",
+        response_description="Renders the issues management page",
+        tags=["Process Roles"],
+    )
+async def issues(
+    request: Request,
+    current_user: Annotated[User, Depends(get_current_active_user)]
+):
+    return templates.TemplateResponse(
+        "process_role.html", 
+        {"request": request, "current_user": current_user}
+    )
+
+@app.get("/job-change-status", response_class=HTMLResponse,
+        summary="Display the issues management page",
+        response_description="Renders the issues management page",
+        tags=["Jobs"],
+    )
+async def issues(
+    request: Request,
+    current_user: Annotated[User, Depends(get_current_active_user)]
+):
+    return templates.TemplateResponse(
+        "job_status.html", 
+        {"request": request, "current_user": current_user}
+    )
+

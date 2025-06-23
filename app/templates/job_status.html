@@ -1,0 +1,595 @@
+{% extends 'base.html' %}
+
+{% block title %}Job Status Management{% endblock %}
+
+{% block extra_head %}
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+    .container {
+        max-width: 100%;
+        padding: 0 1rem;
+    }
+    .mt-5 {
+        margin-top: 1.25rem !important;
+    }
+    .form-section {
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+        background-color: #f8f9fa;
+        border-radius: 0.5rem;
+    }
+    .table-container {
+        background-color: white;
+        border-radius: 0.5rem;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        overflow-x: auto;
+    }
+    .action-btn {
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: none;
+    }
+    .complete-btn {
+        background-color: #10B981;
+        color: white;
+    }
+    .complete-btn:hover {
+        background-color: #059669;
+    }
+    .complete-btn:disabled {
+        background-color: #9CA3AF;
+        cursor: not-allowed;
+    }
+    .pending-btn {
+        background-color: #F59E0B;
+        color: white;
+    }
+    .pending-btn:hover {
+        background-color: #D97706;
+    }
+    .pending-btn:disabled {
+        background-color: #9CA3AF;
+        cursor: not-allowed;
+    }
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+    .status-completed {
+        background-color: #D1FAE5;
+        color: #065F46;
+    }
+    .status-pending {
+        background-color: #FEF3C7;
+        color: #92400E;
+    }
+    .checkbox-input {
+        width: 1rem;
+        height: 1rem;
+        accent-color: #3B82F6;
+    }
+    .selected-count {
+        background-color: #EBF4FF;
+        color: #1E40AF;
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
+        font-weight: 500;
+    }
+    .notification {
+        padding: 1rem;
+        border-radius: 0.375rem;
+        margin-bottom: 1rem;
+        font-weight: 500;
+    }
+    .notification-success {
+        background-color: #D1FAE5;
+        color: #065F46;
+        border: 1px solid #A7F3D0;
+    }
+    .notification-error {
+        background-color: #FEE2E2;
+        color: #991B1B;
+        border: 1px solid #FECACA;
+    }
+    .notification-warning {
+        background-color: #FEF3C7;
+        color: #92400E;
+        border: 1px solid #FDE68A;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-4">
+    <!-- Navigation Menu -->
+    <div class="mb-4 border-b border-gray-200">
+        <ul class="nav nav-tabs">
+            <li class="nav-item">
+                <a href="/job-status-management" class="nav-link active">
+                    Job Status Management
+                </a>
+            </li>
+            {% if current_user.role.role_name in ["admin"] %}
+            <li class="nav-item">
+                <a href="/defect-records" class="nav-link">
+                    Punch List
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/process-roles" class="nav-link">
+                    Process-Role Management
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </div>
+
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-2xl font-bold mb-6 text-center">Job Status Management</h1>
+        
+        <!-- Notification Area -->
+        <div id="notificationArea"></div>
+        
+        <!-- Action Section -->
+        <div class="form-section">
+            <h2 class="text-lg font-semibold mb-4">Batch Actions</h2>
+            
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center space-x-4">
+                    <div class="selected-count" id="selectedCount">
+                        0 jobs selected
+                    </div>
+                    
+                    <button type="button" id="selectAllBtn" onclick="selectAll()" 
+                        class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                        Select All
+                    </button>
+                    
+                    <button type="button" id="deselectAllBtn" onclick="deselectAll()" 
+                        class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                        Deselect All
+                    </button>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                    <button type="button" id="markCompletedBtn" onclick="markSelectedJobs(true)" disabled
+                        class="action-btn complete-btn">
+                        Mark as Completed
+                    </button>
+                    
+                    <button type="button" id="markPendingBtn" onclick="markSelectedJobs(false)" disabled
+                        class="action-btn pending-btn">
+                        Mark as Pending
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Section -->
+        <div class="form-section">
+            <h2 class="text-lg font-semibold mb-4">Filter Jobs</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label for="filterByStatus" class="block text-sm font-medium text-gray-700 mb-1">Filter by Status</label>
+                    <select id="filterByStatus" 
+                        class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">All statuses</option>
+                        <option value="true">Completed</option>
+                        <option value="false">Pending</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="searchJobCode" class="block text-sm font-medium text-gray-700 mb-1">Search by Job Code</label>
+                    <input type="text" id="searchJobCode" placeholder="Enter job code..."
+                        class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                
+                <div class="flex items-end">
+                    <button type="button" onclick="clearFilters()" 
+                        class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Clear Filters
+                    </button>
+                    
+                    <button type="button" onclick="refreshJobs()" 
+                        class="ml-2 px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Jobs Table -->
+        <div class="form-section">
+            <h2 class="text-lg font-semibold mb-4">Jobs List</h2>
+            
+            <div class="table-container">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <input type="checkbox" id="masterCheckbox" class="checkbox-input" onchange="toggleAllSelection()">
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Job Code</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="jobsTableBody" class="bg-white divide-y divide-gray-200">
+                        <!-- Table rows will be populated by JavaScript -->
+                    </tbody>
+                </table>
+                
+                <div id="loadingIndicator" class="flex justify-center items-center p-8" style="display: none;">
+                    <div class="text-gray-500">Loading jobs...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Global variables
+    let allJobs = [];
+    let filteredJobs = [];
+    let selectedJobs = new Set();
+    
+    // Load initial data
+    document.addEventListener('DOMContentLoaded', async () => {
+        await loadJobs();
+        setupEventListeners();
+    });
+    
+    // Setup event listeners
+    function setupEventListeners() {
+        document.getElementById('filterByStatus').addEventListener('change', applyFilters);
+        document.getElementById('searchJobCode').addEventListener('input', applyFilters);
+    }
+    
+    // Functions to load data
+    async function loadJobs() {
+        showLoading(true);
+        try {
+            // ✅ Cambiado de '/jobs/list' a '/jobs/list-complete'
+            const response = await fetch('/jobs/list-complete-product');
+            if (!response.ok) throw new Error('Error loading jobs');
+            allJobs = await response.json();
+            filteredJobs = [...allJobs];
+            renderJobsTable(filteredJobs);
+            updateSelectedCount();
+            
+            // ✅ Log para debug
+            console.log('Loaded jobs:', allJobs.length);
+            console.log('Sample job:', allJobs[0]);
+            
+        } catch (error) {
+            console.error('Error:', error);
+            showNotification('Error loading jobs: ' + error.message, 'error');
+        } finally {
+            showLoading(false);
+        }
+    }
+    
+    function renderJobsTable(jobsToRender) {
+        const tbody = document.getElementById('jobsTableBody');
+        tbody.innerHTML = '';
+        
+        console.log('📋 Rendering jobs table with', jobsToRender.length, 'jobs');
+        
+        if (jobsToRender.length === 0) {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td colspan="6" class="px-6 py-4 text-center text-gray-500">
+                    No jobs found
+                </td>
+            `;
+            tbody.appendChild(row);
+            return;
+        }
+        
+        jobsToRender.forEach((job, index) => {
+            console.log(`📄 Rendering job ${index + 1}:`, {
+                job_code: job.job_code,
+                status: job.status,
+                product_name: job.product_name,
+                created_at: job.created_at
+            });
+            
+            const row = document.createElement('tr');
+            const statusBadge = job.status 
+                ? '<span class="status-badge status-completed">Completed</span>'
+                : '<span class="status-badge status-pending">Pending</span>';
+            
+            // ✅ MANEJO MEJORADO DE FECHA
+            let createdDate = 'N/A';
+            if (job.created_at && job.created_at !== 'NO_DATE') {
+                try {
+                    const date = new Date(job.created_at);
+                    if (!isNaN(date.getTime())) {
+                        createdDate = date.toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                    } else {
+                        createdDate = 'Invalid Date';
+                        console.warn('⚠️ Invalid date for job:', job.job_code, job.created_at);
+                    }
+                } catch (e) {
+                    createdDate = 'Date Error';
+                    console.error('❌ Date parsing error for job:', job.job_code, e);
+                }
+            }
+            
+            // ✅ MANEJO MEJORADO DE PRODUCTO
+            let productName = 'No Product';
+            if (job.product_name && job.product_name !== 'NOT_FOUND') {
+                productName = job.product_name;
+            } else if (job.product_id) {
+                productName = `Product ID: ${job.product_id}`;
+            }
+            
+            row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <input type="checkbox" class="checkbox-input job-checkbox" 
+                        value="${job.job_code}" onchange="updateSelection()">
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${job.job_code}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${statusBadge}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${productName}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${createdDate}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button onclick="toggleSingleJobStatus('${job.job_code}', ${!job.status})" 
+                            class="action-btn ${job.status ? 'pending-btn' : 'complete-btn'}">
+                        ${job.status ? 'Mark Pending' : 'Mark Completed'}
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+        
+        console.log('✅ Table rendered successfully');
+    }
+
+        
+    // Selection management
+    function updateSelection() {
+        selectedJobs.clear();
+        const checkboxes = document.querySelectorAll('.job-checkbox:checked');
+        checkboxes.forEach(cb => selectedJobs.add(cb.value));
+        
+        updateSelectedCount();
+        updateActionButtons();
+        updateMasterCheckbox();
+    }
+    
+    function updateSelectedCount() {
+        const count = selectedJobs.size;
+        document.getElementById('selectedCount').textContent = `${count} job${count !== 1 ? 's' : ''} selected`;
+    }
+    
+    function updateActionButtons() {
+        const hasSelection = selectedJobs.size > 0;
+        document.getElementById('markCompletedBtn').disabled = !hasSelection;
+        document.getElementById('markPendingBtn').disabled = !hasSelection;
+    }
+    
+    function updateMasterCheckbox() {
+        const masterCheckbox = document.getElementById('masterCheckbox');
+        const visibleCheckboxes = document.querySelectorAll('.job-checkbox');
+        const checkedCheckboxes = document.querySelectorAll('.job-checkbox:checked');
+        
+        if (visibleCheckboxes.length === 0) {
+            masterCheckbox.indeterminate = false;
+            masterCheckbox.checked = false;
+        } else if (checkedCheckboxes.length === visibleCheckboxes.length) {
+            masterCheckbox.indeterminate = false;
+            masterCheckbox.checked = true;
+        } else if (checkedCheckboxes.length > 0) {
+            masterCheckbox.indeterminate = true;
+            masterCheckbox.checked = false;
+        } else {
+            masterCheckbox.indeterminate = false;
+            masterCheckbox.checked = false;
+        }
+    }
+    
+    function toggleAllSelection() {
+        const masterCheckbox = document.getElementById('masterCheckbox');
+        const checkboxes = document.querySelectorAll('.job-checkbox');
+        
+        checkboxes.forEach(cb => {
+            cb.checked = masterCheckbox.checked;
+        });
+        
+        updateSelection();
+    }
+    
+    function selectAll() {
+        const checkboxes = document.querySelectorAll('.job-checkbox');
+        checkboxes.forEach(cb => cb.checked = true);
+        updateSelection();
+    }
+    
+    function deselectAll() {
+        const checkboxes = document.querySelectorAll('.job-checkbox');
+        checkboxes.forEach(cb => cb.checked = false);
+        updateSelection();
+    }
+    
+    // Status change functions
+    async function markSelectedJobs(newStatus) {
+        if (selectedJobs.size === 0) {
+            showNotification('Please select at least one job', 'warning');
+            return;
+        }
+        
+        const jobCodes = Array.from(selectedJobs);
+        const statusText = newStatus ? 'completed' : 'pending';
+        
+        if (!confirm(`Are you sure you want to mark ${jobCodes.length} job(s) as ${statusText}?`)) {
+            return;
+        }
+        
+        try {
+            // ✅ CORREGIR LA URL - debe ser /jobs/batch/status
+            const response = await fetch('/jobs/batch/status', {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    job_codes: jobCodes,
+                    status: newStatus
+                })
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || 'Error updating job statuses');
+            }
+            
+            const result = await response.json();
+            
+            // Show detailed results
+            let message = result.message;
+            if (result.not_found_jobs && result.not_found_jobs.length > 0) {
+                message += `\nJobs not found: ${result.not_found_jobs.join(', ')}`;
+            }
+            if (result.errors && result.errors.length > 0) {
+                message += `\nErrors: ${result.errors.join('; ')}`;
+            }
+            
+            const type = (result.errors && result.errors.length > 0) || (result.not_found_jobs && result.not_found_jobs.length > 0) ? 'warning' : 'success';
+            showNotification(message, type);
+            
+            // Refresh the jobs list and clear selection
+            await loadJobs();
+            deselectAll();
+            
+        } catch (error) {
+            console.error('Error:', error);
+            showNotification('Error updating job statuses: ' + error.message, 'error');
+        }
+    }
+        
+    async function toggleSingleJobStatus(jobCode, newStatus) {
+        const statusText = newStatus ? 'completed' : 'pending';
+        
+        if (!confirm(`Are you sure you want to mark job '${jobCode}' as ${statusText}?`)) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/jobs/${jobCode}/status`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    status: newStatus
+                })
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || 'Error updating job status');
+            }
+            
+            const result = await response.json();
+            showNotification(result.message, 'success');
+            
+            // ✅ FORZAR REFRESH COMPLETO
+            await loadJobs();
+            
+        } catch (error) {
+            console.error('Error:', error);
+            showNotification('Error updating job status: ' + error.message, 'error');
+        }
+    }
+    
+    // Filter functions
+    function applyFilters() {
+        const statusFilter = document.getElementById('filterByStatus').value;
+        const searchText = document.getElementById('searchJobCode').value.toLowerCase();
+        
+        filteredJobs = allJobs.filter(job => {
+            const matchesStatus = !statusFilter || job.status.toString() === statusFilter;
+            const matchesSearch = !searchText || job.job_code.toLowerCase().includes(searchText);
+            return matchesStatus && matchesSearch;
+        });
+        
+        renderJobsTable(filteredJobs);
+        deselectAll(); // Clear selection when filters change
+    }
+    
+    function clearFilters() {
+        document.getElementById('filterByStatus').value = '';
+        document.getElementById('searchJobCode').value = '';
+        filteredJobs = [...allJobs];
+        renderJobsTable(filteredJobs);
+        deselectAll();
+    }
+    
+    async function refreshJobs() {
+        await loadJobs();
+        deselectAll();
+        showNotification('Jobs list refreshed', 'success');
+    }
+    
+    // Utility functions
+    function showLoading(show) {
+        const indicator = document.getElementById('loadingIndicator');
+        const table = document.getElementById('jobsTableBody').parentElement;
+        
+        if (show) {
+            indicator.style.display = 'flex';
+            table.style.opacity = '0.5';
+        } else {
+            indicator.style.display = 'none';
+            table.style.opacity = '1';
+        }
+    }
+    
+    function showNotification(message, type = 'info') {
+        const notificationArea = document.getElementById('notificationArea');
+        const notification = document.createElement('div');
+        
+        const classMap = {
+            success: 'notification-success',
+            error: 'notification-error',
+            warning: 'notification-warning',
+            info: 'notification-success'
+        };
+        
+        notification.className = `notification ${classMap[type] || classMap.info}`;
+        notification.innerHTML = `
+            <div class="flex justify-between items-center">
+                <span>${message}</span>
+                <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-lg font-bold">&times;</button>
+            </div>
+        `;
+        
+        notificationArea.appendChild(notification);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        }, 5000);
+    }
+</script>
+{% endblock %}

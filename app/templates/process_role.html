@@ -1,0 +1,479 @@
+{% extends 'base.html' %}
+
+{% block title %}Process Role Management{% endblock %}
+
+{% block extra_head %}
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+    .container {
+        max-width: 100%;
+        padding: 0 1rem;
+    }
+    .mt-5 {
+        margin-top: 1.25rem !important;
+    }
+    .form-section {
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+        background-color: #f8f9fa;
+        border-radius: 0.5rem;
+    }
+    .table-container {
+        background-color: white;
+        border-radius: 0.5rem;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        overflow-x: auto;
+    }
+    .action-btn {
+        padding: 0.25rem 0.75rem;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .edit-btn {
+        background-color: #3B82F6;
+        color: white;
+    }
+    .edit-btn:hover {
+        background-color: #2563EB;
+    }
+    .delete-btn {
+        background-color: #EF4444;
+        color: white;
+    }
+    .delete-btn:hover {
+        background-color: #DC2626;
+    }
+    .cancel-btn {
+        background-color: #6B7280;
+        color: white;
+    }
+    .cancel-btn:hover {
+        background-color: #4B5563;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-4">
+    <!-- Navigation Menu -->
+    <div class="mb-4 border-b border-gray-200">
+        <ul class="nav nav-tabs">
+            <li class="nav-item">
+                <a href="/process-roles" class="nav-link active">
+                    Process-Role Management
+                </a>
+            </li>
+            
+        {% if current_user.role.role_name in ["admin"] %}
+        <li class="nav-item">
+            <a href="/defect-records" class="nav-link">
+                Punch List
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="/issues" class="nav-link">
+                Issues
+            </a>
+        </li>
+        {% endif %}
+{#
+            <li class="nav-item">
+                <a href="/defect-records" class="nav-link">
+                    Punch List
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/issues" class="nav-link">
+                    Issues
+                </a>
+            </li> { #}
+        </ul>
+    </div>
+
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-2xl font-bold mb-6 text-center">Process-Role Management</h1>
+        
+        <!-- Create/Update Form -->
+        <div class="form-section">
+            <h2 class="text-lg font-semibold mb-4" id="formTitle">Create Process-Role Association</h2>
+            
+            <form id="processRoleForm" class="space-y-4">
+                <input type="hidden" id="associationId" name="association_id">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="processSelector" class="block text-sm font-medium text-gray-700 mb-1">Process</label>
+                        <select id="processSelector" name="process_id" required
+                            class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Select a process</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="roleSelector" class="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                        <select id="roleSelector" name="role_id" required
+                            class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Select a role</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-4">
+                    <button type="button" id="cancelBtn" onclick="resetForm()" 
+                        class="action-btn cancel-btn" style="display: none;">
+                        Cancel
+                    </button>
+                    <button type="submit" id="submitBtn"
+                        class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Create Association
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Associations Table -->
+        <div class="form-section">
+            <h2 class="text-lg font-semibold mb-4">Current Process-Role Associations</h2>
+            
+            <div class="table-container">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Process</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="associationsTableBody" class="bg-white divide-y divide-gray-200">
+                        <!-- Table rows will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Filter Section -->
+        <div class="form-section">
+            <h2 class="text-lg font-semibold mb-4">Filter Associations</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label for="filterByProcess" class="block text-sm font-medium text-gray-700 mb-1">Filter by Process</label>
+                    <select id="filterByProcess" 
+                        class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">All processes</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="filterByRole" class="block text-sm font-medium text-gray-700 mb-1">Filter by Role</label>
+                    <select id="filterByRole" 
+                        class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">All roles</option>
+                    </select>
+                </div>
+                
+                <div class="flex items-end">
+                    <button type="button" onclick="clearFilters()" 
+                        class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Clear Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Global variables
+    let processes = [];
+    let roles = [];
+    let associations = [];
+    let isEditMode = false;
+    
+    // Load initial data
+    document.addEventListener('DOMContentLoaded', async () => {
+        await loadProcesses();
+        await loadRoles();
+        await loadAssociations();
+        
+        // Setup event listeners
+        setupEventListeners();
+    });
+    
+    // Functions to load data
+    async function loadProcesses() {
+        try {
+            const response = await fetch('/processes/');
+            if (!response.ok) throw new Error('Error loading processes');
+            processes = await response.json();
+            renderProcessSelector(processes);
+            renderProcessFilter(processes);
+        } catch (error) {
+            console.error('Error:', error);
+            showAlert('Error loading processes', 'error');
+        }
+    }
+    
+    async function loadRoles() {
+        try {
+            const response = await fetch('/users/list_roles');
+            if (!response.ok) throw new Error('Error loading roles');
+            roles = await response.json();
+            renderRoleSelector(roles);
+            renderRoleFilter(roles);
+        } catch (error) {
+            console.error('Error:', error);
+            showAlert('Error loading roles', 'error');
+        }
+    }
+    
+    async function loadAssociations() {
+        try {
+            const response = await fetch('/process-roles/');
+            if (!response.ok) throw new Error('Error loading associations');
+            associations = await response.json();
+            renderAssociationsTable(associations);
+        } catch (error) {
+            console.error('Error:', error);
+            showAlert('Error loading associations', 'error');
+        }
+    }
+    
+    // Functions to render selectors
+    function renderProcessSelector(processes) {
+        const selector = document.getElementById('processSelector');
+        selector.innerHTML = '<option value="">Select a process</option>';
+        processes.forEach(process => {
+            const option = document.createElement('option');
+            option.value = process.process_id;
+            option.textContent = process.process_name;
+            selector.appendChild(option);
+        });
+    }
+    
+    function renderRoleSelector(roles) {
+        const selector = document.getElementById('roleSelector');
+        selector.innerHTML = '<option value="">Select a role</option>';
+        roles.forEach(role => {
+            const option = document.createElement('option');
+            option.value = role.role_id;
+            option.textContent = role.role_name;
+            selector.appendChild(option);
+        });
+    }
+    
+    function renderProcessFilter(processes) {
+        const selector = document.getElementById('filterByProcess');
+        selector.innerHTML = '<option value="">All processes</option>';
+        processes.forEach(process => {
+            const option = document.createElement('option');
+            option.value = process.process_id;
+            option.textContent = process.process_name;
+            selector.appendChild(option);
+        });
+    }
+    
+    function renderRoleFilter(roles) {
+        const selector = document.getElementById('filterByRole');
+        selector.innerHTML = '<option value="">All roles</option>';
+        roles.forEach(role => {
+            const option = document.createElement('option');
+            option.value = role.role_id;
+            option.textContent = role.role_name;
+            selector.appendChild(option);
+        });
+    }
+    
+    function renderAssociationsTable(associationsToRender) {
+        const tbody = document.getElementById('associationsTableBody');
+        tbody.innerHTML = '';
+        
+        if (associationsToRender.length === 0) {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td colspan="4" class="px-6 py-4 text-center text-gray-500">
+                    No associations found
+                </td>
+            `;
+            tbody.appendChild(row);
+            return;
+        }
+        
+        associationsToRender.forEach(association => {
+            const processName = processes.find(p => p.process_id === association.process_id)?.process_name || 'Unknown';
+            const roleName = roles.find(r => r.role_id === association.role_id)?.role_name || 'Unknown';
+            
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${association.id}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${processName}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${roleName}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                    <button onclick="editAssociation(${association.id})" class="action-btn edit-btn">
+                        Edit
+                    </button>
+                    <button onclick="deleteAssociation(${association.id})" class="action-btn delete-btn">
+                        Delete
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+    
+    // Setup event listeners
+    function setupEventListeners() {
+        // Form submission
+        document.getElementById('processRoleForm').addEventListener('submit', handleFormSubmit);
+        
+        // Filter listeners
+        document.getElementById('filterByProcess').addEventListener('change', applyFilters);
+        document.getElementById('filterByRole').addEventListener('change', applyFilters);
+    }
+    
+    // Handle form submission
+    async function handleFormSubmit(event) {
+        event.preventDefault();
+        
+        const formData = new FormData(event.target);
+        const data = {
+            process_id: parseInt(formData.get('process_id')),
+            role_id: parseInt(formData.get('role_id'))
+        };
+        
+        try {
+            let response;
+            if (isEditMode) {
+                const associationId = formData.get('association_id');
+                response = await fetch(`/process-roles/${associationId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+            } else {
+                response = await fetch('/process-roles/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+            }
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || 'Error processing request');
+            }
+            
+            const result = await response.json();
+            showAlert(isEditMode ? 'Association updated successfully' : 'Association created successfully', 'success');
+            
+            // Reset form and reload data
+            resetForm();
+            await loadAssociations();
+            
+        } catch (error) {
+            console.error('Error:', error);
+            showAlert(error.message || 'Error processing request', 'error');
+        }
+    }
+    
+    // Edit association
+    async function editAssociation(associationId) {
+        try {
+            const response = await fetch(`/process-roles/${associationId}`);
+            if (!response.ok) throw new Error('Error loading association');
+            
+            const association = await response.json();
+            
+            // Populate form
+            document.getElementById('associationId').value = association.id;
+            document.getElementById('processSelector').value = association.process_id;
+            document.getElementById('roleSelector').value = association.role_id;
+            
+            // Switch to edit mode
+            isEditMode = true;
+            document.getElementById('formTitle').textContent = 'Update Process-Role Association';
+            document.getElementById('submitBtn').textContent = 'Update Association';
+            document.getElementById('cancelBtn').style.display = 'inline-block';
+            
+        } catch (error) {
+            console.error('Error:', error);
+            showAlert('Error loading association for editing', 'error');
+        }
+    }
+    
+    // Delete association
+    async function deleteAssociation(associationId) {
+        if (!confirm('Are you sure you want to delete this association?')) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/process-roles/${associationId}`, {
+                method: 'DELETE'
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || 'Error deleting association');
+            }
+            
+            showAlert('Association deleted successfully', 'success');
+            await loadAssociations();
+            
+        } catch (error) {
+            console.error('Error:', error);
+            showAlert(error.message || 'Error deleting association', 'error');
+        }
+    }
+    
+    // Reset form
+    function resetForm() {
+        document.getElementById('processRoleForm').reset();
+        document.getElementById('associationId').value = '';
+        isEditMode = false;
+        document.getElementById('formTitle').textContent = 'Create Process-Role Association';
+        document.getElementById('submitBtn').textContent = 'Create Association';
+        document.getElementById('cancelBtn').style.display = 'none';
+    }
+    
+    // Apply filters
+    function applyFilters() {
+        const processFilter = document.getElementById('filterByProcess').value;
+        const roleFilter = document.getElementById('filterByRole').value;
+        
+        let filteredAssociations = associations;
+        
+        if (processFilter) {
+            filteredAssociations = filteredAssociations.filter(a => a.process_id.toString() === processFilter);
+        }
+        
+        if (roleFilter) {
+            filteredAssociations = filteredAssociations.filter(a => a.role_id.toString() === roleFilter);
+        }
+        
+        renderAssociationsTable(filteredAssociations);
+    }
+    
+    // Clear filters
+    function clearFilters() {
+        document.getElementById('filterByProcess').value = '';
+        document.getElementById('filterByRole').value = '';
+        renderAssociationsTable(associations);
+    }
+    
+    // Show alert
+    function showAlert(message, type = 'info') {
+        const alertClass = type === 'error' ? 'alert-danger' : 'alert-success';
+        alert(message); // You can replace this with a better notification system
+    }
+</script>
+{% endblock %}

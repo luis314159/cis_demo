@@ -14,11 +14,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/users",
-    tags=["Users"]
-)
-
-
-
+    tags=["Users"])
 
 @router.post("/add_user", response_model=ResponseUser,
             summary="Create new user",
@@ -207,18 +203,51 @@ def add_role(role_data: CreateRole, session: SessionDep, status_code = status.HT
 
 
 @router.get("/list_users", response_model=list[ResponseUser], response_model_exclude={"hashed_password"},
-            summary="List all users",
-            response_description="Returns list of all users",
-            status_code = status.HTTP_200_OK
+            summary="List all users with optional process filter",
+            response_description="Returns list of users, optionally filtered by process",
+            status_code = status.HTTP_200_OK,
+            responses={
+                200: {"description": "Users retrieved successfully"},
+                404: {"description": "Process not found or no roles associated with process"}
+            }
         )
-def list_users(session: SessionDep):
+def list_users(
+    session: SessionDep,
+    process_id: Annotated[
+        Optional[int], 
+        Query(
+            title="Process ID",
+            description="Optional process ID to filter users by roles associated with this process",
+            examples=[1, 2, 3],
+            ge=1
+        )
+    ] = None
+):
     """
-    ## Get all system users
+    ## Get all system users with optional process filtering
 
-    Retrieves a complete list of all registered users.
+    Retrieves a complete list of all registered users, with optional filtering by process.
+    When a process_id is provided, only users with roles associated to that process are returned.
+
+    ### Parameters:
+    - **process_id** (optional): 
+        - Integer representing the process ID to filter users by
+        - When provided, returns only users whose roles are associated with this process
+        - Omit to get all users regardless of process
 
     ### Returns:
     - **List[ResponseUser]**: List of user objects excluding sensitive data
+
+    ### Examples:
+    1. Get all users (backward compatible):
+    ```bash
+    GET /users/list_users
+    ```
+
+    2. Get users associated with process ID 1:
+    ```bash
+    GET /users/list_users?process_id=1
+    ```
 
     ### Example Response:
     ```json
@@ -229,25 +258,89 @@ def list_users(session: SessionDep):
             "username": "admin",
             "email": "admin@example.com",
             "first_name": "System",
-            "last_name": "Admin",
-            "role_id": 1,
-            "is_active": true
-        },
-        {
-            "user_id": 2,
-            "employee_number": 123,
-            "username": "jdoe",
-            "email": "jdoe@example.com",
-            "first_name": "John",
-            "last_name": "Doe",
-            "role_id": 2,
-            "is_active": true
+            "middle_name": null,
+            "first_surname": "Admin",
+            "second_surname": null,
+            "role": {
+                "role_id": 1,
+                "role_name": "admin"
+            },
+            "is_active": true,
+            "created_at": "2023-08-20T15:30:00Z"
         }
     ]
     ```
     """
-    users = session.exec(select(User)).all()
-    return users
+    logger.info(f"Retrieving users list with process_id filter: {process_id}")
+    
+    try:
+        if process_id is not None:
+            logger.debug(f"Filtering users by process_id: {process_id}")
+            
+            # Importar ProcessRole aquí para evitar imports circulares
+            from models import ProcessRole, Process
+            
+            # Verificar que el proceso existe
+            process_exists = session.exec(
+                select(Process).where(Process.process_id == process_id)
+            ).first()
+            
+            if not process_exists:
+                logger.warning(f"Process with ID {process_id} not found")
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Process with ID {process_id} not found"
+                )
+            
+            # Obtener los role_ids asociados al proceso
+            process_roles = session.exec(
+                select(ProcessRole.role_id).where(ProcessRole.process_id == process_id)
+            ).all()
+            
+            if not process_roles:
+                logger.info(f"No roles associated with process_id: {process_id}")
+                # Retornar lista vacía si no hay roles asociados al proceso
+                return []
+            
+            logger.debug(f"Found {len(process_roles)} roles associated with process {process_id}: {process_roles}")
+            
+            # Filtrar usuarios que tengan alguno de esos roles
+            users = session.exec(
+                select(User)
+                .join(User.role)
+                .where(User.role_id.in_(process_roles))
+                .where(User.is_active == True)  # Solo usuarios activos
+            ).all()
+            
+            logger.info(f"Found {len(users)} users associated with process {process_id}")
+            
+        else:
+            # Comportamiento original: devolver todos los usuarios
+            logger.debug("No process_id provided, returning all users")
+            users = session.exec(select(User).join(User.role)).all()
+            logger.info(f"Retrieved {len(users)} total users")
+        
+        return users
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
+    except SQLAlchemyError as e:
+        # Handle database errors
+        error_message = str(e)
+        logger.error(f"Database error while retrieving users: {error_message}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error al consultar la base de datos"
+        )
+    except Exception as e:
+        # Handle any other unexpected errors
+        error_message = str(e)
+        logger.error(f"Unexpected error while retrieving users: {error_message}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error interno del servidor"
+        )
 
 @router.get(
     "/by-role/",

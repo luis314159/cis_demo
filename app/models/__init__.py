@@ -44,7 +44,77 @@ class JobResponse(JobBase):
 
 class JobResponseCode(SQLModel):
     job_code: str
+
+
+class JobStatusUpdate(SQLModel):
+    status: bool = Field(description="New status for the job (True for active/completed, False for inactive/pending)")
+
+class JobStatusResponse(SQLModel):
+    job_code: str
+    status: bool
+    message: str
+
+# class JobWithProduct(SQLModel):
+#     job_id: int
+#     job_code: str
+#     status: bool
+#     created_at: datetime
+#     product_name: Optional[str] = None
+#     product_id: Optional[int] = None
+
+# class JobListResponse(SQLModel):
+#     jobs: list[JobWithProduct]
+#     total_count: int
+
+class JobStatusUpdate(SQLModel):
+    status: bool = Field(description="New status for the job (True for active/completed, False for inactive/pending)")
+
+class JobStatusResponse(SQLModel):
+    job_code: str
+    status: bool
+    message: str
+
+# Modelos para Batch Update
+class BatchJobStatusUpdate(SQLModel):
+    job_codes: list[str] = Field(description="List of job codes to update")
+    status: bool = Field(description="New status to apply to all jobs")
+
+class BatchJobStatusResponse(SQLModel):
+    updated_jobs: list[str] = Field(description="List of successfully updated job codes")
+    not_found_jobs: list[str] = Field(description="List of job codes that were not found")
+    errors: list[str] = Field(description="List of errors encountered")
+    message: str
+
+# Modelo para Job con información de Producto
+class JobWithProduct(SQLModel):
+    job_id: int
+    job_code: str
+    status: bool
+    created_at: datetime
+    product_name: Optional[str] = None
+    product_id: Optional[int] = None
     
+class JobComplete(SQLModel):
+    job_id: int
+    job_code: str
+    status: bool
+    created_at: Optional[datetime] = None
+    product_id: Optional[int] = None
+    product_name: Optional[str] = None
+    process_order_id: Optional[int] = None
+
+
+# Modelos adicionales útiles
+class JobListResponse(SQLModel):
+    jobs: list[JobWithProduct]
+    total_count: int
+
+class JobSummary(SQLModel):
+    job_code: str
+    status: bool
+    total_items: int
+    completed_items: int
+    progress_percentage: float
 
 # Modelos para la tabla Items
 class ItemBase(SQLModel):
@@ -176,7 +246,7 @@ class Process(ProcessBase, table=True):
     issues: list["Issue"] = Relationship(back_populates="process")
     process_order_id: int = Field(foreign_key="process_order.process_order_id", nullable=False, default = 1)
     process_order: "ProcessOrder" = Relationship(back_populates="processes")
-    
+    process_roles: list["ProcessRole"] = Relationship(back_populates="process")
 
 class ProcessCreate(ProcessBase):
     pass
@@ -433,7 +503,7 @@ class CreateRole(BaseRole):
 class Role(BaseRole, table=True):
     role_id: Optional[int] = Field(default=None, primary_key=True)
     users: list["User"] = Relationship(back_populates="role")
-
+    process_roles: list["ProcessRole"] = Relationship(back_populates="role")
 #==================================#
 # --- Tokens ---
 #==================================#
@@ -539,3 +609,49 @@ class ProcessOrder(SQLModel, table=True):
     process_order_id: Optional[int] = Field(default=None, primary_key=True)
     jobs: List["Job"] = Relationship(back_populates="process_order")
     processes: List["Process"] = Relationship(back_populates="process_order")
+
+
+#==================================#
+# --- Process Role (Base y Create models) ---
+#==================================#
+class ProcessRoleBase(SQLModel):
+    process_id: int = Field(foreign_key="process.process_id")
+    role_id: int = Field(foreign_key="role.role_id")
+
+class ProcessRoleCreate(ProcessRoleBase):
+    pass
+
+class ProcessRoleUpdate(ProcessRoleBase):
+    pass
+
+class ProcessRoleResponse(ProcessRoleBase):
+    id: int
+
+#==================================#
+# --- Process Role (Tabla principal) ---
+#==================================#
+class ProcessRole(ProcessRoleBase, table=True):
+    __tablename__ = "process_role"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    
+    # Relaciones
+    process: "Process" = Relationship(back_populates="process_roles")
+    role: "Role" = Relationship(back_populates="process_roles")
+
+# Modelos de respuesta con información detallada (opcionales)
+class ProcessRoleWithDetails(SQLModel):
+    id: int
+    process_id: int
+    role_id: int
+    process_name: str
+    role_name: str
+
+class ProcessWithRoles(SQLModel):
+    process_id: int
+    process_name: str
+    roles: List[Role]
+
+class RoleWithProcesses(SQLModel):
+    role_id: int
+    role_name: str
+    processes: List[Process]

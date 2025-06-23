@@ -77,6 +77,14 @@
           <a class="nav-link {% if request.path == '/new_job' %}active{% endif %}" href="/new_job">Add Job</a>
         </li>
         {% endif %}
+        {% if current_user.role.role_name in ["admin", "quality"] %}
+        <li class="nav-item">
+          <a class="nav-link {% if request.path == '/process-role' %}active{% endif %}" href="/process-role">Process Role</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.path == '/job-change-status' %}active{% endif %}" href="job-change-status">Job Status</a>
+        </li>
+        {% endif %}
         {% if current_user.role.role_name in ["admin", "engineer", "supervisor"] %}
         <li class="nav-item">
           <a class="nav-link {% if request.path.startswith('/admin') %}active{% endif %}" href="/admin">Admin</a>

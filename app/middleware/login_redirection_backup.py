@@ -1,3 +1,4 @@
+#middleware.py
 from fastapi import Request, HTTPException
 from fastapi.responses import RedirectResponse
 from auth import verify_token, get_token
@@ -16,18 +17,10 @@ async def check_admin_access(request: Request, allowed_roles):
     except jwt.JWTError:
         return False
 
-# Configuración de roles por ruta
-ROUTE_PERMISSIONS = {
-    "/admin": ["admin", "ingeniero", "supervisor"],
-    "/defect-records": ["admin", "ingeniero"],
-    "/defect-codes": ["admin", "ingeniero"],
-    "/issues": ["admin", "ingeniero", "supervisor"],
-    "/create-defect-record": ["admin", "ingeniero"],
-    "/process-role": ["quality", "admin"],
-    "/job-change-status":["quality", "admin"]
-}
+allowed_roles = ["admin", "ingeniero", "supervisor"]
 
 async def auth_middleware(request: Request, call_next):
+    #return await call_next(request)
     # Rutas que no requieren autenticación
     public_paths = {"/login", "/token", "/authenticate", "/static", "/apk", 
                    "/cis_apk", "/cis_qr_pdf", "/rest-password"}
@@ -48,18 +41,15 @@ async def auth_middleware(request: Request, call_next):
     if not payload:
         return RedirectResponse(url="/login", status_code=303)
     
-    # Verifica permisos basados en rutas específicas
-    user_role = payload.get("role")
-    
-    for route_pattern, allowed_roles in ROUTE_PERMISSIONS.items():
-        if path.startswith(route_pattern):
-            if not user_role or user_role not in allowed_roles:
-                if "html" in request.headers.get("accept", ""):
-                    return RedirectResponse(url="/home", status_code=303)
-                raise HTTPException(
-                    status_code=403, 
-                    detail=f"No tienes permisos suficientes para acceder a esta sección. Se requiere uno de los siguientes roles: {', '.join(allowed_roles)}"
-                )
-            break  # Sale del bucle una vez que encuentra una coincidencia
+    # Verifica los permisos de admin si la ruta comienza con/admin
+    if path.startswith("/admin"):
+        user_role = payload.get("role")
+        if not user_role or user_role not in allowed_roles:
+            if "html" in request.headers.get("accept", ""):
+                return RedirectResponse(url="/home", status_code=303)
+            raise HTTPException(
+                status_code=403, 
+                detail="No tienes permisos suficientes para acceder a esta sección"
+            )
     
     return await call_next(request)
