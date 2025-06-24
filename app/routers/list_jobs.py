@@ -56,8 +56,8 @@ def list_jobs(session: SessionDep):
     3. Return the list of jobs.
     """
     # Obtener todos los Jobs disponibles
-    jobs = session.exec(select(Job)).all()
-
+    #jobs = session.exec(select(Job)).all()
+    jobs = session.exec(select(Job).where(Job.status == False)).all()
     # Transformar a la respuesta deseada
     job_list = [JobList(job_code=job.job_code) for job in jobs]
 
