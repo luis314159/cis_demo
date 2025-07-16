@@ -1,3 +1,4 @@
+# routers/defect_record_router.py
 import os
 import shutil
 from typing import Optional
@@ -183,6 +184,10 @@ def search_defect_records(
 
     return results
 
+#LALMAZAN 
+# ENDPOINT CHANGED TO HANDLE SPACES IN JOB NAME
+from urllib.parse import unquote
+from sqlalchemy import func
 
 @router.get("/complete/{job_serial}/{product_name}", response_model=list[CompleteDefectRecordResponse], status_code = status.HTTP_200_OK)
 def get_defect_code(
@@ -191,24 +196,107 @@ def get_defect_code(
     job_serial: str,
     product_name: str
 ):
+    # ✅ Decodificar el job_serial por si viene con caracteres URL encoded
+    decoded_job_serial = unquote(job_serial).strip()  # ✅ Agregar strip() para eliminar espacios
+    decoded_product_name = unquote(product_name).strip()  # ✅ También decodificar product_name
+    
+    logger.info(f"Starting defect search for job_serial: '{decoded_job_serial}' (original: '{job_serial}') and product: '{decoded_product_name}'")
+    
     # Primero buscamos el producto por su nombre
-    product_query = select(Product).where(Product.product_name == product_name)
+    product_query = select(Product).where(Product.product_name == decoded_product_name)
     product = session.exec(product_query).first()
     
+    # ✅ Si no se encuentra con el nombre decodificado, intentar con el original
     if not product:
-        raise HTTPException(status_code=404, detail="Producto no encontrado")
+        clean_original_product = product_name.strip()
+        logger.debug(f"Product not found with decoded name '{decoded_product_name}', trying original name '{clean_original_product}'")
+        product_query = select(Product).where(Product.product_name == clean_original_product)
+        product = session.exec(product_query).first()
     
-    # Luego buscamos el job por su código y producto_id
+    # ✅ Si aún no se encuentra, buscar ignorando espacios al inicio/final
+    if not product:
+        logger.debug(f"Product not found with clean names, attempting trimmed search")
+        product_query = select(Product).where(func.trim(Product.product_name) == decoded_product_name)
+        product = session.exec(product_query).first()
+    
+    if not product:
+        logger.warning(f"Product not found: '{decoded_product_name}'")
+        raise HTTPException(status_code=404, detail=f"Product '{decoded_product_name}' not found")
+    
+    logger.info(f"Product found: {product.product_id} - '{product.product_name}'")
+    
+    # ✅ Buscar el job con manejo robusto similar
     job_query = select(Job).where(
         and_(
-            Job.job_code == job_serial,
+            Job.job_code == decoded_job_serial,
             Job.product_id == product.product_id
         )
     )
     job = session.exec(job_query).first()
     
+    # ✅ Si no se encuentra, intentar con el código original limpio
     if not job:
-        raise HTTPException(status_code=404, detail="Job no encontrado")
+        clean_original_job = job_serial.strip()
+        logger.debug(f"Job not found with decoded code '{decoded_job_serial}', trying original code '{clean_original_job}'")
+        job_query = select(Job).where(
+            and_(
+                Job.job_code == clean_original_job,
+                Job.product_id == product.product_id
+            )
+        )
+        job = session.exec(job_query).first()
+    
+    # ✅ Si aún no se encuentra, buscar ignorando espacios al inicio/final
+    if not job:
+        logger.debug(f"Job not found with clean codes, attempting trimmed search")
+        job_query = select(Job).where(
+            and_(
+                func.trim(Job.job_code) == decoded_job_serial,
+                Job.product_id == product.product_id
+            )
+        )
+        job = session.exec(job_query).first()
+    
+    # ✅ Si aún no encuentra, hacer búsqueda flexible
+    if not job:
+        logger.debug(f"Job not found with trimmed search, attempting flexible search")
+        # Buscar jobs que contengan el código (útil para debug)
+        jobs_similar = session.exec(
+            select(Job).where(
+                and_(
+                    Job.job_code.like(f"%{decoded_job_serial}%"),
+                    Job.product_id == product.product_id
+                )
+            )
+        ).all()
+        
+        if jobs_similar:
+            logger.info(f"Found {len(jobs_similar)} similar jobs for product {product.product_name}:")
+            for similar_job in jobs_similar:
+                logger.info(f"  - '{similar_job.job_code}' (ID: {similar_job.job_id}) [length: {len(similar_job.job_code)}]")
+            
+            # ✅ Si solo hay uno similar, usarlo
+            if len(jobs_similar) == 1:
+                job = jobs_similar[0]
+                logger.info(f"Using the single similar job found: '{job.job_code}'")
+    
+    if not job:
+        logger.warning(f"Job not found: '{decoded_job_serial}' for product '{product.product_name}'")
+        
+        # ✅ Mejorar el mensaje de error con información de debug
+        error_detail = f"Job with code '{decoded_job_serial}' not found for product '{product.product_name}'."
+        
+        # ✅ Obtener algunos jobs existentes para debug
+        existing_jobs = session.exec(
+            select(Job.job_code).where(Job.product_id == product.product_id).limit(5)
+        ).all()
+        if existing_jobs:
+            logger.info(f"Existing jobs for product {product.product_name} (sample): {[repr(job) for job in existing_jobs]}")
+            error_detail += f" Available jobs for this product (sample): {existing_jobs[:3]}"
+        
+        raise HTTPException(status_code=404, detail=error_detail)
+    
+    logger.info(f"Job found: {job.job_id} - '{job.job_code}'")
     
     # Finalmente, buscamos el defect_record asociado a este job
     defect_query = select(DefectRecord).where(
@@ -220,11 +308,13 @@ def get_defect_code(
     defect_records = session.exec(defect_query).all()
     
     if not defect_records:
-        raise HTTPException(status_code=404, detail="No se encontraron registros de defectos")
+        logger.info(f"No defect records found for job '{job.job_code}' and product '{product.product_name}' - returning empty list")
+        return []  # ✅ Retornar lista vacía en lugar de error 404
+    
+    logger.info(f"Found {len(defect_records)} defect records for job '{job.job_code}' and product '{product.product_name}'")
     
     # Retornamos los defect_records
     return defect_records
-
     
 @router.put("/{defect_record_id}", response_model=DefectRecordRead, status_code = status.HTTP_202_ACCEPTED)
 def update_defect_record(

@@ -1,3 +1,9 @@
+######################################################
+#                 routers/job_status.py
+######################################################
+
+# lalmazan July 7th 2025 Delete endoint changed, TODO delete old one
+
 from fastapi import APIRouter, HTTPException, status
 from sqlmodel import Field, select
 from db import SessionDep
@@ -585,102 +591,102 @@ def update_job_status(job_code: str, status_update: JobStatusUpdate, session: Se
             detail=error_message
         )
 
-@router.delete("/{job_code}",
-        summary="Delete a job and its related items and objects",
-        response_description="Confirmation message after deleting the job and its related data",
-        responses={
-            200: {"description": "Job and related data deleted successfully"},
-            404: {"description": "Job not found"},
-        },
-    )
-async def delete_job(job_code: str, session: SessionDep):
-    """
-    ## Endpoint to delete a job and its related items and objects
+# @router.delete("/{job_code}",
+#         summary="Delete a job and its related items and objects",
+#         response_description="Confirmation message after deleting the job and its related data",
+#         responses={
+#             200: {"description": "Job and related data deleted successfully"},
+#             404: {"description": "Job not found"},
+#         },
+#     )
+# async def delete_job(job_code: str, session: SessionDep):
+#     """
+#     ## Endpoint to delete a job and its related items and objects
 
-    This endpoint deletes the job identified by `job_code` and all items and objects related to it.
+#     This endpoint deletes the job identified by `job_code` and all items and objects related to it.
 
-    ### Arguments:
-    - **job_code** (str): The code of the job to delete.
+#     ### Arguments:
+#     - **job_code** (str): The code of the job to delete.
 
-    ### Returns:
-    - **dict**: A confirmation message.
+#     ### Returns:
+#     - **dict**: A confirmation message.
 
-    ### Raises:
-    - `HTTPException`:
-        - `404`: If the job does not exist.
+#     ### Raises:
+#     - `HTTPException`:
+#         - `404`: If the job does not exist.
 
-    ### Example Usage:
-    ```http
-    DELETE /jobs/JOB123
+#     ### Example Usage:
+#     ```http
+#     DELETE /jobs/JOB123
 
-    Response:
-    {
-        "message": "El Job 'JOB123' y todos los datos relacionados fueron eliminados exitosamente."
-    }
-    ```
+#     Response:
+#     {
+#         "message": "El Job 'JOB123' y todos los datos relacionados fueron eliminados exitosamente."
+#     }
+#     ```
 
-    ### Workflow:
-    1. Verify that the job exists.
-    2. Retrieve all items related to the job.
-    3. Delete all objects related to each item.
-    4. Delete all items related to the job.
-    5. Delete all defect records related to the job.
-    6. Delete the job.
-    7. Commit the changes to the database.
-    """
-    logger.info(f"Starting deletion process for job_code: {job_code}")
+#     ### Workflow:
+#     1. Verify that the job exists.
+#     2. Retrieve all items related to the job.
+#     3. Delete all objects related to each item.
+#     4. Delete all items related to the job.
+#     5. Delete all defect records related to the job.
+#     6. Delete the job.
+#     7. Commit the changes to the database.
+#     """
+#     logger.info(f"Starting deletion process for job_code: {job_code}")
     
-    # Verificar si el Job existe
-    job = session.exec(select(Job).where(Job.job_code == job_code)).first()
-    if not job:
-        logger.warning(f"Job not found for deletion: {job_code}")
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="El Job no existe.")
+#     # Verificar si el Job existe
+#     job = session.exec(select(Job).where(Job.job_code == job_code)).first()
+#     if not job:
+#         logger.warning(f"Job not found for deletion: {job_code}")
+#         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="El Job no existe.")
 
-    logger.info(f"Job found for deletion - job_id: {job.job_id}")
+#     logger.info(f"Job found for deletion - job_id: {job.job_id}")
 
-    try:
-        # Obtener los Items relacionados al Job
-        items = session.exec(select(Item).where(Item.job_id == job.job_id)).all()
-        logger.info(f"Found {len(items)} items to delete")
+#     try:
+#         # Obtener los Items relacionados al Job
+#         items = session.exec(select(Item).where(Item.job_id == job.job_id)).all()
+#         logger.info(f"Found {len(items)} items to delete")
 
-        # Eliminar los Objects relacionados a los Items
-        for item in items:
-            objects = session.exec(select(Object).where(Object.item_id == item.item_id)).all()
-            logger.debug(f"Deleting {len(objects)} objects for item {item.item_id}")
-            for obj in objects:
-                session.delete(obj)
+#         # Eliminar los Objects relacionados a los Items
+#         for item in items:
+#             objects = session.exec(select(Object).where(Object.item_id == item.item_id)).all()
+#             logger.debug(f"Deleting {len(objects)} objects for item {item.item_id}")
+#             for obj in objects:
+#                 session.delete(obj)
 
-        # Eliminar los Items relacionados al Job
-        for item in items:
-            logger.debug(f"Deleting item {item.item_id}")
-            session.delete(item)
+#         # Eliminar los Items relacionados al Job
+#         for item in items:
+#             logger.debug(f"Deleting item {item.item_id}")
+#             session.delete(item)
 
-        # Eliminar DefectRecords relacionados al Job
-        defects = session.exec(select(DefectRecord).where(DefectRecord.job_id == job.job_id)).all()
-        logger.info(f"Found {len(defects)} defect records to delete")
-        for defect in defects:
-            logger.debug(f"Deleting defect record {defect.defect_record_id}")
-            session.delete(defect)
+#         # Eliminar DefectRecords relacionados al Job
+#         defects = session.exec(select(DefectRecord).where(DefectRecord.job_id == job.job_id)).all()
+#         logger.info(f"Found {len(defects)} defect records to delete")
+#         for defect in defects:
+#             logger.debug(f"Deleting defect record {defect.defect_record_id}")
+#             session.delete(defect)
 
-        # Eliminar el Job
-        logger.info(f"Deleting job {job.job_id}")
-        session.delete(job)
+#         # Eliminar el Job
+#         logger.info(f"Deleting job {job.job_id}")
+#         session.delete(job)
 
-        # Confirmar los cambios
-        session.commit()
-        logger.info(f"Successfully deleted job {job_code} and all related data")
+#         # Confirmar los cambios
+#         session.commit()
+#         logger.info(f"Successfully deleted job {job_code} and all related data")
 
-        return {"message": f"El Job '{job_code}' y todos los datos relacionados fueron eliminados exitosamente."}
+#         return {"message": f"El Job '{job_code}' y todos los datos relacionados fueron eliminados exitosamente."}
         
-    except Exception as e:
-        # Rollback en caso de error
-        session.rollback()
-        error_message = f"Error deleting job {job_code}: {str(e)}"
-        logger.error(error_message)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=error_message
-        )
+#     except Exception as e:
+#         # Rollback en caso de error
+#         session.rollback()
+#         error_message = f"Error deleting job {job_code}: {str(e)}"
+#         logger.error(error_message)
+#         raise HTTPException(
+#             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+#             detail=error_message
+#         )
     
 @router.get("/list-complete-product", response_model=list[JobComplete],
            summary="Get complete list of all jobs with all fields",
@@ -822,3 +828,172 @@ def debug_job_data(session: SessionDep):
             "error_type": type(e).__name__,
             "traceback": str(e.__traceback__) if hasattr(e, '__traceback__') else None
         }
+
+
+from urllib.parse import unquote  # ✅ Agregar esta importación
+from sqlalchemy import func 
+
+# ... resto del
+# 0 código igual hasta el endpoint delete ...
+from urllib.parse import unquote  # ✅ Agregar esta importación
+
+# ... resto del código igual hasta el endpoint delete ...
+
+@router.delete("/{job_code}",
+        summary="Delete a job and its related items and objects",
+        response_description="Confirmation message after deleting the job and its related data",
+        responses={
+            200: {"description": "Job and related data deleted successfully"},
+            404: {"description": "Job not found"},
+        },
+    )
+async def delete_job(job_code: str, session: SessionDep):
+    """
+    ## Endpoint to delete a job and its related items and objects
+    This endpoint deletes the job identified by `job_code` and all items and objects related to it.
+    ### Arguments:
+    - **job_code** (str): The code of the job to delete.
+    ### Returns:
+    - **dict**: A confirmation message.
+    ### Raises:
+    - `HTTPException`:
+        - `404`: If the job does not exist.
+    ### Example Usage:
+    ```http
+    DELETE /jobs/JOB123
+    Response:
+    {
+        "message": "El Job 'JOB123' y todos los datos relacionados fueron eliminados exitosamente."
+    }
+    ```
+    ### Workflow:
+    1. Verify that the job exists.
+    2. Retrieve all items related to the job.
+    3. Delete all objects related to each item.
+    4. Delete all items related to the job.
+    5. Delete all defect records related to the job.
+    6. Delete the job.
+    7. Commit the changes to the database.
+    """
+    # ✅ Decodificar el job_code por si viene con caracteres URL encoded
+    decoded_job_code = unquote(job_code).strip()  # ✅ Agregar strip() para eliminar espacios
+    logger.info(f"Starting deletion process for job_code: '{decoded_job_code}' (original: '{job_code}')")
+    
+    # ✅ Primero intentar buscar con el código decodificado y limpio
+    job = session.exec(select(Job).where(Job.job_code == decoded_job_code)).first()
+    
+    # ✅ Si no se encuentra, intentar con el código original limpio
+    if not job:
+        clean_original = job_code.strip()
+        logger.debug(f"Job not found with decoded code '{decoded_job_code}', trying original code '{clean_original}'")
+        job = session.exec(select(Job).where(Job.job_code == clean_original)).first()
+    
+    # ✅ Si aún no se encuentra, buscar ignorando espacios al inicio/final
+    if not job:
+        logger.debug(f"Job not found with clean codes, attempting trimmed search")
+        # Buscar con TRIM en la base de datos
+        job = session.exec(
+            select(Job).where(func.trim(Job.job_code) == decoded_job_code)
+        ).first()
+    
+    # ✅ Si aún no encuentra, hacer búsqueda flexible
+    if not job:
+        logger.debug(f"Job not found with trimmed search, attempting flexible search")
+        # Buscar jobs que contengan el código (útil para debug)
+        jobs_similar = session.exec(
+            select(Job).where(Job.job_code.like(f"%{decoded_job_code}%"))
+        ).all()
+        
+        if jobs_similar:
+            logger.info(f"Found {len(jobs_similar)} similar jobs:")
+            for similar_job in jobs_similar:
+                logger.info(f"  - '{similar_job.job_code}' (ID: {similar_job.job_id}) [length: {len(similar_job.job_code)}]")
+            
+            # ✅ Si solo hay uno similar, usarlo
+            if len(jobs_similar) == 1:
+                job = jobs_similar[0]
+                logger.info(f"Using the single similar job found: '{job.job_code}'")
+    
+    if not job:
+        logger.warning(f"Job not found for deletion: '{decoded_job_code}'")
+        
+        # ✅ Mejorar el mensaje de error con información de debug
+        error_detail = f"Job with code '{decoded_job_code}' not found."
+        
+        # ✅ Obtener algunos jobs existentes para debug
+        existing_jobs = session.exec(select(Job.job_code).limit(5)).all()
+        if existing_jobs:
+            logger.info(f"Existing jobs (sample): {[repr(job) for job in existing_jobs]}")
+            error_detail += f" Available jobs (sample): {existing_jobs[:3]}"
+        
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail=error_detail
+        )
+    
+    logger.info(f"Job found for deletion - job_id: {job.job_id}, job_code: '{job.job_code}'")
+    
+    try:
+        # ✅ Contador para tracking
+        deleted_objects = 0
+        deleted_items = 0
+        deleted_defects = 0
+        
+        # Obtener los Items relacionados al Job
+        items = session.exec(select(Item).where(Item.job_id == job.job_id)).all()
+        logger.info(f"Found {len(items)} items to delete")
+        
+        # Eliminar los Objects relacionados a los Items
+        for item in items:
+            objects = session.exec(select(Object).where(Object.item_id == item.item_id)).all()
+            logger.debug(f"Deleting {len(objects)} objects for item {item.item_id}")
+            for obj in objects:
+                session.delete(obj)
+                deleted_objects += 1
+        
+        # Eliminar los Items relacionados al Job
+        for item in items:
+            logger.debug(f"Deleting item {item.item_id}")
+            session.delete(item)
+            deleted_items += 1
+        
+        # Eliminar DefectRecords relacionados al Job
+        defects = session.exec(select(DefectRecord).where(DefectRecord.job_id == job.job_id)).all()
+        logger.info(f"Found {len(defects)} defect records to delete")
+        for defect in defects:
+            logger.debug(f"Deleting defect record {defect.defect_record_id}")
+            session.delete(defect)
+            deleted_defects += 1
+        
+        # Eliminar el Job
+        logger.info(f"Deleting job {job.job_id}")
+        session.delete(job)
+        
+        # Confirmar los cambios
+        session.commit()
+        
+        success_message = (
+            f"Job '{job.job_code}' and all related data deleted successfully. "
+            f"Deleted: {deleted_items} items, {deleted_objects} objects, {deleted_defects} defect records."
+        )
+        
+        logger.info(success_message)
+        
+        return {
+            "message": success_message,
+            "deleted_items": deleted_items,
+            "deleted_objects": deleted_objects,
+            "deleted_defects": deleted_defects,
+            "job_code": job.job_code
+        }
+        
+    except Exception as e:
+        # Rollback en caso de error
+        session.rollback()
+        error_message = f"Error deleting job {job.job_code}: {str(e)}"
+        logger.error(error_message)
+        logger.error(f"Exception type: {type(e).__name__}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=error_message
+        )

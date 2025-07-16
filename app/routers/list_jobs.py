@@ -1,3 +1,6 @@
+######################################################
+#                 routers/list_jobs.py
+######################################################
 from fastapi import APIRouter, status
 from sqlmodel import select
 from db import SessionDep
@@ -56,10 +59,17 @@ def list_jobs(session: SessionDep):
     3. Return the list of jobs.
     """
     # Obtener todos los Jobs disponibles
-    jobs = session.exec(select(Job)).all()
+    #jobs = session.exec(select(Job)).all()
+    jobs = session.exec(select(Job).where(Job.status == False)).all()
 
-    # Transformar a la respuesta deseada
-    job_list = [JobList(job_code=job.job_code) for job in jobs]
+    # # Transformar incluyendo todos los campos del modelo de respuesta
+    job_list = [
+        JobListComplete(
+            job_code=job.job_code,
+            job_id=job.job_id  # Campo faltante añadido
+        ) 
+        for job in jobs
+    ]    
 
     return job_list
 
@@ -100,18 +110,12 @@ def list_jobs(session: SessionDep):
     3. Return the list of jobs.
     """
     # Obtener todos los Jobs disponibles
+
+
     jobs = session.exec(select(Job)).all()
 
-    # # Transformar incluyendo todos los campos del modelo de respuesta
-    job_list = [
-        JobListComplete(
-            job_code=job.job_code,
-            job_id=job.job_id  # Campo faltante añadido
-        ) 
-        for job in jobs
-    ]
-
-    
+    # Transformar a la respuesta deseada
+    job_list = [JobList(job_code=job.job_code) for job in jobs]
 
     return job_list
 

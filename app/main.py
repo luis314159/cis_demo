@@ -1,3 +1,4 @@
+import datetime
 from fastapi import FastAPI, Request, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -15,6 +16,8 @@ from routers import (
     rest_password_router, products_router, issue_router, defect_record_router,
     correction_process_router, status_router, process_role
 )
+
+from fastapi import status
 
 from generate_qr import generate_qr, generate_pdf
 from middleware import auth_middleware
@@ -610,3 +613,22 @@ async def issues(
         {"request": request, "current_user": current_user}
     )
 
+@app.get("/health", 
+        status_code=status.HTTP_200_OK,
+        summary="Health check endpoint",
+        response_description="Returns the health status of the API",
+        tags=["Health Check"],
+    )
+async def health_check():
+    """
+    Health check endpoint to verify if the API is running correctly.
+    
+    Returns:
+        dict: Contains status, timestamp, and service information
+    """
+    return {
+        "status": "healthy",
+        "timestamp": datetime.datetime.utcnow().isoformat(),
+        "service": "API Service",
+        "version": "1.0.0"
+    }

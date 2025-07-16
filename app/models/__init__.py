@@ -1,3 +1,6 @@
+#####################################
+#            models/__init__.py
+######################################
 from pydantic import EmailStr
 from sqlmodel import SQLModel, Field, Relationship
 from typing import List, Optional
